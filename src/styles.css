@@ -338,6 +338,10 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* The nested-scroll rule: as a column flex child (the phone layout) this
+     pane must be allowed to shrink below its content height, or the whole
+     page scrolls instead of just the narrative log. */
+  min-height: 0;
   border-right: 1px solid var(--border);
 }
 
@@ -347,6 +351,7 @@ body {
   gap: 12px;
   padding: 8px 16px;
   border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
 }
 
 .session-room {
@@ -1593,6 +1598,7 @@ body {
     gap: 8px;
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
+    flex-shrink: 0;
   }
 
   .input-dock .input-wrap {
