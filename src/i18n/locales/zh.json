@@ -243,7 +243,9 @@
         "df16": "DF-16",
         "phosphor": "磷光",
         "paperwhite": "纸白"
-      }
+      },
+      "narrativeWidth": "叙事宽度",
+      "narrativeWidthHint": "桌面端叙事栏的宽度。手机端始终全宽显示。"
     },
     "rooms": {
       "title": "房间生命周期",

@@ -243,7 +243,9 @@
         "df16": "DF-16",
         "phosphor": "Phosphor",
         "paperwhite": "Paperwhite"
-      }
+      },
+      "narrativeWidth": "Narrative width",
+      "narrativeWidthHint": "How wide the story column is on desktop. Mobile always uses full width."
     },
     "rooms": {
       "title": "Room lifecycle",

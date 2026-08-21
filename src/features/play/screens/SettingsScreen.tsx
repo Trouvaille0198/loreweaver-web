@@ -1,16 +1,18 @@
 // Settings — the TUI's theme cycle (F1–F5 order, lamplight first) as swatch
-// cards, plus the language switch. The theme applies app-wide instantly and
-// persists across restarts.
+// cards, the desktop narrative width, plus the language switch. Theme and
+// width apply app-wide instantly and persist across restarts.
 
 import { useTranslation } from "react-i18next"
 import { themeOrder, themes } from "../../../lib/themes"
-import { useAppStore } from "../../../store/app"
+import { MAX_NARRATIVE_WIDTH, MIN_NARRATIVE_WIDTH, useAppStore } from "../../../store/app"
 import ScreenShell from "./ScreenShell"
 
 export default function SettingsScreen({ onBack }: { onBack: () => void }) {
   const { t, i18n } = useTranslation()
   const theme = useAppStore((s) => s.theme)
   const setTheme = useAppStore((s) => s.setTheme)
+  const narrativeWidth = useAppStore((s) => s.narrativeWidth)
+  const setNarrativeWidth = useAppStore((s) => s.setNarrativeWidth)
 
   return (
     <ScreenShell title={t("play.menu.settings")} onBack={onBack}>
@@ -46,6 +48,25 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
           )
         })}
       </div>
+
+      <label className="field narrative-width-field">
+        <span className="narrative-width-label">
+          {t("play.settings.narrativeWidth")}
+          <span className="narrative-width-value" aria-live="polite">
+            {narrativeWidth}ch
+          </span>
+        </span>
+        <input
+          type="range"
+          min={MIN_NARRATIVE_WIDTH}
+          max={MAX_NARRATIVE_WIDTH}
+          step={5}
+          value={narrativeWidth}
+          aria-label={t("play.settings.narrativeWidth")}
+          onChange={(e) => setNarrativeWidth(Number(e.target.value))}
+        />
+        <small className="studio-hint">{t("play.settings.narrativeWidthHint")}</small>
+      </label>
 
       <label className="field field-narrow">
         {t("lang.label")}

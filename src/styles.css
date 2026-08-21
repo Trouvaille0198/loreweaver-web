@@ -10,6 +10,9 @@
 :root {
   color-scheme: dark;
 
+  /* Story-log column width; the settings screen overrides it at runtime. */
+  --narrative-max: 110ch;
+
   /* raw TUI theme tokens (lamplight — the Loreweaver identity palette) */
   --lw-bg: #17130e;
   --lw-fg: #e7d8b5;
@@ -443,7 +446,7 @@ body {
 .dice-line,
 .system-line {
   width: 100%;
-  max-width: 110ch;
+  max-width: var(--narrative-max);
   margin-inline: auto;
 }
 
@@ -715,7 +718,7 @@ body {
   gap: 10px;
   margin: 10px auto 0;
   width: 100%;
-  max-width: 110ch;
+  max-width: var(--narrative-max);
   padding: 8px 14px;
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
@@ -969,7 +972,7 @@ body {
 
 .log-ui {
   width: 100%;
-  max-width: 110ch;
+  max-width: var(--narrative-max);
   margin-inline: auto;
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
@@ -3595,6 +3598,28 @@ select option {
   color: var(--ink);
 }
 
+.narrative-width-field {
+  max-width: 420px;
+}
+
+.narrative-width-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.narrative-width-value {
+  font: 600 13px/1 var(--font-mono);
+  color: var(--accent-strong);
+}
+
+.narrative-width-field input[type="range"] {
+  width: 100%;
+}
+
 /* ---- checkboxes & radios: theme-accented ---- */
 
 /* ---- checkboxes & radios: fully custom, not the native control ---- */
@@ -4360,8 +4385,6 @@ code {
     overflow-x: auto;
     white-space: nowrap;
   }
-
-
 }
 
 /* Small phones: drop the version readout (debug chrome) and tighten further. */
