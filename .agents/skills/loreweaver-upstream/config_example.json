@@ -1,0 +1,28 @@
+{
+  "upstream": {
+    "studio": "https://github.com/1A7432/loreweaver-studio",
+    "engine": "https://github.com/1A7432/loreweaver"
+  },
+  "local": {
+    "web_repo": "/home/melon/self-pro/loreweaver-web",
+    "engine_repo": "/home/melon/self-pro/loreweaver",
+    "studio_probe": "/tmp/lw-studio-upstream"
+  },
+  "deploy": {
+    "vps": "USER@HOST",
+    "ssh_key": "~/.ssh/id_github",
+    "web_dir": "~/apps/loreweaver-web",
+    "engine_dir": "~/apps/loreweaver"
+  },
+  "_help": {
+    "upstream.studio": "Studio 桌面客户端仓库（play UI 的源头）",
+    "upstream.engine": "引擎仓库（服务端行为/协议/--web 托管）",
+    "local.web_repo": "本地 loreweaver-web 仓库路径",
+    "local.engine_repo": "本地 loreweaver（fork）仓库路径",
+    "local.studio_probe": "克隆上游 studio 用的临时目录",
+    "deploy.vps": "SSH 目标（用户@主机）",
+    "deploy.ssh_key": "SSH 私钥路径",
+    "deploy.web_dir": "VPS 上 web 仓库目录",
+    "deploy.engine_dir": "VPS 上引擎仓库目录"
+  }
+}
