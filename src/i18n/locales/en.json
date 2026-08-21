@@ -118,9 +118,8 @@
     "quickMenuHint": "Pick to insert into the box — tweak before sending",
     "quickMenuSearch": "Filter commands…",
     "quickMenuEmpty": "No matching commands",
-    "quickMenuClose": "Close",
-    "quickMenuKeys": "↑↓ select · Enter insert · Esc close",
-    "deskReset": "Reset order"
+    "deskReset": "Reset order",
+    "deskGrip": "Drag to reorder"
   },
   "panels": {
     "menu": "Panels ({{n}})",
@@ -197,7 +196,15 @@
       "apiKey": "API key (write-only)",
       "keyMasked": "saved: {{masked}}",
       "apply": "Apply",
-      "demoActive": "The offline sample Keeper is running — applying a model switches the room to it."
+      "demoActive": "The offline sample Keeper is running — applying a model switches the room to it.",
+      "roomSection": "This room's model",
+      "roomHint": "Pin this room's own provider/key/models. Empty fields follow the global config below; a room override wins for every turn in this room.",
+      "roomInherit": "inherit",
+      "roomApply": "Apply to this room",
+      "roomClear": "Clear room override",
+      "roomEffective": "Effective: {{provider}} / {{chat_model}} · key {{api_key}}",
+      "roomInactive": "Following the global model — no room override.",
+      "roomBroken": "Room override failed to build — this room is being served the global model. Fix the provider/key above."
     },
     "module": {
       "path": "Module path on the server",

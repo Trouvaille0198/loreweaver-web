@@ -34,7 +34,14 @@ function seed() {
     initiative: [{ name: "Ash", value: 8, current: true }],
     variables: [{ id: "v", label: "Suspicion", kind: "number", value: 2, min: 0, max: 10 }],
     systems: [{ id: "coc7", make_char: "coc" }],
-    usage: { context_tokens: 1200, context_window: 8000, input_tokens: 100, output_tokens: 50, cache_hit_tokens: 900, cache_miss_tokens: 300 },
+    usage: {
+      context_tokens: 1200,
+      context_window: 8000,
+      input_tokens: 100,
+      output_tokens: 50,
+      cache_hit_tokens: 900,
+      cache_miss_tokens: 300,
+    },
     online: 1,
   })
 }
@@ -52,6 +59,13 @@ function stubRects() {
   })
 }
 
+/** The drag handle inside a slot — the only element that starts a drag. */
+function gripOf(slot: HTMLElement): HTMLElement {
+  const grip = slot.querySelector<HTMLElement>(".desk-slot-grip")
+  if (!grip) throw new Error("slot has no grip handle")
+  return grip
+}
+
 describe("DeskColumn", () => {
   beforeEach(() => {
     localStorage.clear()
@@ -62,7 +76,16 @@ describe("DeskColumn", () => {
     render(<DeskColumn />)
     // sidebar/tray/uiPanels/pregens have no data here — the rest follow the
     // default order with packImport and usage in their slots.
-    expect(domOrder()).toEqual(["character", "party", "scene", "systems", "trackers", "initiative", "packImport", "usage"])
+    expect(domOrder()).toEqual([
+      "character",
+      "party",
+      "scene",
+      "systems",
+      "trackers",
+      "initiative",
+      "packImport",
+      "usage",
+    ])
     expect(screen.queryByRole("button", { name: "Reset order" })).not.toBeInTheDocument()
   })
 
@@ -73,15 +96,25 @@ describe("DeskColumn", () => {
     const usage = slots.find((el) => el.getAttribute("data-slot") === "usage")
     expect(usage).toBeDefined()
 
-    fireEvent.pointerDown(usage!, { pointerType: "mouse", button: 0, pointerId: 1, clientX: 10, clientY: 10 })
+    const grip = gripOf(usage!)
+    fireEvent.pointerDown(grip, { pointerType: "mouse", button: 0, pointerId: 1, clientX: 10, clientY: 10 })
     // Move >5px down to the party slot's band (index 1 → y 100..180).
-    fireEvent.pointerMove(usage!, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
-    fireEvent.pointerUp(usage!, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
+    fireEvent.pointerMove(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
+    fireEvent.pointerUp(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
 
     // Usage now sits right after the character card. The persisted layout is
     // the FULL slot list — hidden slots (sidebar/tray/uiPanels/pregens) keep
     // their relative places for when their data returns.
-    expect(domOrder()).toEqual(["character", "usage", "party", "scene", "systems", "trackers", "initiative", "packImport"])
+    expect(domOrder()).toEqual([
+      "character",
+      "usage",
+      "party",
+      "scene",
+      "systems",
+      "trackers",
+      "initiative",
+      "packImport",
+    ])
     expect(localStorage.getItem("lw-desk-order:r1")).toBe(
       JSON.stringify([
         "character",
@@ -105,9 +138,10 @@ describe("DeskColumn", () => {
     stubRects()
     const slots = Array.from(document.querySelectorAll<HTMLElement>(".desk-slot"))
     const usage = slots.find((el) => el.getAttribute("data-slot") === "usage")
-    fireEvent.pointerDown(usage!, { pointerType: "mouse", button: 0, pointerId: 1, clientX: 10, clientY: 10 })
-    fireEvent.pointerMove(usage!, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
-    fireEvent.pointerUp(usage!, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
+    const grip = gripOf(usage!)
+    fireEvent.pointerDown(grip, { pointerType: "mouse", button: 0, pointerId: 1, clientX: 10, clientY: 10 })
+    fireEvent.pointerMove(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
+    fireEvent.pointerUp(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
     expect(domOrder()[1]).toBe("usage")
 
     // A fresh mount reads the stored order.
@@ -118,7 +152,16 @@ describe("DeskColumn", () => {
     // The reset control appears once customized; clicking restores default.
     const reset = screen.getByRole("button", { name: "Reset order" })
     fireEvent.click(reset)
-    expect(domOrder()).toEqual(["character", "party", "scene", "systems", "trackers", "initiative", "packImport", "usage"])
+    expect(domOrder()).toEqual([
+      "character",
+      "party",
+      "scene",
+      "systems",
+      "trackers",
+      "initiative",
+      "packImport",
+      "usage",
+    ])
     expect(localStorage.getItem("lw-desk-order:r1")).toBe(
       JSON.stringify([
         "character",
@@ -137,17 +180,23 @@ describe("DeskColumn", () => {
     )
   })
 
-  it("never starts a drag from a card's interactive controls", () => {
+  it("only the grip starts a drag — the card body and its controls do not", () => {
     render(<DeskColumn />)
-    // The pack-import card's Browse button is inside its slot — pressing it
-    // must not begin a drag.
-    const browse = screen.getByRole("button", { name: /browse/i })
-    const slot = browse.closest(".desk-slot") as HTMLElement
+    const slot = document.querySelector<HTMLElement>('[data-slot="packImport"]')!
     const before = domOrder()
+
+    // Pressing a control inside the card must not begin a drag.
+    const browse = screen.getByRole("button", { name: /browse/i })
     fireEvent.pointerDown(browse, { pointerType: "mouse", button: 0, pointerId: 2, clientX: 10, clientY: 10 })
     fireEvent.pointerMove(browse, { pointerType: "mouse", pointerId: 2, clientX: 10, clientY: 500 })
     fireEvent.pointerUp(browse, { pointerType: "mouse", pointerId: 2, clientX: 10, clientY: 500 })
+
+    // Pressing the card body (its text) must not begin a drag either — that is
+    // what keeps the text inside selectable and copyable.
+    fireEvent.pointerDown(slot, { pointerType: "mouse", button: 0, pointerId: 3, clientX: 10, clientY: 10 })
+    fireEvent.pointerMove(slot, { pointerType: "mouse", pointerId: 3, clientX: 10, clientY: 500 })
+    fireEvent.pointerUp(slot, { pointerType: "mouse", pointerId: 3, clientX: 10, clientY: 500 })
+
     expect(domOrder()).toEqual(before)
-    expect(slot.getAttribute("data-slot")).toBe("packImport")
   })
 })

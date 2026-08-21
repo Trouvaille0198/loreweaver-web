@@ -1,11 +1,13 @@
 // The desk column as one freely reorderable stack. Every card is a slot;
-// drag a card by its body (never by its buttons/inputs) to move it, and the
-// order persists per room in localStorage. Slots with nothing to show are
-// skipped and return to their stored place when their data comes back.
+// drag a card by its grip handle (⠿) to move it, and the order persists per
+// room in localStorage. Slots with nothing to show are skipped and return to
+// their stored place when their data comes back.
 //
-// Drag is mouse-driven (pointer events, fine pointers only): the desk column
-// scrolls on touch, and hijacking that for a drag would break the phone
-// drawer. The persisted order still applies to the drawer on every screen.
+// Only the grip starts a drag — the card body stays freely selectable so the
+// text inside can still be selected and copied. Drag is mouse-driven (pointer
+// events, fine pointers only): the desk column scrolls on touch, and hijacking
+// that for a drag would break the phone drawer. The persisted order still
+// applies to the drawer on every screen.
 
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import { useTranslation } from "react-i18next"
@@ -82,9 +84,6 @@ function writeOrder(room: string, order: DeskSlotId[]): void {
   }
 }
 
-/** Interactive elements inside a card must never start a drag. */
-const NO_DRAG = "button, input, select, textarea, a, [contenteditable]"
-
 interface DragState {
   id: DeskSlotId
   pointerId: number
@@ -150,9 +149,13 @@ export default function DeskColumn() {
   const onPointerDown = (event: ReactPointerEvent<HTMLElement>, id: DeskSlotId) => {
     // Mouse only: touch scrolls the drawer; hijacking it would break the phone.
     if (event.pointerType !== "mouse" || event.button !== 0) return
-    const target = event.target as Element
-    if (target.closest(NO_DRAG)) return
-    dragRef.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, moved: false }
+    dragRef.current = {
+      id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    }
     try {
       event.currentTarget.setPointerCapture(event.pointerId)
     } catch {
@@ -247,11 +250,19 @@ export default function DeskColumn() {
           }}
           className={`desk-slot${id === dragId ? " is-dragging" : ""}${id === overId ? " drop-target" : ""}`}
           data-slot={id}
-          onPointerDown={(event) => onPointerDown(event, id)}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerEnd}
-          onPointerCancel={onPointerEnd}
         >
+          <button
+            type="button"
+            className="desk-slot-grip"
+            aria-label={t("session.deskGrip")}
+            title={t("session.deskGrip")}
+            onPointerDown={(event) => onPointerDown(event, id)}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerEnd}
+            onPointerCancel={onPointerEnd}
+          >
+            ⠿
+          </button>
           {renderSlot(id)}
         </div>
       ))}

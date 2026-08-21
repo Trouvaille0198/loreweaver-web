@@ -118,9 +118,8 @@
     "quickMenuHint": "点选插入输入框，发送前可再修改",
     "quickMenuSearch": "过滤指令…",
     "quickMenuEmpty": "没有匹配的指令",
-    "quickMenuClose": "关闭",
-    "quickMenuKeys": "↑↓ 选择 · Enter 插入 · Esc 关闭",
-    "deskReset": "恢复默认顺序"
+    "deskReset": "恢复默认顺序",
+    "deskGrip": "拖动排序"
   },
   "panels": {
     "menu": "面板({{n}})",
@@ -197,7 +196,15 @@
       "apiKey": "API 密钥（只写）",
       "keyMasked": "已保存：{{masked}}",
       "apply": "应用",
-      "demoActive": "离线示例守秘人正在运行——应用模型后房间会切换过去。"
+      "demoActive": "离线示例守秘人正在运行——应用模型后房间会切换过去。",
+      "roomSection": "本房间模型",
+      "roomHint": "为本房间固定自己的服务商/密钥/模型。留空的字段跟随下方全局配置；房间覆盖对本房间的每一回合生效。",
+      "roomInherit": "跟随全局",
+      "roomApply": "应用到本房间",
+      "roomClear": "清除房间覆盖",
+      "roomEffective": "生效：{{provider}} / {{chat_model}} · 密钥 {{api_key}}",
+      "roomInactive": "跟随全局模型——本房间没有覆盖。",
+      "roomBroken": "房间覆盖构建失败——本房间正在使用全局模型。请修正上方的服务商/密钥。"
     },
     "module": {
       "path": "服务器上的模组路径",

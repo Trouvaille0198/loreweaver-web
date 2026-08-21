@@ -2,9 +2,8 @@
 // menu of ready-to-send command lines. Picking a row inserts the line into
 // the input box (never sends it) so the player can adjust the arguments.
 //
-// The old design rendered the command tree as nested, indented sub-menus;
-// this flattens groups into labelled sections that scan in one pass, adds a
-// filter field (the standard command-palette pattern) and full keyboard
+// The command tree is flattened into labelled sections that scan in one pass,
+// with a filter field (the standard command-palette pattern) and full keyboard
 // navigation: ↑/↓ to move, Enter to insert, Esc to close.
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react"
@@ -50,6 +49,30 @@ function flatten(commands: readonly QuickCommand[], keeper = false): PaletteRow[
   }
   return rows
 }
+
+/** A 24px-grid lightning bolt — the "quick" glyph, drawn with currentColor so
+ * it inherits the theme instead of shipping a platform emoji. */
+function BoltIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+      <path d="M7 2v11h3v9l7-12h-4l4-8z" />
+    </svg>
+  )
+}
+
+/** A magnifier for the filter field. */
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z" />
+    </svg>
+  )
+}
+
+// (No header or close button: the palette opens from the bolt beside it, Esc
+// and an outside tap close it, and the filter field titles the surface the
+// way the dot-completion hints above the same input are titled — by being
+// usable, not by furniture.)
 
 export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) {
   const { t } = useTranslation()
@@ -177,7 +200,7 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
     <div className="quick-menu" ref={rootRef}>
       <button
         type="button"
-        className="ghost-button quick-menu-toggle"
+        className="quick-menu-toggle"
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={t("session.quickCommands")}
@@ -185,26 +208,12 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
         disabled={disabled}
         onClick={toggle}
       >
-        ⚡
+        <BoltIcon />
       </button>
       {open ? (
         <div className="quick-menu-pop" role="menu" aria-label={t("session.quickCommands")}>
-          <header className="quick-menu-head">
-            <div className="quick-menu-title-wrap">
-              <span className="quick-menu-title">{t("session.quickCommands")}</span>
-              <span className="quick-menu-hint">{t("session.quickMenuHint")}</span>
-            </div>
-            <button
-              type="button"
-              className="icon-button quick-menu-close"
-              aria-label={t("session.quickMenuClose")}
-              title={t("session.quickMenuClose")}
-              onClick={close}
-            >
-              ×
-            </button>
-          </header>
           <div className="quick-menu-search">
+            <SearchIcon />
             <input
               ref={searchRef}
               value={query}
@@ -217,8 +226,6 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
               aria-label={t("session.quickMenuSearch")}
               spellCheck={false}
             />
-          </div>
-          <div className="quick-menu-list">
             {display.length === 0 ? (
               <p className="quick-menu-empty">{t("session.quickMenuEmpty")}</p>
             ) : (
@@ -248,7 +255,9 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
               )
             )}
           </div>
-          <footer className="quick-menu-foot">{t("session.quickMenuKeys")}</footer>
+          <footer className="quick-menu-foot">
+            <span>{t("session.quickMenuHint")}</span>
+          </footer>
         </div>
       ) : null}
     </div>

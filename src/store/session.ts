@@ -10,7 +10,6 @@ import type {
   ServerFrame,
   StateFrame,
   SystemFrame,
-  TurnActivity,
   UiFrame,
 } from "@loreweaver/protocol"
 import { transportSend } from "../lib/transport"
@@ -67,27 +66,31 @@ export interface UiPanelRegion {
 
 /**
  * The activity words this client has a label for — the protocol's own closed
- * set, typed against it, so a word a later protocol adds fails the BUILD here
- * rather than showing a raw translation key at the table. The set stays a
- * runtime check as well: the frame validator does not police these two hints,
- * and a newer server is exactly who would send an unfamiliar one.
+ * set. The set stays a runtime check: the frame validator does not police
+ * these hints, and a newer server is exactly who would send a word this
+ * client predates — which must render as "no hint", never as a raw key.
+ * (`thinking` arrived with the 2.4 engine and is what every model call
+ * announces, so even a tool-less stretch keeps the busy line live.)
  */
-const TURN_ACTIVITIES: readonly TurnActivity[] = ["reading", "dice", "cast", "bookkeeping"]
+const TURN_ACTIVITIES = ["thinking", "reading", "dice", "cast", "bookkeeping"] as const
+type TurnActivityLabel = (typeof TURN_ACTIVITIES)[number]
 
 export interface TurnState {
   busy: boolean
   actor: string | null
   /** Epoch ms of the busy frame, for the safety timeout. */
   since: number
-  /** The 2.3.1 activity hint, or null when the server did not send one. */
-  activity: TurnActivity | null
-  /** The 2.3.1 tool round (1-based), or null when the server did not send one. */
+  /** The activity hint, or null when the server did not send one. */
+  activity: TurnActivityLabel | null
+  /** The tool round (1-based), or null when the server did not send one. */
   round: number | null
 }
 
-/** The 2.3.1 activity hint, ignoring anything outside the set we can label. */
-function readActivity(activity: TurnActivity | undefined): TurnActivity | null {
-  return activity !== undefined && TURN_ACTIVITIES.includes(activity) ? activity : null
+/** The activity hint, ignoring anything outside the set we can label. */
+function readActivity(activity: unknown): TurnActivityLabel | null {
+  return typeof activity === "string" && (TURN_ACTIVITIES as readonly string[]).includes(activity)
+    ? (activity as TurnActivityLabel)
+    : null
 }
 
 /** The 2.3.1 round hint; a non-integer or sub-1 value is no hint at all. */

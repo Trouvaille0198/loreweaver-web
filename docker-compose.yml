@@ -22,6 +22,12 @@ services:
     user: "${LW_UID:-1001}:${LW_GID:-1001}"
     ports:
       - "8787:8787"
+    # Run BOTH transports on one SessionCore: the browser WebSocket listener
+    # (with the SPA) and the Iroh p2p listener, so web players and desktop
+    # (p2p) players share one live table. The stock `--web`/`--serve` modes
+    # are mutually exclusive in app.py, hence the combined runner.
+    command: ["python", "/srv/serve_both.py", "--host", "0.0.0.0", "--port", "8787",
+              "--static-dir", "/srv/web-dist", "--keys", "/data/keys.toml"]
     volumes:
       # BIND MOUNT, not a named volume: every record — keys.toml, the campaign
       # SQLite DB, media, packs, backups — lives at ./data on the HOST and is
@@ -29,6 +35,9 @@ services:
       # host directly (scp a module into ./data/, back up ./data, read keys)
       # with no `docker exec` needed.
       - ./data:/data
+      # The combined WS+p2p runner, read-only (it must track the engine's API,
+      # so keep it next to the compose file on the host).
+      - ./serve_both.py:/srv/serve_both.py:ro
     environment:
       # TUI locale of the server (en/zh).
       - LANG=C.UTF-8

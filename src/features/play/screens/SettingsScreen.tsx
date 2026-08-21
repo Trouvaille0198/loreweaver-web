@@ -1,10 +1,18 @@
 // Settings — the TUI's theme cycle (F1–F5 order, lamplight first) as swatch
 // cards, the desktop narrative width, plus the language switch. Theme and
 // width apply app-wide instantly and persist across restarts.
+//
+// On a combined WS+p2p server the top section also surfaces the shareable
+// Iroh p2p ticket (so the keeper can hand desktop players a dial-in address)
+// and, for keepers, the invite-key loop (`InviteKeysPanel`) — the one-stop
+// "server & invites" view.
 
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { themeOrder, themes } from "../../../lib/themes"
 import { MAX_NARRATIVE_WIDTH, MIN_NARRATIVE_WIDTH, useAppStore } from "../../../store/app"
+import { useConnectionStore } from "../../../store/connection"
+import InviteKeysPanel from "./InviteKeysPanel"
 import ScreenShell from "./ScreenShell"
 
 export default function SettingsScreen({ onBack }: { onBack: () => void }) {
@@ -13,9 +21,46 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
   const setTheme = useAppStore((s) => s.setTheme)
   const narrativeWidth = useAppStore((s) => s.narrativeWidth)
   const setNarrativeWidth = useAppStore((s) => s.setNarrativeWidth)
+  const welcome = useConnectionStore((s) => s.welcome)
+  const isKeeper = welcome?.you.role === "keeper"
+  const p2pTicket = welcome?.p2p_ticket
+  const [ticketCopied, setTicketCopied] = useState(false)
+
+  const copyTicket = async () => {
+    if (!p2pTicket) return
+    try {
+      await navigator.clipboard.writeText(p2pTicket)
+      setTicketCopied(true)
+    } catch {
+      setTicketCopied(false)
+    }
+  }
 
   return (
-    <ScreenShell title={t("play.menu.settings")} onBack={onBack}>
+    <ScreenShell title={t("play.menu.settings")} onBack={onBack} showAdminError={isKeeper}>
+      {p2pTicket || isKeeper ? (
+        <section className="play-server-info" aria-label={t("play.settings.serverSection")}>
+          <h3>{t("play.settings.serverSection")}</h3>
+          {p2pTicket ? (
+            <>
+              <p className="studio-hint">{t("play.settings.ticketHint")}</p>
+              <div className="play-ticket-row">
+                <code className="play-minted-key">{p2pTicket}</code>
+                <button type="button" className="ghost-button" onClick={() => void copyTicket()}>
+                  {ticketCopied ? t("play.keys.copied") : t("play.keys.copy")}
+                </button>
+              </div>
+            </>
+          ) : null}
+          {isKeeper ? (
+            <div className="play-invites-block">
+              <h3>{t("play.settings.invitesSection")}</h3>
+              <InviteKeysPanel />
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <p className="studio-hint">{t("play.settings.themeHint")}</p>
       <div className="play-theme-grid">
         {themeOrder.map((name, index) => {

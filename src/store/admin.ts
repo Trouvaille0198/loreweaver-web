@@ -11,8 +11,10 @@ import type {
   AdminKeyInfo,
   AdminKeyPurpose,
   AdminResetScope,
+  AdminRoomConfigFrame,
   AdminRoomOpFrame,
   AdminRuleInfo,
+  AdminSetModelFrame,
   AdminSkillInfo,
   AdminUpdateFrame,
   MintedKey,
@@ -27,6 +29,8 @@ interface AdminState {
   /** Model catalog for the provider last asked about ("" until one arrives). */
   modelsProvider: string
   models: string[]
+  /** THIS room's LLM override state (null until the first admin_room_config). */
+  roomConfig: AdminRoomConfigFrame | null
   keys: AdminKeyInfo[]
   /** The freshly minted key — cleartext arrives exactly once; show + let copy. */
   minted: MintedKey | null
@@ -48,6 +52,20 @@ interface AdminState {
   refreshConfig: () => void
   setModel: (provider: string, chatModel?: string, apiKey?: string, baseUrl?: string) => void
   listModels: (provider?: string, apiKey?: string, baseUrl?: string) => void
+  /** Fetch the caller's room's LLM override state (admin_room_config reply). */
+  refreshRoomConfig: () => void
+  /** Pin/change the caller's room's own LLM override. Fields present in the
+   * frame set (or clear, when empty) the room's stored value; omitted ones keep
+   * the current value. The server probes before persisting — a config whose
+   * main client cannot build is refused. */
+  setRoomModel: (patch: {
+    provider?: string
+    chatModel?: string
+    baseUrl?: string
+    apiKey?: string
+  }) => void
+  /** Wipe the room override (back to follow-the-global-model). */
+  clearRoomModel: () => void
   listKeys: () => void
   mintKey: (room: string, name: string, role: PlayerRole, purpose?: AdminKeyPurpose) => void
   updateKey: (id: string, patch: { room?: string; name?: string; role?: PlayerRole }) => void
@@ -93,6 +111,7 @@ const EMPTY = {
   config: null,
   modelsProvider: "",
   models: [],
+  roomConfig: null,
   keys: [],
   minted: null,
   skills: [],
@@ -114,6 +133,10 @@ export const useAdminStore = create<AdminState>((set) => ({
         return true
       case "admin_models":
         set({ modelsProvider: frame.provider, models: frame.models, busy: false })
+        return true
+      case "admin_room_config" as ServerFrame["type"]:
+        // Augmented frame: not yet a member of the published ServerFrame union.
+        set({ roomConfig: frame as unknown as AdminRoomConfigFrame, busy: false, lastError: null })
         return true
       case "admin_keys":
         set({ keys: frame.keys, minted: frame.minted ?? null, busy: false, lastError: null })
@@ -163,6 +186,23 @@ export const useAdminStore = create<AdminState>((set) => ({
       },
       set,
     ),
+  // The room-override frames are on the wire (server implements them) but not
+  // yet in the published npm union types — cast at this transport boundary.
+  refreshRoomConfig: () =>
+    send({ type: "admin_get_room_config" } as unknown as ClientFrame, set),
+  setRoomModel: (patch) =>
+    send(
+      {
+        type: "admin_set_room_model",
+        ...(patch.provider !== undefined ? { provider: patch.provider } : {}),
+        ...(patch.chatModel !== undefined ? { chat_model: patch.chatModel } : {}),
+        ...(patch.baseUrl !== undefined ? { base_url: patch.baseUrl } : {}),
+        ...(patch.apiKey ? { api_key: patch.apiKey } : {}),
+      } as unknown as ClientFrame,
+      set,
+    ),
+  clearRoomModel: () =>
+    send({ type: "admin_set_room_model", clear: true } as unknown as ClientFrame, set),
   listKeys: () => send({ type: "admin_list_keys" }, set),
   mintKey: (room, name, role, purpose) =>
     send({ type: "admin_mint_key", room, name, role, ...(purpose ? { purpose } : {}) }, set),
