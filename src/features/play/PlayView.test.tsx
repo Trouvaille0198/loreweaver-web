@@ -29,8 +29,9 @@ describe("PlayView", () => {
     render(<PlayView />)
     const urlField = screen.getByLabelText(/server url/i)
     // The page is served by the server itself, so the field starts with the
-    // same origin (jsdom: http://localhost/) — the only missing piece is the key.
-    expect(urlField).toHaveValue("ws://localhost/")
+    // same origin (jsdom: http://localhost:3000/ — note the port) — the only
+    // missing piece is the key.
+    expect(urlField).toHaveValue("ws://localhost:3000/")
     const submit = screen.getByRole("button", { name: "Connect" })
     expect(submit).toBeDisabled()
     await user.type(urlField, "ws://localhost:8787")
