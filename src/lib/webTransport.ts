@@ -48,6 +48,14 @@ export function webClient(): WsClient {
       // would double-report.
       onProtocolMismatch: () => {},
       webSocketFactory: (url) => makeSocket(url),
+      // Strict-mode ES modules: invoking the native window.setTimeout as a
+      // METHOD of a foreign `this` throws "Illegal invocation" — and WsClient
+      // calls its timer option as `this.setTimeoutFn(...)`. Wrapped as plain
+      // closures, a dropped connection can still schedule its reconnect;
+      // unwrapped, handleClose throws, no timer is set, and the client is
+      // stuck in "reconnecting" forever.
+      setTimeoutFn: (handler, timeout, ...args) => setTimeout(handler, timeout, ...args),
+      clearTimeoutFn: (handle) => clearTimeout(handle),
     })
     client.onStatus((status) =>
       emit({
