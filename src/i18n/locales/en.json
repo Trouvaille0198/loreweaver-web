@@ -98,7 +98,8 @@
     "varDecrement": "Decrease {{label}}",
     "varToggle": "Toggle",
     "varSet": "Set {{label}}",
-    "varSetAction": "Set"
+    "varSetAction": "Set",
+    "commandHints": "Commands"
   },
   "panels": {
     "menu": "Panels ({{n}})",
@@ -361,6 +362,54 @@
       "keeperImport": "Import a pack's audio",
       "keeperImportRun": "Import",
       "keeperHint": "These send the same keeper commands the TUI does (.bgm / .ambience / .sfx / .audio import), and the server broadcasts the result to everyone. The track list is this room's own audio library — a pack install is host-wide, so bringing its soundtrack into a room stays your call."
+    },
+    "title": {
+      "menu": "Main menu",
+      "game": "At the table",
+      "character": "My character",
+      "settings": "Settings",
+      "keys": "Rooms & invites",
+      "module": "Import module",
+      "rules": "Rule systems",
+      "skills": "KP skills",
+      "model": "Model / config"
+    },
+    "commands": {
+      "r": "Roll dice",
+      "ra": "Skill check",
+      "opposed": "Opposed check",
+      "hr": "Hidden roll",
+      "st": "Edit the sheet",
+      "var": "Module variables",
+      "module": "Import a module",
+      "pack": "Install a content pack",
+      "import": "Import a card",
+      "pc": "Character commands",
+      "skill": "Keeper skills",
+      "cast": "Cast & NPCs",
+      "init": "Initiative",
+      "sanity": "Sanity roll",
+      "genchar": "Generate a character",
+      "growth": "Character growth",
+      "chronicle": "Campaign chronicle",
+      "recap": "Recap the story",
+      "report": "Session report",
+      "save": "Save state",
+      "undo": "Undo last action",
+      "phase": "Room phase",
+      "help": "Command help",
+      "language": "Room language",
+      "room": "Room lifecycle",
+      "panels": "UI panels",
+      "audio": "Audio layers",
+      "avatar": "Set your avatar"
+    },
+    "onboarding": {
+      "title": "This table is still empty",
+      "hint": "Bring the story in, invite your players, or run the built-in sample adventure to see the table in motion.",
+      "importModule": "Import a module",
+      "invite": "Invite players",
+      "sample": "Try the sample"
     }
   },
   "studio": {

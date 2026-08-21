@@ -1,8 +1,12 @@
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, type KeyboardEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
+import { matchCommands } from "./commands"
+
+/** How many sent lines are kept for the up-arrow history (in-memory only). */
+const HISTORY_MAX = 50
 
 export default function InputBox() {
   const { t } = useTranslation()
@@ -11,7 +15,14 @@ export default function InputBox() {
   const echoLocalInput = useSessionStore((s) => s.echoLocalInput)
   const failEcho = useSessionStore((s) => s.failEcho)
   const [text, setText] = useState("")
+  const [history, setHistory] = useState<string[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
   const online = status === "online"
+
+  // The command palette shows while the line starts with `.` (or `/`) and
+  // something is typed — exactly when a completion would be useful.
+  const commandPrefix = text.startsWith(".") || text.startsWith("/") ? text.slice(1) : ""
+  const suggestions = commandPrefix.length > 0 ? matchCommands(commandPrefix) : []
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -25,22 +36,80 @@ export default function InputBox() {
       // so where the player is actually looking.
       failEcho(seq)
     })
+    setHistory((prev) => [trimmed, ...prev.filter((line) => line !== trimmed)].slice(0, HISTORY_MAX))
+    setHistoryIndex(-1)
     setText("")
   }
 
+  const applyCommand = (word: string) => {
+    setText(`.${word} `)
+    // Keep focus in the box so the player can keep typing the arguments.
+    const input = document.querySelector<HTMLInputElement>(".input-box input")
+    input?.focus()
+  }
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    // Tab completes the top suggestion.
+    if (event.key === "Tab" && suggestions.length > 0) {
+      event.preventDefault()
+      applyCommand(suggestions[0].word)
+      return
+    }
+    // Up/Down walk the send history.
+    if (event.key === "ArrowUp" && history.length > 0) {
+      event.preventDefault()
+      const next = Math.min(historyIndex + 1, history.length - 1)
+      setHistoryIndex(next)
+      setText(history[next])
+      return
+    }
+    if (event.key === "ArrowDown" && historyIndex >= 0) {
+      event.preventDefault()
+      const next = historyIndex - 1
+      setHistoryIndex(next)
+      setText(next >= 0 ? history[next] : "")
+    }
+  }
+
   return (
-    <form className="input-box" onSubmit={submit}>
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={t("session.inputPlaceholder")}
-        aria-label={t("session.inputPlaceholder")}
-        disabled={!online}
-        spellCheck={false}
-      />
-      <button type="submit" disabled={!online || text.trim().length === 0}>
-        {t("session.send")}
-      </button>
-    </form>
+    <div className="input-wrap">
+      {suggestions.length > 0 ? (
+        <div className="command-hints" role="listbox" aria-label={t("session.commandHints")}>
+          {suggestions.map((entry) => (
+            <button
+              key={entry.word}
+              type="button"
+              role="option"
+              className="command-hint"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyCommand(entry.word)}
+            >
+              <span className="command-hint-word">.{entry.word}</span>
+              <span className="command-hint-hint">
+                {t(`play.commands.${entry.word}`)}
+                {entry.example ? ` · ${entry.example}` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <form className="input-box" onSubmit={submit}>
+        <input
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value)
+            setHistoryIndex(-1)
+          }}
+          onKeyDown={onKeyDown}
+          placeholder={t("session.inputPlaceholder")}
+          aria-label={t("session.inputPlaceholder")}
+          disabled={!online}
+          spellCheck={false}
+        />
+        <button type="submit" disabled={!online || text.trim().length === 0}>
+          {t("session.send")}
+        </button>
+      </form>
+    </div>
   )
 }

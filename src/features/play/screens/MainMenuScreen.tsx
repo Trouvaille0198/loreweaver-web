@@ -6,6 +6,7 @@
 import { useTranslation } from "react-i18next"
 import { transportSend } from "../../../lib/transport"
 import { useConnectionStore } from "../../../store/connection"
+import { useSessionStore } from "../../../store/session"
 import { quitTable } from "../../../store/hostLocal"
 import StatePanel from "../StatePanel"
 import StatusPill from "../StatusPill"
@@ -18,9 +19,23 @@ interface MenuRow {
   keeper: boolean
 }
 
+/** A room that has never been prepared reads as empty: no character, no party,
+ * no pregens, no scene — nothing a player could sit down into. That is exactly
+ * the moment a first-time keeper needs a pointer, not a menu with one item. */
+function isEmptyTable(game: ReturnType<typeof useSessionStore.getState>["game"]): boolean {
+  if (game === null) return true
+  return (
+    game.character === undefined &&
+    game.party.length === 0 &&
+    (game.pregens ?? []).length === 0 &&
+    game.scene === undefined
+  )
+}
+
 export default function MainMenuScreen({ onNavigate }: { onNavigate: (screen: PlayScreen) => void }) {
   const { t } = useTranslation()
   const welcome = useConnectionStore((s) => s.welcome)
+  const game = useSessionStore((s) => s.game)
   const isKeeper = welcome?.you.role === "keeper"
   const hasDemo = isKeeper && (welcome?.features ?? []).includes("demo")
 
@@ -49,6 +64,7 @@ export default function MainMenuScreen({ onNavigate }: { onNavigate: (screen: Pl
   }
 
   const firstKeeper = rows.findIndex((row) => row.keeper)
+  const empty = isEmptyTable(game)
 
   return (
     <div className="play-menu">
@@ -63,6 +79,25 @@ export default function MainMenuScreen({ onNavigate }: { onNavigate: (screen: Pl
           </span>{" "}
           <StatusPill />
         </p>
+        {isKeeper && empty ? (
+          <section className="menu-onboarding" aria-label={t("play.onboarding.title")}>
+            <p className="menu-onboarding-title">{t("play.onboarding.title")}</p>
+            <p className="menu-onboarding-hint">{t("play.onboarding.hint")}</p>
+            <div className="menu-onboarding-actions">
+              <button type="button" className="primary-button" onClick={() => onNavigate("module")}>
+                {t("play.onboarding.importModule")}
+              </button>
+              <button type="button" className="ghost-button" onClick={() => onNavigate("keys")}>
+                {t("play.onboarding.invite")}
+              </button>
+              {hasDemo ? (
+                <button type="button" className="ghost-button" onClick={startDemo}>
+                  {t("play.onboarding.sample")}
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
         {rows.map((row, index) => (
           <div key={row.key}>
             {index === firstKeeper ? (

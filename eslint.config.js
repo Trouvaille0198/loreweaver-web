@@ -9,6 +9,12 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // The service worker runs in a worker scope, not the browser window —
+    // `self`/`caches`/`fetch` are its globals, not leaks.
+    files: ["public/sw.js"],
+    languageOptions: { globals: { self: "readonly", caches: "readonly", fetch: "readonly", URL: "readonly" } },
+  },
+  {
     files: ["src/**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
     rules: {

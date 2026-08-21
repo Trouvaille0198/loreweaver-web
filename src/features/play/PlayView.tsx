@@ -139,6 +139,8 @@ function HostLocalBlock() {
 }
 
 function OnlineView() {
+  const { t } = useTranslation()
+  const room = useConnectionStore((s) => s.welcome?.room ?? "")
   const role = useConnectionStore((s) => s.welcome?.you.role ?? "player")
   const isKeeper = role === "keeper"
 
@@ -152,6 +154,15 @@ function OnlineView() {
     // whose every admin frame the server refuses — fall back to the menu.
     return isKeeperScreen(fromHash) && !isKeeper ? "menu" : fromHash
   })
+
+  // The browser tab says where you are: `牌桌 · room` or `Settings · room`.
+  useEffect(() => {
+    const title = `${t(`play.title.${screen}`)} · ${room}`
+    if (document.title !== title) document.title = title
+    return () => {
+      if (document.title === title) document.title = "Loreweaver Web"
+    }
+  }, [screen, room, t])
 
   // Setting location.hash pushes a history entry — the browser back/forward
   // buttons then walk the screens in order, exactly like any app. Writing the

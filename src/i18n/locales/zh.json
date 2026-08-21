@@ -98,7 +98,8 @@
     "varDecrement": "减少{{label}}",
     "varToggle": "切换",
     "varSet": "设置{{label}}",
-    "varSetAction": "设置"
+    "varSetAction": "设置",
+    "commandHints": "命令提示"
   },
   "panels": {
     "menu": "面板({{n}})",
@@ -361,6 +362,54 @@
       "keeperImport": "导入模组包音频",
       "keeperImportRun": "导入",
       "keeperHint": "这些按钮发送的就是 TUI 用的同一批 keeper 命令（.bgm / .ambience / .sfx / .audio import），由服务器把结果广播给所有人。曲目列表是本房间自己的音频库——模组包的安装是全主机范围的，把它的配乐引入某个房间始终由你决定。"
+    },
+    "title": {
+      "menu": "主菜单",
+      "game": "牌桌",
+      "character": "我的角色",
+      "settings": "设置",
+      "keys": "房间与邀请",
+      "module": "导入模组",
+      "rules": "规则体系",
+      "skills": "KP 技能",
+      "model": "模型 / 配置"
+    },
+    "commands": {
+      "r": "掷骰",
+      "ra": "技能检定",
+      "opposed": "对抗检定",
+      "hr": "暗骰",
+      "st": "编辑角色卡",
+      "var": "模组变量",
+      "module": "导入模组",
+      "pack": "安装内容包",
+      "import": "导入卡牌",
+      "pc": "角色命令",
+      "skill": "KP 技能",
+      "cast": "角色与 NPC",
+      "init": "先攻",
+      "sanity": "理智检定",
+      "genchar": "生成角色",
+      "growth": "角色成长",
+      "chronicle": "战役编年史",
+      "recap": "剧情回顾",
+      "report": "战报",
+      "save": "保存状态",
+      "undo": "撤销上一步",
+      "phase": "房间阶段",
+      "help": "命令帮助",
+      "language": "房间语言",
+      "room": "房间生命周期",
+      "panels": "UI 面板",
+      "audio": "音频分层",
+      "avatar": "设置头像"
+    },
+    "onboarding": {
+      "title": "这张牌桌还是空的",
+      "hint": "导入剧情、邀请玩家，或者先跑内置样例冒险看看牌桌动起来的样子。",
+      "importModule": "导入模组",
+      "invite": "邀请玩家",
+      "sample": "试玩样例"
     }
   },
   "studio": {

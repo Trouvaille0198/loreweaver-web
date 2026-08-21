@@ -77,4 +77,34 @@ describe("InputBox", () => {
     render(<InputBox />)
     expect(screen.getByRole("textbox")).toBeDisabled()
   })
+
+  it("offers command hints while typing a dot command, and Tab completes", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+    await user.type(field, ".ra")
+    // The hint list is a listbox with matching commands; `.ra` matches only `ra`.
+    const listbox = screen.getByRole("listbox", { name: "Commands" })
+    expect(listbox).toBeInTheDocument()
+    await user.keyboard("{Tab}")
+    expect(field).toHaveValue(".ra ")
+    // Hints disappear once the line no longer looks like a command prefix.
+    await user.type(field, "spot hidden{Enter}")
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument()
+  })
+
+  it("recalls sent lines with the up arrow", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+    await user.type(field, "first line{Enter}")
+    await user.type(field, "second line{Enter}")
+    await user.keyboard("{ArrowUp}")
+    expect(field).toHaveValue("second line")
+    await user.keyboard("{ArrowUp}")
+    expect(field).toHaveValue("first line")
+    // Down arrow walks back out.
+    await user.keyboard("{ArrowDown}")
+    expect(field).toHaveValue("second line")
+  })
 })
