@@ -43,6 +43,20 @@ type Phase = "loading" | "serving" | "live" | "stalled" | "error"
 const HANDSHAKE_TIMEOUT_MS = 6000
 
 export default function Tier2Frame({ panel }: { panel: UiManifestPanel }) {
+  // A tier-2 panel is executable pack code isolated behind the native
+  // `panel://` scheme — a browser capability that does not exist. The web
+  // client renders the panel's declared fallback blocks instead, exactly as
+  // the terminal client does ("a tier-2 panel's `fallback` blocks").
+  //
+  // Branch BEFORE any hook: the native host keeps its hooks, this wrapper has
+  // none, so the early return never makes a hook count conditional.
+  if (!isTauri()) {
+    return <PanelFallback panel={panel} />
+  }
+  return <Tier2NativeFrame panel={panel} />
+}
+
+function Tier2NativeFrame({ panel }: { panel: UiManifestPanel }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.resolvedLanguage ?? "en"
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
@@ -50,14 +64,6 @@ export default function Tier2Frame({ panel }: { panel: UiManifestPanel }) {
   const [src, setSrc] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
   const [crash, setCrash] = useState<string | null>(null)
-
-  // A tier-2 panel is executable pack code isolated behind the native
-  // `panel://` scheme — a browser capability that does not exist. The web
-  // client renders the panel's declared fallback blocks instead, exactly as
-  // the terminal client does ("a tier-2 panel's `fallback` blocks").
-  if (!isTauri()) {
-    return <PanelFallback panel={panel} />
-  }
 
   useEffect(() => {
     let cancelled = false

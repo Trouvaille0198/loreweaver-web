@@ -8,7 +8,7 @@
 //
 // Exit 0 on a clean handshake, 1 otherwise.
 
-import { WsClient, type ServerFrame } from "@loreweaver/protocol"
+import { WsClient } from "@loreweaver/protocol"
 
 const [, , url, key, name] = process.argv
 
@@ -25,7 +25,9 @@ const client = new WsClient({
   webSocketFactory: (target) => {
     const socket = new WebSocket(target)
     socket.binaryType = "arraybuffer"
-    return socket as unknown as ConstructorParameters<typeof WsClient>[0] extends { webSocketFactory: infer F }
+    return socket as unknown as ConstructorParameters<typeof WsClient>[0] extends {
+      webSocketFactory: infer F
+    }
       ? F extends (u: string) => infer R
         ? R
         : never
@@ -41,7 +43,9 @@ const timeout = setTimeout(() => {
 client.on("welcome", (frame) => {
   clearTimeout(timeout)
   const major = frame.protocol.split(".")[0]
-  console.log(`welcome: protocol=${frame.protocol} room=${frame.room} you=${frame.you.name} role=${frame.you.role}`)
+  console.log(
+    `welcome: protocol=${frame.protocol} room=${frame.room} you=${frame.you.name} role=${frame.you.role}`,
+  )
   if (major !== "2") {
     console.error(`live join FAILED: protocol major ${major} != 2`)
     process.exit(1)

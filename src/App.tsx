@@ -26,12 +26,7 @@ export default function App() {
       <header className="app-header">
         <h1 className="app-title">{t("app.title")}</h1>
         <nav className="mode-nav" aria-label={t("nav.label")}>
-          <button
-            key={mode}
-            type="button"
-            className="mode-tab active"
-            onClick={() => undefined}
-          >
+          <button key={mode} type="button" className="mode-tab active" onClick={() => undefined}>
             {t(`nav.${mode}`)}
           </button>
         </nav>

@@ -105,11 +105,7 @@ export const useHostLocalStore = create<HostLocalState>()(
           // Already serving? Then this press means "sit me back down", not "start one":
           // the Rust side would refuse, and refusing is the whole dead end.
           if (await get().reconnectIfServing()) return
-          await hostLocalStart(
-            undefined,
-            get().homeOverride.trim() || undefined,
-            devSourceRoot || undefined,
-          )
+          await hostLocalStart(undefined, get().homeOverride.trim() || undefined, devSourceRoot || undefined)
         } catch (cause) {
           set({ phase: "error", error: cause instanceof Error ? cause.message : String(cause) })
         }

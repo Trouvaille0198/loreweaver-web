@@ -69,13 +69,13 @@ bun run build        # production bundle → dist/
 
 ## What differs from Studio / the TUI
 
-| Capability | Web | Studio (desktop) | TUI |
-|---|---|---|---|
-| Transport | WebSocket | Iroh p2p (Rust) | Iroh + WS |
-| One-click local hosting | — | ✅ | ✅ |
-| Card / pack studio | — | ✅ | — |
-| Tier-2 executable panels | fallback blocks | ✅ | fallback blocks |
-| Media upload / audio | ✅ (WebCrypto hash, in-memory cache) | ✅ (native cache) | ✅ |
+| Capability               | Web                                  | Studio (desktop)  | TUI             |
+| ------------------------ | ------------------------------------ | ----------------- | --------------- |
+| Transport                | WebSocket                            | Iroh p2p (Rust)   | Iroh + WS       |
+| One-click local hosting  | —                                    | ✅                | ✅              |
+| Card / pack studio       | —                                    | ✅                | —               |
+| Tier-2 executable panels | fallback blocks                      | ✅                | fallback blocks |
+| Media upload / audio     | ✅ (WebCrypto hash, in-memory cache) | ✅ (native cache) | ✅              |
 
 ## Layout notes
 

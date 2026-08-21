@@ -7,5 +7,4 @@
 
 declare const __WEB_VERSION__: string
 
-export const WEB_VERSION: string =
-  typeof __WEB_VERSION__ === "string" ? __WEB_VERSION__ : "0.0.0-dev"
+export const WEB_VERSION: string = typeof __WEB_VERSION__ === "string" ? __WEB_VERSION__ : "0.0.0-dev"

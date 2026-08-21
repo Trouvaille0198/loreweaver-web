@@ -38,6 +38,8 @@ jobs:
         run: git clone --depth 1 https://github.com/Trouvaille0198/loreweaver.git ../loreweaver
       - uses: oven-sh/setup-bun@v2
       - run: bun install
+      # The gate serves the built SPA (--static-dir dist), so build it first.
+      - run: bun run build
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

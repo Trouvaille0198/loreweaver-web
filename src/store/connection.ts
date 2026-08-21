@@ -2,7 +2,6 @@ import { create } from "zustand"
 import { isServerFrame, protocolMismatch, type WelcomeFrame } from "@loreweaver/protocol"
 import i18n from "../i18n"
 import {
-  isTauri,
   transportConnect,
   transportDisconnect,
   type TransportConnectParams,

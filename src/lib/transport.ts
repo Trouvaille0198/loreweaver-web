@@ -7,14 +7,7 @@
 import { invoke } from "@tauri-apps/api/core"
 import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 import type { ClientFrame, MediaFrame, MediaPayload, MediaUpload } from "@loreweaver/protocol"
-import {
-  onWebEvent,
-  webConnect,
-  webDisconnect,
-  webGetMedia,
-  webSend,
-  webUploadMedia,
-} from "./webTransport"
+import { onWebEvent, webConnect, webDisconnect, webGetMedia, webSend, webUploadMedia } from "./webTransport"
 
 export const TRANSPORT_EVENT = "loreweaver://transport"
 

@@ -14,7 +14,10 @@ export default tseslint.config(
     rules: {
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      // 0.3.x dropped `allowConstantExport` (its schema rejects it); the
+      // option's old intent — don't nag about `export const …` beside a
+      // component — is satisfied by leaving the rule a warning.
+      "react-refresh/only-export-components": "warn",
     },
   },
   prettier,
