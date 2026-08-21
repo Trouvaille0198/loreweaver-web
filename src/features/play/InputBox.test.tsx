@@ -5,6 +5,7 @@ import "../../i18n"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import InputBox from "./InputBox"
+import { quickCommandLines } from "./commands"
 
 vi.mock("../../lib/transport", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/transport")>()
@@ -137,9 +138,9 @@ describe("InputBox quick commands", () => {
     const menu = screen.getByRole("menu", { name: /quick commands/i })
     expect(menu).toBeInTheDocument()
 
-    // Picking "Roll dice" puts `.r 3d6` into the box, keeps focus, closes menu.
-    await user.click(screen.getByRole("menuitem", { name: /\.r 3d6/i }))
-    expect(field).toHaveValue(".r 3d6")
+    // `.recap` is a plain leaf: one click puts the line in, keeps focus, closes.
+    await user.click(screen.getByRole("menuitem", { name: /\.recap/i }))
+    expect(field).toHaveValue(".recap")
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
     expect(field).toHaveFocus()
     // Nothing sent yet — the player adjusts then sends.
@@ -155,5 +156,53 @@ describe("InputBox quick commands", () => {
     await user.keyboard("{Escape}")
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
     expect(field).toHaveValue("")
+  })
+})
+
+describe("InputBox quick commands sub-menus", () => {
+  beforeEach(() => {
+    vi.mocked(transportSend).mockClear()
+    vi.mocked(transportSend).mockResolvedValue(undefined)
+    useSessionStore.getState().clear()
+    useConnectionStore.setState({
+      status: "online",
+      welcome: {
+        type: "welcome",
+        protocol: "2.3",
+        room: "midnight-pier",
+        you: { id: "p1", name: "Nyx", role: "player" },
+        locale: "en",
+        server: "loreweaver",
+      },
+    })
+  })
+
+  it("expands a group to reveal sub-commands, then inserts one", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+
+    await user.click(screen.getByRole("button", { name: /quick commands/i }))
+    // `.pc` row is a group: its sub-commands are hidden until expanded.
+    expect(screen.queryByRole("menuitem", { name: /\.pc release/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("menuitem", { name: /cast commands|character commands/i }))
+    // Sub-commands appear; picking one fills the box.
+    await user.click(screen.getByRole("menuitem", { name: /\.pc release/i }))
+    expect(field).toHaveValue(".pc release")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+  })
+
+  it("lists every quick command line as reachable", () => {
+    const lines = quickCommandLines()
+    // A sane spread of dice, checks, sheet, cast and session commands.
+    expect(lines).toContain(".r 4d6kh3")
+    expect(lines).toContain(".ra 聆听 ")
+    expect(lines).toContain(".sc 1/1d6")
+    expect(lines).toContain(".pc claim 顾晚棠 ")
+    expect(lines).toContain(".recap")
+    expect(lines).toContain(".help")
+    // More than the old flat list.
+    expect(lines.length).toBeGreaterThan(14)
   })
 })

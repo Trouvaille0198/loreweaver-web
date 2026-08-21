@@ -2694,6 +2694,13 @@ body {
   margin: 0;
 }
 
+/* Inline "copy" next to a cleartext invite key in the keys table. */
+.play-copy-inline {
+  margin-left: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
 .play-minted {
   border: 1px solid var(--ok);
   border-radius: 8px;

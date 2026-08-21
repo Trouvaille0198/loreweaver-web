@@ -58,30 +58,79 @@ export function matchCommands(prefix: string): CommandEntry[] {
 }
 
 /**
- * The quick-command menu beside the input box: the handful of commands a
- * player reaches for every session, each with a ready-to-send template. The
- * client inserts the line into the input box (not sent) so the player can
- * adjust the argument — `.r 3d6` is a good default but not always the roll
- * you meant. `word` keys the i18n label under `play.commands.<word>`; the
- * `line` is what actually lands in the box (can carry arguments beyond the
- * completion's bare example).
+ * The quick-command menu beside the input box: the commands a player reaches
+ * for every session, each with a ready-to-send template, and grouped sub-
+ * commands where the word has them (`.pc` → list/claim/release, `.r` → the
+ * common dice expressions, `.st` → the sheet actions). The client inserts the
+ * line into the input box (not sent) so the player can adjust the argument.
+ * `word` keys the i18n label under `play.commands.<word>`; `line` is what
+ * lands in the box. `children` renders as an indented sub-menu under the row.
  */
 export interface QuickCommand {
   /** The command word (i18n label key). */
   word: string
-  /** The full line inserted into the input box. */
-  line: string
+  /** The full line inserted into the input box (omit to make it a pure group). */
+  line?: string
+  /** Sub-commands shown when the row is expanded. */
+  children?: readonly QuickCommand[]
 }
 
 export const QUICK_COMMANDS: readonly QuickCommand[] = [
-  { word: "r", line: ".r 3d6" },
-  { word: "ra", line: ".ra 侦查 " }, // i18n-exempt: a CJK example argument, data not UI
-  { word: "hr", line: ".hr 1d100" },
-  { word: "opposed", line: ".rav 侦查 隐匿 " }, // i18n-exempt: a CJK example argument, data not UI
+  {
+    word: "r",
+    line: ".r 3d6",
+    children: [
+      { word: "r", line: ".r 3d6" },
+      { word: "r", line: ".r 4d6kh3" },
+      { word: "r", line: ".r 2d20kl1" },
+      { word: "r", line: ".r 1d100" },
+      { word: "hr", line: ".hr 1d100" },
+    ],
+  },
+  {
+    word: "ra",
+    line: ".ra 侦查 ", // i18n-exempt: a CJK example argument, data not UI
+    children: [
+      { word: "ra", line: ".ra 侦查 " }, // i18n-exempt
+      { word: "ra", line: ".ra 聆听 " }, // i18n-exempt
+      { word: "ra", line: ".ra 图书馆使用 " }, // i18n-exempt
+      { word: "ra", line: ".ra 敏捷 " }, // i18n-exempt
+      { word: "rav", line: ".rav 侦查 隐匿 " }, // i18n-exempt
+    ],
+  },
   { word: "sanity", line: ".sc 1/1d6" },
   { word: "init", line: ".ri" },
-  { word: "st", line: ".st " },
+  {
+    word: "st",
+    line: ".st ",
+    children: [
+      { word: "st", line: ".st " },
+      { word: "st", line: ".st HP-1" },
+      { word: "st", line: ".st 理智-1" }, // i18n-exempt
+      { word: "st", line: ".st finalize" },
+    ],
+  },
+  {
+    word: "pc",
+    line: ".pc list",
+    children: [
+      { word: "pc", line: ".pc list" },
+      { word: "pc", line: ".pc claim 顾晚棠 " }, // i18n-exempt: pregen names are data
+      { word: "pc", line: ".pc claim 白榆生 " }, // i18n-exempt
+      { word: "pc", line: ".pc claim 陈九鲤 " }, // i18n-exempt
+      { word: "pc", line: ".pc release" },
+    ],
+  },
   { word: "recap", line: ".recap" },
-  { word: "pc", line: ".pc list" },
   { word: "help", line: ".help" },
 ]
+
+/** Flatten for tests: every leaf line reachable from the menu. */
+export function quickCommandLines(commands: readonly QuickCommand[] = QUICK_COMMANDS): string[] {
+  const out: string[] = []
+  for (const command of commands) {
+    if (command.line) out.push(command.line)
+    if (command.children) out.push(...quickCommandLines(command.children))
+  }
+  return out
+}

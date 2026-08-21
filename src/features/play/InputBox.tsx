@@ -3,10 +3,92 @@ import { useTranslation } from "react-i18next"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
-import { matchCommands, QUICK_COMMANDS } from "./commands"
+import { matchCommands, QUICK_COMMANDS, type QuickCommand } from "./commands"
 
 /** How many sent lines are kept for the up-arrow history (in-memory only). */
 const HISTORY_MAX = 50
+
+/** One row of the quick menu: a leaf inserts its line; a group (has children)
+ * expands to reveal its sub-commands. A group row is an expander, never an
+ * inserter — the children are the actionable leaves. */
+function QuickRow({
+  command,
+  onPick,
+  depth = 0,
+}: {
+  command: QuickCommand
+  onPick: (line: string) => void
+  depth?: number
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const hasChildren = Boolean(command.children && command.children.length > 0)
+  const label = t(`play.commands.${command.word}`)
+
+  const children = command.children
+  if (hasChildren && children) {
+    // Group: the row toggles its sub-menu; the own line (if any) is offered
+    // as the first child so nothing is unreachable.
+    return (
+      <div className={`quick-group depth-${Math.min(depth, 2)}`}>
+        <button
+          type="button"
+          role="menuitem"
+          className="quick-command quick-command-group"
+          aria-expanded={open}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span className="quick-command-line">{command.line ?? `.${command.word}`}</span>
+          <span className="quick-command-label">{label}</span>
+          <span className={`quick-command-caret${open ? " open" : ""}`} aria-hidden="true">
+            ▸
+          </span>
+        </button>
+        {open ? (
+          <div className="quick-children" role="group">
+            {command.line ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="quick-command"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => onPick(command.line as string)}
+              >
+                <span className="quick-command-line">{command.line}</span>
+                <span className="quick-command-label">{label}</span>
+              </button>
+            ) : null}
+            {children.map((child) => (
+              <QuickRow
+                key={`${child.word}-${child.line ?? "child"}`}
+                command={child}
+                onPick={onPick}
+                depth={depth + 1}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  // Leaf: inserts its line.
+  return (
+    <div className={`quick-group depth-${Math.min(depth, 2)}`}>
+      <button
+        type="button"
+        role="menuitem"
+        className="quick-command"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPick(command.line as string)}
+      >
+        <span className="quick-command-line">{command.line}</span>
+        <span className="quick-command-label">{label}</span>
+      </button>
+    </div>
+  )
+}
 
 export default function InputBox() {
   const { t } = useTranslation()
@@ -139,17 +221,7 @@ export default function InputBox() {
           {quickOpen ? (
             <div className="quick-commands-pop" role="menu" aria-label={t("session.quickCommands")}>
               {QUICK_COMMANDS.map((quick) => (
-                <button
-                  key={quick.word}
-                  type="button"
-                  role="menuitem"
-                  className="quick-command"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => applyQuick(quick.line)}
-                >
-                  <span className="quick-command-line">{quick.line}</span>
-                  <span className="quick-command-label">{t(`play.commands.${quick.word}`)}</span>
-                </button>
+                <QuickRow key={`${quick.word}-${quick.line ?? "root"}`} command={quick} onPick={applyQuick} />
               ))}
             </div>
           ) : null}
