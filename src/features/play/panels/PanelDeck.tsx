@@ -1,6 +1,6 @@
 // The two always-mounted slots: `sidebar` stacks into the desk column,
-// `tray` is a horizontal strip pinned above the input line. Both render only
-// open (non-closed) panels; the narrative log and input line never yield.
+// `tray` sits above it. Both render only open (non-closed) panels; the
+// narrative log and input line never yield.
 
 import { usePanelsStore } from "../../../store/panels"
 import PanelCard from "./PanelCard"
@@ -25,19 +25,17 @@ export function PanelSidebar() {
 }
 
 /**
- * Tray slot: a bottom strip of cards between the log and the input line.
- *
- * On phones that strip is exactly where the tray cards feel bolted on — a
- * horizontal carousel wedged between the story and the keyboard. The chat
- * layout folds tray panels into the bottom drawer instead (see SessionView:
- * the drawer hosts a `panel-tray-mobile` copy), so the component renders two
- * flavors and CSS shows whichever the screen size wants.
+ * Tray slot: the module's carry-along panels (手边物 and friends) — cards the
+ * player wants near at hand. They live INSIDE the desk column on every screen
+ * size: stacked in the sidebar on desktop, stacked in the bottom drawer on
+ * phones. The old horizontal strip pinned between the story and the input row
+ * is gone — a carousel wedged between text and keyboard helped nobody.
  */
-export function PanelTray({ flavor = "desktop" }: { flavor?: "desktop" | "mobile" }) {
+export function PanelTray() {
   const panels = useOpenPanels("tray")
   if (panels.length === 0) return null
   return (
-    <div className={flavor === "mobile" ? "panel-tray-mobile" : "panel-tray"} data-slot="tray">
+    <div className="panel-tray" data-slot="tray">
       {panels.map((panel) => (
         <PanelCard key={panel.id} panel={panel} />
       ))}

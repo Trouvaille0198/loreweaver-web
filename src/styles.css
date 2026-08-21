@@ -2261,31 +2261,19 @@ body {
   background: var(--bg-inset);
 }
 
-/* Tray slot: a horizontal strip pinned between the log and the input line.
-   It scrolls sideways and never grows past a third of the pane. */
+/* Tray slot: the module's carry-along panels (手边物 and friends). They stack
+   inside the desk column — sidebar on desktop, bottom drawer on phones — never
+   as a horizontal strip wedged between the story and the input row. */
 
 .panel-tray {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  padding: 8px 12px;
-  border-top: 1px solid var(--border-soft);
-  overflow-x: auto;
-  max-height: 34%;
-  flex-shrink: 0;
+  margin-bottom: 12px;
 }
 
 .panel-tray .panel-card {
-  width: 280px;
-  flex-shrink: 0;
-  overflow-y: auto;
-}
-
-/* The mobile flavor of the tray lives INSIDE the bottom drawer (see
-   SessionView): cards stack full-width under the drawer head instead of
-   wedging a horizontal carousel between the story and the keyboard. Hidden
-   on wide screens, where the desktop strip is the one that exists. */
-.panel-tray-mobile {
-  display: none;
+  width: 100%;
 }
 
 /* Tier-2 iframe: the sandboxed document owns its own visuals. */
@@ -4092,22 +4080,6 @@ code {
     max-height: 40vh;
     border: 1px solid var(--border-soft);
     border-radius: 8px;
-  }
-
-  /* --- tray panels: off the input strip, into the drawer --- */
-  .panel-tray {
-    display: none;
-  }
-
-  .panel-tray-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .panel-tray-mobile .panel-card {
-    width: 100%;
   }
 
   /* --- header: chat-style on a phone — one row, the rest folds into "⋯" --- */

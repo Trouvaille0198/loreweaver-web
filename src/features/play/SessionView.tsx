@@ -191,7 +191,6 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
         <PanelNotice />
         <TurnStatus />
         <NarrativeLog />
-        <PanelTray flavor="desktop" />
         <div className="input-dock">
           <button
             type="button"
@@ -223,7 +222,7 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
           </div>
         </div>
         <StatePanel order="drawer" />
-        <PanelTray flavor="mobile" />
+        <PanelTray />
         <PanelSidebar />
       </aside>
       <PanelModalHost />
