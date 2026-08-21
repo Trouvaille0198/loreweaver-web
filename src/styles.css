@@ -358,6 +358,17 @@ body {
   white-space: nowrap;
 }
 
+/* The "⋯" overflow menu is a NARROW-SCREEN affordance: on wide screens the
+   panels menu, status pill and disconnect sit directly in the header, so the
+   fold-away chrome does not exist. */
+.session-more {
+  display: none;
+}
+
+.session-quit-wide {
+  display: inline-flex;
+}
+
 .ghost-button {
   background: none;
   border: 1px solid var(--border);
@@ -390,6 +401,13 @@ body {
 .desk-backdrop,
 .desk-drawer-head {
   display: none;
+}
+
+/* The input dock wraps the drawer toggle + the input row. On wide screens it
+   is just the input row (the toggle is hidden); on phones it becomes the
+   bottom thumb dock. */
+.input-dock {
+  display: contents;
 }
 
 /* ---- Narrative log ---- */
@@ -1482,8 +1500,9 @@ body {
   }
 }
 
-/* Phone: one column. The session desk is a bottom drawer (opened from the
-   header); the menu desk simply stacks under the menu list. */
+/* Phone: one column. The session desk is a bottom drawer opened from the
+   INPUT dock (the thumb's home) — never the top header; the menu desk simply
+   stacks under the menu list. */
 @media (max-width: 760px) {
   .session {
     flex-direction: column;
@@ -1501,19 +1520,26 @@ body {
     bottom: 0;
     z-index: 35;
     width: auto;
-    max-height: 75dvh;
-    max-height: 75vh;
-    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    max-height: 70dvh;
+    max-height: 70vh;
+    padding: 6px 16px calc(14px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
-    border-radius: 14px 14px 0 0;
+    border-radius: 16px 16px 0 0;
     box-shadow: 0 -8px 32px rgb(0 0 0 / 0.45);
     transform: translateY(105%);
-    transition: transform 200ms ease;
+    transition: transform 220ms ease;
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .session .desk-pane.desk-open {
     transform: translateY(0);
+  }
+
+  /* Lock the chronicle scroll while the drawer is up — the story must not
+     keep rolling behind the sheet. */
+  .session.desk-active .narrative-log {
+    overflow: hidden;
   }
 
   .desk-backdrop {
@@ -1527,14 +1553,30 @@ body {
   .desk-toggle,
   .desk-close {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .desk-drawer-head {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  /* The grab handle: the universal "this sheet pulls up/down" affordance. */
+  .desk-drawer-grip {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto 10px;
+    border-radius: 999px;
+    background: var(--border);
+  }
+
+  .desk-drawer-title-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 10px;
   }
 
   .desk-drawer-title {
@@ -1542,6 +1584,38 @@ body {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink-dim);
+  }
+
+  /* --- input dock: toggle beside the send row, inside the thumb zone --- */
+  .input-dock {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+  }
+
+  .input-dock .input-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .input-dock .input-box {
+    padding: 0;
+    border-top: none;
+  }
+
+  .input-dock .desk-toggle {
+    flex: 0 0 auto;
+    min-width: 48px;
+    padding: 0 12px;
+  }
+
+  /* Command hints are positioned against the input wrapper; inside the dock
+     they should hug the dock's own padding instead of the desktop 24px. */
+  .input-dock .command-hints {
+    left: 0;
+    right: 0;
   }
 
   /* --- menu desk stays stacked (not a drawer) --- */
@@ -1558,21 +1632,65 @@ body {
     border-radius: 8px;
   }
 
-  /* --- header: let it wrap instead of overflowing --- */
+  /* --- header: chat-style on a phone — one row, the rest folds into "⋯" --- */
   .session-head {
-    flex-wrap: wrap;
-    row-gap: 6px;
+    gap: 8px;
     padding: 8px 12px;
+  }
+
+  .session-quit-wide {
+    display: none;
+  }
+
+  .session-more {
+    display: block;
+    position: relative;
+  }
+
+  .session-more-toggle {
+    min-width: 36px;
+    padding: 0 8px;
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .session-more-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    width: 260px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .session-more-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .session-more-quit {
+    width: 100%;
+    justify-content: center;
   }
 
   .session-head .status-pill,
   .session-head .version-badge {
-    order: 10;
+    order: 0;
   }
 
   /* --- input row: iOS-safe font size (16px stops the focus zoom) + home bar --- */
   .input-box {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    padding: 8px 12px;
+    border-top: none;
   }
 
   .input-box input {
@@ -1583,9 +1701,53 @@ body {
     padding: 0 14px;
   }
 
-  /* --- narrative: give the column back to the story --- */
+  /* --- narrative: chat-style on a phone --- */
   .narrative-log {
-    padding: 14px 14px;
+    padding: 10px 10px;
+    gap: 8px;
+  }
+
+  .log-entry,
+  .dice-line,
+  .system-line {
+    max-width: 100%;
+  }
+
+  /* Chat bubbles: the speaker label floats above its own bubble, the story
+     text gets the room instead of the desktop left rail. */
+  .log-entry {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .entry-speaker {
+    font-size: 11px;
+    margin-bottom: 3px;
+    padding: 0 4px;
+  }
+
+  .entry-body {
+    font-size: 16px;
+    line-height: 1.6;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  /* The player's own bubble sits on the right, like a sent message. */
+  .speaker-player .entry-body {
+    background: color-mix(in srgb, var(--lw-player) 12%, var(--bg-raised));
+  }
+
+  /* Pending echoes and dice lines stay flat lines, not bubbles. */
+  .log-entry.pending .entry-body,
+  .dice-line,
+  .system-line {
+    background: none;
+    border: none;
+    padding: 0;
+    border-radius: 0;
   }
 
   .turn-status {
@@ -1682,11 +1844,11 @@ body {
   }
 
   .narrative-log {
-    padding: 12px 10px;
+    padding: 10px 8px;
   }
 
   .log-entry {
-    padding-left: 10px;
+    padding-left: 0;
   }
 
   .play-screen {
