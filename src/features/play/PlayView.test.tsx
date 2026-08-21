@@ -24,12 +24,16 @@ function reset() {
 describe("PlayView", () => {
   beforeEach(reset)
 
-  it("disables connect until url and key are filled", async () => {
+  it("pre-fills the server url with the same origin, and disables connect until key is filled", async () => {
     const user = userEvent.setup()
     render(<PlayView />)
+    const urlField = screen.getByLabelText(/server url/i)
+    // The page is served by the server itself, so the field starts with the
+    // same origin (jsdom: http://localhost/) — the only missing piece is the key.
+    expect(urlField).toHaveValue("ws://localhost/")
     const submit = screen.getByRole("button", { name: "Connect" })
     expect(submit).toBeDisabled()
-    await user.type(screen.getByLabelText(/server url/i), "ws://localhost:8787")
+    await user.type(urlField, "ws://localhost:8787")
     expect(submit).toBeDisabled()
     await user.type(screen.getByLabelText(/access key/i), "k-1")
     expect(submit).toBeEnabled()
@@ -40,7 +44,9 @@ describe("PlayView", () => {
     useConnectionStore.setState({ connect })
     const user = userEvent.setup()
     render(<PlayView />)
-    await user.type(screen.getByLabelText(/server url/i), "  ws://localhost:8787  ")
+    const urlField = screen.getByLabelText(/server url/i)
+    await user.clear(urlField)
+    await user.type(urlField, "  ws://localhost:8787  ")
     await user.type(screen.getByLabelText(/access key/i), " k-1 ")
     await user.click(screen.getByRole("button", { name: "Connect" }))
     expect(connect).toHaveBeenCalledWith({ ticket: "ws://localhost:8787", key: "k-1", name: undefined })

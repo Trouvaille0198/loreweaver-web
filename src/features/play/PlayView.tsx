@@ -140,13 +140,26 @@ function OnlineView() {
   }
 }
 
+/** The page is served by the loreweaver server itself (`--web` hosts the SPA
+ * and the WebSocket endpoint on ONE origin), so the same origin is the
+ * natural default: opened from https://role.meloncholi.top the field is
+ * pre-filled with wss://role.meloncholi.top/, from http://192.168.1.5:8787
+ * with ws://192.168.1.5:8787/. Type over it to reach another server. */
+function defaultServerUrl(): string {
+  if (typeof window === "undefined") return ""
+  const scheme = window.location.protocol === "https:" ? "wss" : "ws"
+  return `${scheme}://${window.location.host}/`
+}
+
 export default function PlayView() {
   const { t } = useTranslation()
   const status = useConnectionStore((s) => s.status)
   const lastError = useConnectionStore((s) => s.lastError)
   const connect = useConnectionStore((s) => s.connect)
 
-  const [ticket, setTicket] = useState("")
+  // The native app dials an Iroh ticket and has no same-origin concept —
+  // pre-fill only in the browser.
+  const [ticket, setTicket] = useState(isTauri() ? "" : defaultServerUrl())
   const [key, setKey] = useState("")
   const [name, setName] = useState("")
 
