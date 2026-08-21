@@ -1135,6 +1135,17 @@ body {
   opacity: 0.75;
 }
 
+/* The context meter's token breakdown line (input/output/cache). */
+.usage-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  margin: 6px 0 0;
+  font: 11px/1.4 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
 .desk-title {
   display: flex;
   align-items: baseline;

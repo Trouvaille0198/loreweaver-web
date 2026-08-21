@@ -539,10 +539,23 @@ function InitiativeCard({ game }: { game: StateFrame }) {
   )
 }
 
+/** Compact token count: 12_400 → "12.4k", 1_200_000 → "1.2m". */
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return String(n)
+}
+
 function UsageCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   const usage = game.usage
   if (!usage || usage.context_window <= 0) return null
+  const parts = [
+    { key: "input", value: usage.input_tokens },
+    { key: "output", value: usage.output_tokens },
+    { key: "cacheHit", value: usage.cache_hit_tokens },
+    { key: "cacheMiss", value: usage.cache_miss_tokens },
+  ].filter((part) => part.value > 0)
   return (
     <section className="desk-card desk-card-dim">
       <Meter
@@ -551,6 +564,40 @@ function UsageCard({ game }: { game: StateFrame }) {
         max={usage.context_window}
         tone="context"
       />
+      {parts.length > 0 ? (
+        <p className="usage-breakdown">
+          {parts.map((part) => (
+            <span key={part.key}>
+              {t(`session.usage.${part.key}`)} {formatTokens(part.value)}
+            </span>
+          ))}
+        </p>
+      ) : null}
+    </section>
+  )
+}
+
+/** The rule systems this room plays by (protocol 2.3) — the same list the
+ * character screen's creation picker uses, surfaced so players can see what
+ * the table runs at a glance. */
+function SystemsCard({ game }: { game: StateFrame }) {
+  const { t } = useTranslation()
+  const systems = game.systems ?? []
+  if (systems.length === 0) return null
+  return (
+    <section className="desk-card">
+      <header className="desk-title">{t("session.systems")}</header>
+      <div className="chip-row">
+        {systems.map((system) => (
+          <span
+            key={system.id}
+            className="chip"
+            title={system.make_char ? `.${system.make_char}` : undefined}
+          >
+            {stripControlChars(system.id)}
+          </span>
+        ))}
+      </div>
     </section>
   )
 }
@@ -585,19 +632,20 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
     // them at the very top of the desk column — who is at the table belongs
     // next to who you are), then the module's own panels (SessionView's
     // PanelSidebar / PanelTray); this is the room around you: the scene, the
-    // trackers and the table. System furniture — audio, media, presence,
-    // usage — is NOT state and does not live here; the mobile "⋯" menu hosts
-    // it. The scene card leads here too: the session header's scene strip is
-    // mobile-only, so on a wide screen this desk column is where "where am I"
-    // must live.
+    // rules, the trackers and the table. The context meter closes the column
+    // (it is public wire data and tells a metered table how much headroom the
+    // keeper has); system furniture — audio, media, presence — is NOT state
+    // and does not live here; the mobile "⋯" menu hosts it.
     return (
       <div className="desk-stack">
         {game ? <SceneCard game={game} /> : null}
+        {game ? <SystemsCard game={game} /> : null}
         <UiPanelCards />
         {game ? <VariablesCard game={game} /> : null}
         {game ? <InitiativeCard game={game} /> : null}
         {game ? <PregenCard game={game} /> : null}
         <PackImportCard />
+        {game ? <UsageCard game={game} /> : null}
       </div>
     )
   }
@@ -610,6 +658,7 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
       {game ? <PregenCard game={game} /> : null}
       <PackImportCard />
       {game ? <SceneCard game={game} /> : null}
+      {game ? <SystemsCard game={game} /> : null}
       {game ? <InitiativeCard game={game} /> : null}
       <PresenceCard />
       <MediaDeck />

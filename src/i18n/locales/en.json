@@ -61,6 +61,7 @@
     "serverRefused": "The server refused it: {{message}}",
     "turnBusy": "Resolving {{actor}}'s action…",
     "turnActivity": {
+      "thinking": "thinking…",
       "reading": "reading the module",
       "dice": "rolling dice",
       "cast": "voicing the cast",
@@ -77,6 +78,13 @@
     "presence": "At the table",
     "online": "{{n}} online",
     "context": "Context",
+    "systems": "Rule systems",
+    "usage": {
+      "input": "In",
+      "output": "Out",
+      "cacheHit": "Cache hit",
+      "cacheMiss": "Cache miss"
+    },
     "hiddenVar": "Not exposed to players yet (Keeper view) — `.var expose <prefix>` puts it on the party panel.",
     "pregens": "Pre-generated cast",
     "pregenClaim": "Claim",
@@ -420,7 +428,18 @@
       "panels": "UI panels",
       "audio": "Audio layers",
       "avatar": "Set your avatar",
-      "keeper": "Keeper"
+      "keeper": "Keeper",
+      "npc": "NPCs",
+      "companion": "Companions",
+      "lore": "World lore",
+      "rule": "Rule system",
+      "preset": "Prompt presets",
+      "model": "Model / config",
+      "reset": "Reset room",
+      "bot": "Bot replies",
+      "botlist": "Bot list",
+      "dev": "Dev tools",
+      "habits": "Table habits"
     },
     "onboarding": {
       "title": "This table is still empty",
