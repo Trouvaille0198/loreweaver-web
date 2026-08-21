@@ -4,7 +4,9 @@ import { stripControlChars } from "@loreweaver/protocol"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import { quitTable } from "../../store/hostLocal"
+import AudioDeck from "./AudioDeck"
 import InputBox from "./InputBox"
+import MediaDeck from "./MediaDeck"
 import NarrativeLog from "./NarrativeLog"
 import { PanelSidebar, PanelTray } from "./panels/PanelDeck"
 import PanelMenu from "./panels/PanelMenu"
@@ -162,7 +164,13 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
                   <StatusPill />
                   <VersionBadge />
                 </div>
-                <PanelMenu />
+                <div className="session-more-section">
+                  <PanelMenu />
+                </div>
+                <div className="session-more-section session-more-tools">
+                  <AudioDeck />
+                  <MediaDeck />
+                </div>
                 <button
                   type="button"
                   className="ghost-button session-more-quit"

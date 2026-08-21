@@ -4133,19 +4133,41 @@ code {
   }
 
   .session-more-pop {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 12px;
     z-index: 30;
-    width: 260px;
+    max-height: 75dvh;
+    max-height: 75vh;
+    width: auto;
     background: var(--bg-raised);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 8px 32px rgb(0 0 0 / 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .session-more-section {
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .session-more-section + .session-more-section {
+    border-top: 1px solid var(--border-soft);
+    padding-top: 10px;
+  }
+
+  .session-more-tools .desk-card {
+    background: var(--bg-inset);
   }
 
   .session-more-row {
