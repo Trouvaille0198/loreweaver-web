@@ -108,3 +108,52 @@ describe("InputBox", () => {
     expect(field).toHaveValue("second line")
   })
 })
+
+describe("InputBox quick commands", () => {
+  beforeEach(() => {
+    vi.mocked(transportSend).mockClear()
+    vi.mocked(transportSend).mockResolvedValue(undefined)
+    useSessionStore.getState().clear()
+    useConnectionStore.setState({
+      status: "online",
+      welcome: {
+        type: "welcome",
+        protocol: "2.3",
+        room: "midnight-pier",
+        you: { id: "p1", name: "Nyx", role: "player" },
+        locale: "en",
+        server: "loreweaver",
+      },
+    })
+  })
+
+  it("opens the quick menu from the ⚡ button and inserts the line into the box", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /quick commands/i }))
+    const menu = screen.getByRole("menu", { name: /quick commands/i })
+    expect(menu).toBeInTheDocument()
+
+    // Picking "Roll dice" puts `.r 3d6` into the box, keeps focus, closes menu.
+    await user.click(screen.getByRole("menuitem", { name: /\.r 3d6/i }))
+    expect(field).toHaveValue(".r 3d6")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    expect(field).toHaveFocus()
+    // Nothing sent yet — the player adjusts then sends.
+    expect(transportSend).not.toHaveBeenCalled()
+  })
+
+  it("closes the quick menu with Escape without touching the box", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+    await user.click(screen.getByRole("button", { name: /quick commands/i }))
+    expect(screen.getByRole("menu")).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    expect(field).toHaveValue("")
+  })
+})

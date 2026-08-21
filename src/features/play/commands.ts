@@ -56,3 +56,32 @@ export function matchCommands(prefix: string): CommandEntry[] {
   if (p.length === 0) return COMMANDS.slice(0, 8)
   return COMMANDS.filter((entry) => entry.word.startsWith(p)).slice(0, 8)
 }
+
+/**
+ * The quick-command menu beside the input box: the handful of commands a
+ * player reaches for every session, each with a ready-to-send template. The
+ * client inserts the line into the input box (not sent) so the player can
+ * adjust the argument — `.r 3d6` is a good default but not always the roll
+ * you meant. `word` keys the i18n label under `play.commands.<word>`; the
+ * `line` is what actually lands in the box (can carry arguments beyond the
+ * completion's bare example).
+ */
+export interface QuickCommand {
+  /** The command word (i18n label key). */
+  word: string
+  /** The full line inserted into the input box. */
+  line: string
+}
+
+export const QUICK_COMMANDS: readonly QuickCommand[] = [
+  { word: "r", line: ".r 3d6" },
+  { word: "ra", line: ".ra 侦查 " }, // i18n-exempt: a CJK example argument, data not UI
+  { word: "hr", line: ".hr 1d100" },
+  { word: "opposed", line: ".rav 侦查 隐匿 " }, // i18n-exempt: a CJK example argument, data not UI
+  { word: "sanity", line: ".sc 1/1d6" },
+  { word: "init", line: ".ri" },
+  { word: "st", line: ".st " },
+  { word: "recap", line: ".recap" },
+  { word: "pc", line: ".pc list" },
+  { word: "help", line: ".help" },
+]

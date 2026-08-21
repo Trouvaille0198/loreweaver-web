@@ -55,6 +55,7 @@
     "empty": "编年史还是空白。说点什么，让故事开始。",
     "inputPlaceholder": "发言、行动，或输入指令…",
     "send": "发送",
+    "moreAria": "牌桌工具",
     "echoPending": "发送中…",
     "echoFailed": "未送达",
     "serverRefused": "服务器拒绝了这一条：{{message}}",
@@ -104,7 +105,8 @@
     "deskTitle": "桌面状态",
     "deskClose": "关闭",
     "attributes": "属性",
-    "skills": "技能（{{n}}）"
+    "skills": "技能（{{n}}）",
+    "quickCommands": "快捷命令"
   },
   "panels": {
     "menu": "面板({{n}})",
@@ -136,7 +138,7 @@
     "system": "系统"
   },
   "play": {
-    "back": "← 菜单",
+    "back": "← 返回牌桌",
     "busy": "处理中…",
     "sendFailed": "没能发出去——应用连不上房间。检查连接后重试。",
     "menuButton": "菜单",

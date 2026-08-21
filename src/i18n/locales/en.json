@@ -55,6 +55,7 @@
     "empty": "The chronicle is empty. Say something to begin.",
     "inputPlaceholder": "Speak, act, or type a command…",
     "send": "Send",
+    "moreAria": "Session tools",
     "echoPending": "sending…",
     "echoFailed": "not delivered",
     "serverRefused": "The server refused it: {{message}}",
@@ -104,7 +105,8 @@
     "deskTitle": "Table status",
     "deskClose": "Close",
     "attributes": "Attributes",
-    "skills": "Skills ({{n}})"
+    "skills": "Skills ({{n}})",
+    "quickCommands": "Quick commands"
   },
   "panels": {
     "menu": "Panels ({{n}})",
@@ -136,7 +138,7 @@
     "system": "System"
   },
   "play": {
-    "back": "← Menu",
+    "back": "← Back to the table",
     "busy": "Working…",
     "sendFailed": "Nothing was sent — the app could not reach the room. Check the connection and try again.",
     "menuButton": "Menu",

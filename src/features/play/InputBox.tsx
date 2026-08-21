@@ -1,9 +1,9 @@
-import { useState, type FormEvent, type KeyboardEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
-import { matchCommands } from "./commands"
+import { matchCommands, QUICK_COMMANDS } from "./commands"
 
 /** How many sent lines are kept for the up-arrow history (in-memory only). */
 const HISTORY_MAX = 50
@@ -17,6 +17,9 @@ export default function InputBox() {
   const [text, setText] = useState("")
   const [history, setHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
+  const [quickOpen, setQuickOpen] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const quickRef = useRef<HTMLDivElement | null>(null)
   const online = status === "online"
 
   // The command palette shows while the line starts with `.` (or `/`) and
@@ -47,6 +50,32 @@ export default function InputBox() {
     const input = document.querySelector<HTMLInputElement>(".input-box input")
     input?.focus()
   }
+
+  /** Quick menu: insert the whole line into the box and keep typing focus. */
+  const applyQuick = (line: string) => {
+    setText(line)
+    setQuickOpen(false)
+    inputRef.current?.focus()
+  }
+
+  const closeQuick = () => setQuickOpen(false)
+
+  // Close the quick menu on Escape / outside tap regardless of focus.
+  useEffect(() => {
+    if (!quickOpen) return
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") closeQuick()
+    }
+    const onPointer = (event: globalThis.PointerEvent) => {
+      if (quickRef.current && !quickRef.current.contains(event.target as Node)) closeQuick()
+    }
+    window.addEventListener("keydown", onKey)
+    window.addEventListener("pointerdown", onPointer)
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      window.removeEventListener("pointerdown", onPointer)
+    }
+  }, [quickOpen])
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     // Tab completes the top suggestion.
@@ -94,7 +123,39 @@ export default function InputBox() {
         </div>
       ) : null}
       <form className="input-box" onSubmit={submit}>
+        <div className="quick-commands" ref={quickRef}>
+          <button
+            type="button"
+            className="quick-commands-toggle"
+            aria-expanded={quickOpen}
+            aria-haspopup="menu"
+            aria-label={t("session.quickCommands")}
+            title={t("session.quickCommands")}
+            disabled={!online}
+            onClick={() => setQuickOpen((open) => !open)}
+          >
+            ⚡
+          </button>
+          {quickOpen ? (
+            <div className="quick-commands-pop" role="menu" aria-label={t("session.quickCommands")}>
+              {QUICK_COMMANDS.map((quick) => (
+                <button
+                  key={quick.word}
+                  type="button"
+                  role="menuitem"
+                  className="quick-command"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyQuick(quick.line)}
+                >
+                  <span className="quick-command-line">{quick.line}</span>
+                  <span className="quick-command-label">{t(`play.commands.${quick.word}`)}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
         <input
+          ref={inputRef}
           value={text}
           onChange={(e) => {
             setText(e.target.value)
