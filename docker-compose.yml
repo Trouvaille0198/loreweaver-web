@@ -15,6 +15,11 @@ services:
       additional_contexts:
         engine: ../loreweaver
     image: loreweaver-web:local
+    # Run as the host user (default 1001:1001 — melon on the deployment VPS),
+    # NOT root: every file the server writes into the ./data bind mount is
+    # then owned by the host user, so the host can read/back it up without
+    # sudo. Override via LW_UID/LW_GID if your host user differs.
+    user: "${LW_UID:-1001}:${LW_GID:-1001}"
     ports:
       - "8787:8787"
     volumes:
