@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { stripControlChars } from "@loreweaver/protocol"
+import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import { quitTable } from "../../store/hostLocal"
+import AppMenu from "./AppMenu"
 import AudioDeck from "./AudioDeck"
 import InputBox from "./InputBox"
 import MediaDeck from "./MediaDeck"
@@ -17,6 +19,7 @@ import StatusPill from "./StatusPill"
 import VersionBadge from "./VersionBadge"
 import TurnStatus from "./TurnStatus"
 import Meter from "./Meter"
+import type { PlayScreen } from "./PlayView"
 
 /** "Where am I, what time is it" — the one context line a player always wants.
  * Mobile-only: on wide screens the scene card already lives in the desk. */
@@ -77,7 +80,59 @@ function VitalsStrip() {
   )
 }
 
-export default function SessionView({ onMenu }: { onMenu?: () => void }) {
+/** A room that has never been prepared reads as empty: no character, no party,
+ * no pregens, no scene — nothing a player could sit down into. That is exactly
+ * the moment a first-time keeper needs a pointer, not a bare chat column. */
+function isEmptyTable(game: ReturnType<typeof useSessionStore.getState>["game"]): boolean {
+  if (game === null) return true
+  return (
+    game.character === undefined &&
+    game.party.length === 0 &&
+    (game.pregens ?? []).length === 0 &&
+    game.scene === undefined
+  )
+}
+
+/** First-time keeper onboarding banner (was the main menu's onboarding card):
+ * an empty table points at the three things that make it playable. It sits
+ * between the header and the story, and disappears once the room is prepared. */
+function OnboardingBanner({ onNavigate }: { onNavigate: (screen: PlayScreen) => void }) {
+  const { t } = useTranslation()
+  const welcome = useConnectionStore((s) => s.welcome)
+  const game = useSessionStore((s) => s.game)
+  const isKeeper = welcome?.you.role === "keeper"
+  const hasDemo = isKeeper && (welcome?.features ?? []).includes("demo")
+  if (!isKeeper || !isEmptyTable(game)) return null
+
+  const startDemo = () => {
+    // The server's demo responder treats this exact localized, human-readable
+    // action as one guided transaction (same string the TUI sends).
+    void transportSend({ type: "input", text: t("play.menu.demoAction") }).catch(() => {})
+    onNavigate("game")
+  }
+
+  return (
+    <section className="menu-onboarding onboarding-banner" aria-label={t("play.onboarding.title")}>
+      <p className="menu-onboarding-title">{t("play.onboarding.title")}</p>
+      <p className="menu-onboarding-hint">{t("play.onboarding.hint")}</p>
+      <div className="menu-onboarding-actions">
+        <button type="button" className="primary-button" onClick={() => onNavigate("module")}>
+          {t("play.onboarding.importModule")}
+        </button>
+        <button type="button" className="ghost-button" onClick={() => onNavigate("keys")}>
+          {t("play.onboarding.invite")}
+        </button>
+        {hasDemo ? (
+          <button type="button" className="ghost-button" onClick={startDemo}>
+            {t("play.onboarding.sample")}
+          </button>
+        ) : null}
+      </div>
+    </section>
+  )
+}
+
+export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayScreen) => void }) {
   const { t } = useTranslation()
   const welcome = useConnectionStore((s) => s.welcome)
   const game = useSessionStore((s) => s.game)
@@ -92,11 +147,14 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
   const toggleDesk = () => setDeskOpen((open) => !open)
 
   // Mobile "⋯" menu: the connection status, version readout, panels menu and
-  // Disconnect fold into it so the chat header stays one row on a phone.
+  // the in-session tools (audio/media) fold into it so the chat header stays
+  // one row on a phone. Navigation (character/settings/keeper screens) and
+  // Disconnect live in the ≡ app menu instead.
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement | null>(null)
 
-  // Escape closes the drawer (the shell's own Esc handling lives in PlayView).
+  // Escape closes the drawer (the ≡ app menu and the ⋯ popup own their own
+  // Esc; there is no global Esc that navigates anywhere).
   useEffect(() => {
     if (!deskOpen) return
     const onKey = (event: KeyboardEvent) => {
@@ -143,24 +201,25 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
     <div className={`session${deskOpen ? " desk-active" : ""}`}>
       <div className="chronicle-pane">
         <header className="session-head">
-          {onMenu ? (
-            <button type="button" className="ghost-button session-back" onClick={onMenu}>
-              {t("play.menuButton")}
-            </button>
-          ) : null}
+          <AppMenu onNavigate={onNavigate} />
           <span className="session-room">{welcome ? `${welcome.room} · ${welcome.you.name}` : "…"}</span>
+          {/* Wide screens show status + the panels menu directly in the header;
+              phones fold them into the ⋯ popup (hidden here via CSS). */}
+          <StatusPill />
+          <PanelMenu />
           <div className="session-more" ref={moreRef}>
             <button
               type="button"
               className="ghost-button session-more-toggle"
               aria-expanded={moreOpen}
               aria-haspopup="menu"
+              aria-label={t("session.moreAria")}
               onClick={() => setMoreOpen((open) => !open)}
             >
               ⋯
             </button>
             {moreOpen ? (
-              <div className="session-more-pop" role="menu">
+              <div className="session-more-pop" role="menu" aria-label={t("session.moreAria")}>
                 <div className="session-more-row session-more-status">
                   <StatusPill />
                   <VersionBadge />
@@ -172,14 +231,6 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
                   <AudioDeck />
                   <MediaDeck />
                 </div>
-                <button
-                  type="button"
-                  className="ghost-button session-more-quit"
-                  role="menuitem"
-                  onClick={() => void quitTable()}
-                >
-                  {t("connect.disconnect")}
-                </button>
               </div>
             ) : null}
           </div>
@@ -187,6 +238,7 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
             {t("connect.disconnect")}
           </button>
         </header>
+        <OnboardingBanner onNavigate={onNavigate} />
         <SceneLine />
         <VitalsStrip />
         <PanelNotice />

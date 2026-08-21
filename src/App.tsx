@@ -2,12 +2,10 @@ import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import PlayView from "./features/play/PlayView"
 import { onTransportEvent } from "./lib/transport"
-import { useAppStore } from "./store/app"
 import { useConnectionStore } from "./store/connection"
 
 export default function App() {
   const { t, i18n } = useTranslation()
-  const mode = useAppStore((s) => s.mode)
 
   // Both transports — the Tauri bridge (native app) and the browser WebSocket
   // transport — funnel into the same connection store via the same event
@@ -25,11 +23,6 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">{t("app.title")}</h1>
-        <nav className="mode-nav" aria-label={t("nav.label")}>
-          <button key={mode} type="button" className="mode-tab active" onClick={() => undefined}>
-            {t(`nav.${mode}`)}
-          </button>
-        </nav>
         <div className="header-spacer" />
         <select
           className="lang-select"

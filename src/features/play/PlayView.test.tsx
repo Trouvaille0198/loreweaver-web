@@ -58,28 +58,41 @@ describe("PlayView", () => {
     expect(connect).toHaveBeenCalledWith({ ticket: "ws://localhost:8787", key: "k-1", name: undefined })
   })
 
-  it("lands on the main menu while online; Enter game opens the chronicle", async () => {
+  it("lands directly in the chronicle while online — the game IS the home screen", async () => {
     const user = userEvent.setup()
     useConnectionStore.setState({ status: "online", welcome: WELCOME })
     render(<PlayView />)
-    // The TUI flow: welcome → main menu, the game is one item among the rows.
-    expect(screen.getByText(/Table “r1”/)).toBeInTheDocument()
+    // No full-page menu between the player and the table anymore.
+    expect(screen.queryByText(/Table “r1”/)).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Connect" })).not.toBeInTheDocument()
-    await user.click(screen.getByRole("menuitem", { name: /Enter game/ }))
     expect(screen.getByText("r1 · Nyx")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Disconnect" })).toBeInTheDocument()
     // Named, not "the one textbox": the keeper's audio deck has fields too.
     expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
-    // Esc backs out to the menu.
-    await user.keyboard("{Escape}")
-    expect(screen.getByText(/Table “r1”/)).toBeInTheDocument()
+
+    // The ≡ app menu is the navigation surface: screens, not a menu page.
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
+    expect(screen.getByRole("menuitem", { name: "My character" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Settings" })).toBeInTheDocument()
   })
 
-  it("keeps the menu visible while reconnecting, with the attempt count", () => {
+  it("Escape does not eject from the game", async () => {
+    const user = userEvent.setup()
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    render(<PlayView />)
+    await user.keyboard("{Escape}")
+    // Still at the table — Esc closes overlays, it never navigates.
+    expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
+    expect(window.location.hash).toBe("")
+  })
+
+  it("keeps the game visible while reconnecting, with the attempt count", () => {
     useConnectionStore.setState({ status: "reconnecting", attempt: 2, welcome: WELCOME })
     render(<PlayView />)
+    // The session header's status pill reports the reconnect in place.
     expect(screen.getByText(/reconnecting/i)).toBeInTheDocument()
     expect(screen.getByText(/attempt 2/i)).toBeInTheDocument()
+    expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
   })
 
   it("rejoins automatically on a cold load and when the tab returns, using the remembered connection", () => {
@@ -128,21 +141,25 @@ describe("PlayView", () => {
     expect(connect).not.toHaveBeenCalled()
   })
 
-  it("shows keeper rows and the demo item only for a keeper whose server offers it", () => {
+  it("shows keeper screens and the demo item in the app menu only for a keeper whose server offers it", async () => {
+    const user = userEvent.setup()
     useConnectionStore.setState({ status: "online", welcome: { ...WELCOME, features: ["demo"] } })
     render(<PlayView />)
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
     expect(screen.getByText("── Keeper ──")).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /Play sample adventure/ })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /Rooms & invites/ })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /Model \/ config/ })).toBeInTheDocument()
   })
 
-  it("hides the keeper section from players", () => {
+  it("hides the keeper section from players", async () => {
+    const user = userEvent.setup()
     useConnectionStore.setState({
       status: "online",
       welcome: { ...WELCOME, you: { ...WELCOME.you, role: "player" } },
     })
     render(<PlayView />)
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
     expect(screen.queryByText("── Keeper ──")).not.toBeInTheDocument()
     expect(screen.queryByRole("menuitem", { name: /Rooms & invites/ })).not.toBeInTheDocument()
   })
@@ -224,34 +241,39 @@ describe("PlayView", () => {
     expect(screen.getByRole("heading", { name: /Rooms & invites/ })).toBeInTheDocument()
 
     // In-app navigation writes the hash, so the URL and the screen stay in step.
-    await user.click(screen.getByRole("button", { name: "← Menu" }))
-    expect(window.location.hash).toBe("#/menu")
-    expect(screen.getByText(/Table “r1”/)).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Back to the table/ }))
+    expect(window.location.hash).toBe("#/game")
+    expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
   })
 
   it("drives the screen from hashchange — the browser back/forward path", async () => {
-    const user = userEvent.setup()
     useConnectionStore.setState({ status: "online", welcome: WELCOME })
     render(<PlayView />)
-    await user.click(screen.getByRole("menuitem", { name: /Enter game/ }))
-    expect(screen.getByText("r1 · Nyx")).toBeInTheDocument()
-    expect(window.location.hash).toBe("#/game")
+    // The game is the default screen.
+    expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
 
     // The browser's Back button changes the hash without any React click.
-    window.history.replaceState(null, "", "#/menu")
+    window.history.replaceState(null, "", "#/character")
     window.dispatchEvent(new HashChangeEvent("hashchange"))
-    expect(await screen.findByText(/Table “r1”/)).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: /My character/ })).toBeInTheDocument()
+
+    window.history.replaceState(null, "", "#/game")
+    window.dispatchEvent(new HashChangeEvent("hashchange"))
+    expect(await screen.findByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
   })
 
-  it("sends a player on a stale keeper hash to the menu instead", () => {
+  it("sends a player on a stale keeper hash to the game instead", async () => {
+    const user = userEvent.setup()
     useConnectionStore.setState({
       status: "online",
       welcome: { ...WELCOME, you: { ...WELCOME.you, role: "player" } },
     })
     window.history.replaceState(null, "", "#/keys")
     render(<PlayView />)
-    // No admin screens for a player — the menu (and no Rooms & invites row).
-    expect(screen.getByText(/Table “r1”/)).toBeInTheDocument()
+    // No admin screens for a player — they land on the table, and the app
+    // menu has no keeper rows.
+    expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
     expect(screen.queryByRole("menuitem", { name: /Rooms & invites/ })).not.toBeInTheDocument()
   })
 })

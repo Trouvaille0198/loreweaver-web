@@ -583,11 +583,15 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
     // The phone drawer is the PLAYER's desk, not the keeper's dashboard. The
     // character card renders ABOVE this stack (SessionView places it at the
     // very top of the desk column), then the module's own panels (SessionView's
-    // PanelSidebar / PanelTray); this is the room around you: the trackers and
-    // the table. System furniture — audio, media, presence, usage — is NOT
-    // state and does not live here; the mobile "⋯" menu hosts it.
+    // PanelSidebar / PanelTray); this is the room around you: the scene, the
+    // trackers and the table. System furniture — audio, media, presence,
+    // usage — is NOT state and does not live here; the mobile "⋯" menu hosts
+    // it. The scene card leads here too: the session header's scene strip is
+    // mobile-only, so on a wide screen this desk column is where "where am I"
+    // must live.
     return (
       <div className="desk-stack">
+        {game ? <SceneCard game={game} /> : null}
         <UiPanelCards />
         {game ? <VariablesCard game={game} /> : null}
         {game ? <PartyCard game={game} /> : null}

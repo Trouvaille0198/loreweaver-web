@@ -1,6 +1,7 @@
-// Play mode: connect screen → MAIN MENU (the TUI flow — the game is one menu
-// item among character/settings and the keeper screens) → the chronicle or a
-// management screen. Esc anywhere below the menu returns to it.
+// Play mode: connect screen → the chronicle (the game IS the home screen).
+// Character, settings and the keeper screens are reached from the ≡ app menu
+// in the session header, never by leaving the table first. Overlays own their
+// own Escape (drawer, popovers, modals); Escape never ejects from the game.
 
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { useTranslation } from "react-i18next"
@@ -11,7 +12,6 @@ import { useConnectionStore, hasManualDisconnect } from "../../store/connection"
 import { useHostLocalStore } from "../../store/hostLocal"
 import CharacterScreen from "./screens/CharacterScreen"
 import KeysScreen from "./screens/KeysScreen"
-import MainMenuScreen from "./screens/MainMenuScreen"
 import ModelScreen from "./screens/ModelScreen"
 import ModuleScreen from "./screens/ModuleScreen"
 import RulesScreen from "./screens/RulesScreen"
@@ -21,13 +21,12 @@ import SessionView from "./SessionView"
 import StatusPill from "./StatusPill"
 
 export type PlayScreen =
-  "menu" | "game" | "character" | "settings" | "keys" | "module" | "rules" | "skills" | "model"
+  "game" | "character" | "settings" | "keys" | "module" | "rules" | "skills" | "model"
 
 /** Every play screen, keyed by the URL hash that selects it. The hash is the
  * single source of truth for which screen is up: browser back/forward and a
  * reload both just read it, and every in-app navigation writes it. */
 const SCREEN_HASHES: Record<PlayScreen, string> = {
-  menu: "#/menu",
   game: "#/game",
   character: "#/character",
   settings: "#/settings",
@@ -41,12 +40,12 @@ const SCREEN_HASHES: Record<PlayScreen, string> = {
 const SCREENS = Object.keys(SCREEN_HASHES) as PlayScreen[]
 
 /** Parse the current hash back into a screen; unknown/empty hashes fall back
- * to the menu (e.g. a plain bookmark or the first visit). */
+ * to the game (e.g. a plain bookmark or the first visit). */
 function screenFromHash(): PlayScreen {
-  if (typeof window === "undefined") return "menu"
+  if (typeof window === "undefined") return "game"
   const hash = window.location.hash
   const hit = SCREENS.find((screen) => SCREEN_HASHES[screen] === hash)
-  return hit ?? "menu"
+  return hit ?? "game"
 }
 
 /** The keeper-only management screens — a player landing on one of these
@@ -151,8 +150,8 @@ function OnlineView() {
   const [screen, setScreen] = useState<PlayScreen>(() => {
     const fromHash = screenFromHash()
     // A stale keeper hash on a player connection would land them on a screen
-    // whose every admin frame the server refuses — fall back to the menu.
-    return isKeeperScreen(fromHash) && !isKeeper ? "menu" : fromHash
+    // whose every admin frame the server refuses — fall back to the game.
+    return isKeeperScreen(fromHash) && !isKeeper ? "game" : fromHash
   })
 
   // The browser tab says where you are: `牌桌 · room` or `Settings · room`.
@@ -184,30 +183,21 @@ function OnlineView() {
       const next = screenFromHash()
       // Same guard as the initializer: a player must never land on a keeper
       // screen, no matter how the hash got there.
-      setScreen(isKeeperScreen(next) && !isKeeper ? "menu" : next)
+      setScreen(isKeeperScreen(next) && !isKeeper ? "game" : next)
     }
     window.addEventListener("hashchange", onHash)
     return () => window.removeEventListener("hashchange", onHash)
   }, [isKeeper])
 
-  // Esc backs out of any screen to the menu — the TUI's navigation spine.
-  // The game screen keeps Esc too (its input is a plain textarea; Esc there
-  // is not otherwise meaningful).
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") navigate("menu")
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [navigate])
-
-  const back = useCallback(() => navigate("menu"), [navigate])
+  // Escape is overlay-owned: the desk drawer, the ⋯ popup, the app menu and
+  // the panel modal each close on their own Esc. There is deliberately NO
+  // global Esc here — a web player pressing Esc in the middle of a scene
+  // must not be ejected from the table.
+  const back = useCallback(() => navigate("game"), [navigate])
 
   switch (screen) {
-    case "menu":
-      return <MainMenuScreen onNavigate={navigate} />
     case "game":
-      return <SessionView onMenu={back} />
+      return <SessionView onNavigate={navigate} />
     case "character":
       return <CharacterScreen onBack={back} />
     case "settings":

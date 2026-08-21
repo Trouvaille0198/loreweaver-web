@@ -249,7 +249,10 @@
         "paperwhite": "Paperwhite"
       },
       "narrativeWidth": "Narrative width",
-      "narrativeWidthHint": "How wide the story column is on desktop. Mobile always uses full width."
+      "narrativeWidthHint": "How wide the story column is on desktop. Mobile always uses full width.",
+      "serverSection": "Server & invites",
+      "ticketHint": "Desktop players (TUI / Studio) dial straight into this room with this p2p ticket plus an invite key — no domain, TLS or port-forward.",
+      "invitesSection": "Invite keys"
     },
     "rooms": {
       "title": "Room lifecycle",

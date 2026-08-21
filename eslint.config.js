@@ -5,7 +5,12 @@ import reactRefresh from "eslint-plugin-react-refresh"
 import tseslint from "typescript-eslint"
 
 export default tseslint.config(
-  { ignores: ["dist/**", "node_modules/**", "src-tauri/**", "crates/**", "target/**"] },
+  {
+    // `data/` is the runtime bind-mount (packs, skills, backups) — sandboxed
+    // content that runs in the engine with its own globals, never lintable
+    // source. Ignoring it keeps local lint working against a live server.
+    ignores: ["dist/**", "dist-new/**", "node_modules/**", "src-tauri/**", "crates/**", "target/**", "data/**"],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
