@@ -18,6 +18,7 @@ const WELCOME: WelcomeFrame = {
 
 function reset() {
   localStorage.clear()
+  sessionStorage.clear()
   // The URL hash now carries the screen; wipe it so a test that navigated to
   // #/keys does not leak "keys" into the next test's first render.
   window.history.replaceState(null, "", window.location.pathname + window.location.search)
@@ -79,6 +80,38 @@ describe("PlayView", () => {
     render(<PlayView />)
     expect(screen.getByText(/reconnecting/i)).toBeInTheDocument()
     expect(screen.getByText(/attempt 2/i)).toBeInTheDocument()
+  })
+
+  it("rejoins automatically when the tab returns, using the remembered connection", () => {
+    const connect = vi.fn().mockResolvedValue(undefined)
+    useConnectionStore.setState({ connect })
+    localStorage.setItem(
+      "loreweaver-web.connect",
+      JSON.stringify({
+        state: { url: "ws://localhost:8787", key: "k-saved", name: "Nyx" },
+        version: 1,
+      }),
+    )
+    // The page is freshly built (a discarded mobile tab): store is offline,
+    // nothing was dialed yet, the form would otherwise be showing.
+    render(<PlayView />)
+    expect(connect).not.toHaveBeenCalled()
+    // The tab becomes visible again → the app dials the remembered connection.
+    document.dispatchEvent(new Event("visibilitychange"))
+    expect(connect).toHaveBeenCalledWith({ ticket: "ws://localhost:8787", key: "k-saved", name: "Nyx" })
+  })
+
+  it("does not rejoin after a deliberate disconnect", () => {
+    const connect = vi.fn().mockResolvedValue(undefined)
+    useConnectionStore.setState({ connect })
+    localStorage.setItem(
+      "loreweaver-web.connect",
+      JSON.stringify({ state: { url: "ws://localhost:8787", key: "k-saved", name: "Nyx" }, version: 1 }),
+    )
+    sessionStorage.setItem("loreweaver-web.manual-disconnect", "1")
+    render(<PlayView />)
+    document.dispatchEvent(new Event("visibilitychange"))
+    expect(connect).not.toHaveBeenCalled()
   })
 
   it("shows keeper rows and the demo item only for a keeper whose server offers it", () => {

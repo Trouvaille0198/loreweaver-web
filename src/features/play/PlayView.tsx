@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next"
 import { pickDirectory } from "../../lib/native"
 import { isTauri } from "../../lib/transport"
 import { clearSavedConnect, loadSavedConnect, saveConnect } from "../../lib/savedConnect"
-import { useConnectionStore } from "../../store/connection"
+import { useConnectionStore, hasManualDisconnect } from "../../store/connection"
 import { useHostLocalStore } from "../../store/hostLocal"
 import CharacterScreen from "./screens/CharacterScreen"
 import KeysScreen from "./screens/KeysScreen"
@@ -266,6 +266,39 @@ export default function PlayView() {
     saveConnect({ url: ticket.trim(), key: key.trim(), name: name.trim() || undefined })
     setRemembered(true)
   }, [status, web, ticket, key, name])
+
+  // Auto-rejoin on tab return. Mobile browsers freeze or discard background
+  // tabs (iOS especially): the WS drops AND the page's JS heap may be rebuilt
+  // from scratch, so the store is back to `offline` with no memory of the
+  // session. `WsClient` cannot help there — its reconnect timer died with the
+  // heap. When the tab becomes visible again (or the page is restored from
+  // bfcache/reload), dial the remembered connection instead of stranding the
+  // player on the connect form. Stands down when the player disconnected on
+  // purpose (flag set in the store) or nothing was ever remembered.
+  useEffect(() => {
+    if (!web) return
+    const rejoin = () => {
+      if (useConnectionStore.getState().status !== "offline") return
+      if (hasManualDisconnect()) return
+      const saved = loadSavedConnect()
+      if (saved === null) return
+      void connect({ ticket: saved.url, key: saved.key, name: saved.name })
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") rejoin()
+    }
+    const onPageShow = (event: PageTransitionEvent) => {
+      // persisted=true is a bfcache restore (heap intact, status still online);
+      // only a real reload/rebuild starts from offline.
+      if (!event.persisted) rejoin()
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("pageshow", onPageShow)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("pageshow", onPageShow)
+    }
+  }, [web, connect])
 
   // The session stays visible through reconnects; the form only returns once
   // the transport has given up (offline) or is dialing the very first time.

@@ -13,6 +13,45 @@ import { useAudioStore } from "./audio"
 import { useMediaStore } from "./media"
 import { useSessionStore } from "./session"
 
+/**
+* "The operator left on purpose." Mobile browsers freeze or discard background
+* tabs (iOS especially): when the page comes back, the JS heap is gone and the
+* connect form is showing again even though the connection was fine. The app
+* re-joins automatically with the remembered connection on `visibilitychange` /
+* `pageshow` — but NOT when the player deliberately disconnected (or the
+* handshake was refused). This sessionStorage flag is that distinction: set on
+* explicit disconnect/refusal, cleared on any fresh connect. It lives in
+* sessionStorage (not the store) because the whole store is what a discarded
+* tab loses — the flag must survive the very page death it answers to.
+*/
+const MANUAL_DISCONNECT_KEY = "loreweaver-web.manual-disconnect"
+
+function markManualDisconnect(): void {
+  try {
+    sessionStorage.setItem(MANUAL_DISCONNECT_KEY, "1")
+  } catch {
+    /* private mode / quota — best effort, same as every store */
+  }
+}
+
+function clearManualDisconnect(): void {
+  try {
+    sessionStorage.removeItem(MANUAL_DISCONNECT_KEY)
+  } catch {
+    /* best effort */
+  }
+}
+
+/** True when the player (or a refusal) ended the connection on purpose —
+ * the automatic rejoin on tab-return must stand down. */
+export function hasManualDisconnect(): boolean {
+  try {
+    return sessionStorage.getItem(MANUAL_DISCONNECT_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
 /** Tolerate the ticket shapes people actually paste: the engine writes
  * `ticket=endpoint…` into iroh-ticket.txt, its console announce line reads
  * `Ticket：endpoint…`, and terminals wrap long tickets across lines. The real
@@ -54,6 +93,7 @@ type Getter = () => ConnectionState
  * the bridge redial into the same wall. */
 function refuse(set: Setter, get: Getter, reason: string): void {
   set({ status: "offline", attempt: 0, welcome: null, lastError: reason, refused: true })
+  markManualDisconnect()
   void get().disconnect()
 }
 
@@ -69,6 +109,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     // early return, so a refused handshake cannot leave the store deaf to every
     // status that follows for the rest of the process's life.
     set({ refused: false })
+    clearManualDisconnect()
     set({ status: "connecting", attempt: 0, lastError: null, welcome: null })
     useSessionStore.getState().clear()
     useMediaStore.getState().reset()
@@ -81,6 +122,9 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   },
 
   disconnect: async () => {
+    // A deliberate leave: the auto-rejoin on tab-return must stand down, or
+    // quitting would just silently reconnect the moment the page is hidden.
+    markManualDisconnect()
     try {
       await transportDisconnect()
     } catch {

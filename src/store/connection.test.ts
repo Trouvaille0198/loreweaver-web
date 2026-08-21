@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { PROTOCOL_VERSION } from "@loreweaver/protocol"
-import { sanitizeTicket, useConnectionStore } from "./connection"
+import { hasManualDisconnect, sanitizeTicket, useConnectionStore } from "./connection"
 
 const WELCOME = {
   type: "welcome",
@@ -19,6 +19,7 @@ function reset() {
     welcome: null,
     refused: false,
   })
+  sessionStorage.clear()
 }
 
 describe("sanitizeTicket", () => {
@@ -118,6 +119,18 @@ describe("connection store", () => {
     // latch, which is the half this asserts: a new dial gets a clean verdict.
     await useConnectionStore.getState().connect({ ticket: "endpoint-x", key: "k" })
     expect(useConnectionStore.getState().refused).toBe(false)
+  })
+
+  it("marks a deliberate disconnect so the tab-return rejoin stands down", async () => {
+    // Before any disconnect the flag is clear — the auto-rejoin may act.
+    expect(hasManualDisconnect()).toBe(false)
+    await useConnectionStore.getState().disconnect()
+    // After an explicit leave the flag is set: PlayView's rejoin-on-visible
+    // must NOT silently redial into a room the player just quit.
+    expect(hasManualDisconnect()).toBe(true)
+    // A fresh connect clears it again.
+    await useConnectionStore.getState().connect({ ticket: "endpoint-x", key: "k" })
+    expect(hasManualDisconnect()).toBe(false)
   })
 
   it("accepts the live engine's welcome verbatim", () => {
