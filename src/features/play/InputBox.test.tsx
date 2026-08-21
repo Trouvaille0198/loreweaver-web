@@ -177,20 +177,33 @@ describe("InputBox quick commands sub-menus", () => {
     })
   })
 
-  it("expands a group to reveal sub-commands, then inserts one", async () => {
+  it("shows group sub-commands under a section header, and inserts one", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
     const field = screen.getByRole("textbox")
 
     await user.click(screen.getByRole("button", { name: /quick commands/i }))
-    // `.pc` row is a group: its sub-commands are hidden until expanded.
-    expect(screen.queryByRole("menuitem", { name: /\.pc release/i })).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole("menuitem", { name: /cast commands|character commands/i }))
-    // Sub-commands appear; picking one fills the box.
+    // Groups are flattened into labelled sections — a sub-command is
+    // reachable in one pass, with no expansion step.
+    expect(screen.getByRole("menuitem", { name: /\.pc release/i })).toBeInTheDocument()
     await user.click(screen.getByRole("menuitem", { name: /\.pc release/i }))
     expect(field).toHaveValue(".pc release")
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+  })
+
+  it("filters the palette as you type, and shows the empty state on no match", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    await user.click(screen.getByRole("button", { name: /quick commands/i }))
+    const search = screen.getByLabelText(/filter commands/i)
+    // "san" matches the sanity roll's label — the rest of the palette drops out.
+    await user.type(search, "san")
+    expect(screen.getByRole("menuitem", { name: /\.sc 1\/1d6/i })).toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: /\.recap/i })).not.toBeInTheDocument()
+    // A nonsense query empties the palette.
+    await user.clear(search)
+    await user.type(search, "zzzz")
+    expect(screen.getByText(/no matching commands/i)).toBeInTheDocument()
   })
 
   it("lists every quick command line as reachable", () => {

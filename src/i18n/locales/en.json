@@ -106,7 +106,12 @@
     "deskClose": "Close",
     "attributes": "Attributes",
     "skills": "Skills ({{n}})",
-    "quickCommands": "Quick commands"
+    "quickCommands": "Quick commands",
+    "quickMenuHint": "Pick to insert into the box — tweak before sending",
+    "quickMenuSearch": "Filter commands…",
+    "quickMenuEmpty": "No matching commands",
+    "quickMenuClose": "Close",
+    "quickMenuKeys": "↑↓ select · Enter insert · Esc close"
   },
   "panels": {
     "menu": "Panels ({{n}})",

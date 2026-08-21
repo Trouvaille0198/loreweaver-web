@@ -106,7 +106,12 @@
     "deskClose": "关闭",
     "attributes": "属性",
     "skills": "技能（{{n}}）",
-    "quickCommands": "快捷命令"
+    "quickCommands": "快捷命令",
+    "quickMenuHint": "点选插入输入框，发送前可再修改",
+    "quickMenuSearch": "过滤指令…",
+    "quickMenuEmpty": "没有匹配的指令",
+    "quickMenuClose": "关闭",
+    "quickMenuKeys": "↑↓ 选择 · Enter 插入 · Esc 关闭"
   },
   "panels": {
     "menu": "面板({{n}})",
