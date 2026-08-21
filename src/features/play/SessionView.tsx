@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useConnectionStore } from "../../store/connection"
 import { quitTable } from "../../store/hostLocal"
@@ -16,6 +17,12 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
   const { t } = useTranslation()
   const welcome = useConnectionStore((s) => s.welcome)
 
+  // On narrow screens the desk (panels + state) is a bottom drawer, opened
+  // from the header and closed by the backdrop or the close button; on wide
+  // screens the drawer chrome is hidden and the desk sits in its own column.
+  const [deskOpen, setDeskOpen] = useState(false)
+  const closeDesk = () => setDeskOpen(false)
+
   return (
     <div className="session">
       <div className="chronicle-pane">
@@ -29,6 +36,15 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
           <PanelMenu />
           <StatusPill />
           <VersionBadge />
+          <button
+            type="button"
+            className="ghost-button desk-toggle"
+            aria-expanded={deskOpen}
+            aria-controls="session-desk"
+            onClick={() => setDeskOpen((open) => !open)}
+          >
+            {t("session.deskToggle")}
+          </button>
           <button type="button" className="ghost-button" onClick={() => void quitTable()}>
             {t("connect.disconnect")}
           </button>
@@ -39,7 +55,14 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
         <PanelTray />
         <InputBox />
       </div>
-      <aside className="desk-pane">
+      {deskOpen ? <div className="desk-backdrop" onClick={closeDesk} /> : null}
+      <aside id="session-desk" className={`desk-pane${deskOpen ? " desk-open" : ""}`}>
+        <div className="desk-drawer-head">
+          <span className="desk-drawer-title">{t("session.deskTitle")}</span>
+          <button type="button" className="ghost-button desk-close" onClick={closeDesk}>
+            {t("session.deskClose")}
+          </button>
+        </div>
         <PanelSidebar />
         <StatePanel />
       </aside>

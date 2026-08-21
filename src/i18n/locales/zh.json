@@ -99,7 +99,10 @@
     "varToggle": "切换",
     "varSet": "设置{{label}}",
     "varSetAction": "设置",
-    "commandHints": "命令提示"
+    "commandHints": "命令提示",
+    "deskToggle": "状态",
+    "deskTitle": "桌面状态",
+    "deskClose": "关闭"
   },
   "panels": {
     "menu": "面板({{n}})",

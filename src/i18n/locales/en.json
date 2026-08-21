@@ -99,7 +99,10 @@
     "varToggle": "Toggle",
     "varSet": "Set {{label}}",
     "varSetAction": "Set",
-    "commandHints": "Commands"
+    "commandHints": "Commands",
+    "deskToggle": "Status",
+    "deskTitle": "Table status",
+    "deskClose": "Close"
   },
   "panels": {
     "menu": "Panels ({{n}})",

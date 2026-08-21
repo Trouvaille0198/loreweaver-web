@@ -77,12 +77,26 @@ body,
   height: 100%;
 }
 
+/* Mobile browsers: the dynamic viewport (address-bar aware) is what a full-height
+   app shell actually means; 100vh on iOS Safari overshoots under the collapsed
+   chrome. Fall back to 100% where dvh is unsupported (old WebViews). */
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+  }
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
   font: 14px/1.5 var(--font-ui);
   -webkit-font-smoothing: antialiased;
+  /* No double-tap zoom on touch: tap targets are sized in CSS, the browser's
+     automatic double-tap-zoom would fight the app's own tap handling. */
+  touch-action: manipulation;
 }
 
 :focus-visible {
@@ -367,6 +381,15 @@ body {
   overflow-y: auto;
   padding: 16px;
   background: var(--bg-inset);
+}
+
+/* The desk drawer chrome is a NARROW-SCREEN affordance: on wide screens the
+   desk is an always-on column and the toggle/close/backdrop do not exist. */
+.desk-toggle,
+.desk-close,
+.desk-backdrop,
+.desk-drawer-head {
+  display: none;
 }
 
 /* ---- Narrative log ---- */
@@ -1449,8 +1472,18 @@ body {
   white-space: pre;
 }
 
-/* ---- Small screens: desk drops below the chronicle ---- */
+/* ---- Small screens: the desk becomes a bottom drawer ---- */
 
+/* Tablet: two columns survive but the desk stops hogging width. */
+@media (max-width: 1024px) {
+  .desk-pane {
+    width: clamp(240px, 30vw, 320px);
+    padding: 12px;
+  }
+}
+
+/* Phone: one column. The session desk is a bottom drawer (opened from the
+   header); the menu desk simply stacks under the menu list. */
 @media (max-width: 760px) {
   .session {
     flex-direction: column;
@@ -1460,12 +1493,58 @@ body {
     border-right: none;
   }
 
-  .desk-pane {
+  /* --- session desk → bottom drawer --- */
+  .session .desk-pane {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 35;
     width: auto;
-    max-height: 40vh;
+    max-height: 75dvh;
+    max-height: 75vh;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 32px rgb(0 0 0 / 0.45);
+    transform: translateY(105%);
+    transition: transform 200ms ease;
+    overscroll-behavior: contain;
   }
 
+  .session .desk-pane.desk-open {
+    transform: translateY(0);
+  }
+
+  .desk-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 34;
+    background: rgb(0 0 0 / 0.55);
+  }
+
+  .desk-toggle,
+  .desk-close {
+    display: inline-flex;
+  }
+
+  .desk-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .desk-drawer-title {
+    font: 600 11px/1.3 var(--font-ui);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
+  /* --- menu desk stays stacked (not a drawer) --- */
   .play-menu {
     flex-direction: column;
   }
@@ -1474,6 +1553,144 @@ body {
     margin-left: 0;
     width: auto;
     align-self: stretch;
+    max-height: 40vh;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+  }
+
+  /* --- header: let it wrap instead of overflowing --- */
+  .session-head {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding: 8px 12px;
+  }
+
+  .session-head .status-pill,
+  .session-head .version-badge {
+    order: 10;
+  }
+
+  /* --- input row: iOS-safe font size (16px stops the focus zoom) + home bar --- */
+  .input-box {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .input-box input {
+    font-size: 16px;
+  }
+
+  .input-box button {
+    padding: 0 14px;
+  }
+
+  /* --- narrative: give the column back to the story --- */
+  .narrative-log {
+    padding: 14px 14px;
+  }
+
+  .turn-status {
+    margin-top: 6px;
+  }
+
+  /* --- connect / menu / screens: breathe on a phone --- */
+  .play-view {
+    padding: 16px;
+  }
+
+  .connect-card {
+    padding: 16px;
+  }
+
+  .play-menu {
+    padding: 14px;
+  }
+
+  .play-screen {
+    padding: 12px 14px;
+  }
+
+  /* --- dialogs & modals: edge-to-edge --- */
+  .dialog-backdrop,
+  .panel-modal-backdrop {
+    padding: 12px;
+  }
+
+  .dialog {
+    width: min(480px, calc(100vw - 24px));
+  }
+
+  .panel-menu-pop {
+    width: min(300px, calc(100vw - 24px));
+  }
+
+  /* --- form fields: no iOS zoom, easier thumbs --- */
+  .field
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
+  .field select,
+  .field textarea,
+  .dialog-row
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
+  .play-table select,
+  .play-table
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
+  .var-set-input,
+  .connect-form input,
+  .connect-form textarea,
+  .host-local-home
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ) {
+    font-size: 16px;
+  }
+
+  /* --- touch targets: at least thumb-sized --- */
+  .ghost-button,
+  .primary-button,
+  .icon-button,
+  .play-menu-item,
+  .input-box button,
+  .connect-form button {
+    min-height: 40px;
+  }
+
+  .play-menu-item {
+    padding: 10px;
+  }
+
+  .input-box input {
+    min-height: 44px;
+  }
+
+  /* --- wide tables scroll sideways instead of squashing --- */
+  .play-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Small phones: drop the version readout (debug chrome) and tighten further. */
+@media (max-width: 420px) {
+  .session-head .version-badge {
+    display: none;
+  }
+
+  .narrative-log {
+    padding: 12px 10px;
+  }
+
+  .log-entry {
+    padding-left: 10px;
+  }
+
+  .play-screen {
+    padding: 10px;
   }
 }
 
@@ -1533,6 +1750,7 @@ body {
   padding: 20px;
   width: min(480px, calc(100vw - 48px));
   max-height: calc(100vh - 64px);
+  max-height: calc(100dvh - 64px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -2411,6 +2629,7 @@ body {
 .panel-modal {
   width: min(720px, 100%);
   max-height: min(80vh, 100%);
+  max-height: min(80dvh, 100%);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3490,14 +3709,20 @@ body {
 
 /* ---- text fields (inputs, textareas, selects) ---- */
 
-.field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.field
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .field select,
 .field textarea,
-.dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.dialog-row
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .play-table select,
-.play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.play-table
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .var-set-input,
-.host-local-home input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]) {
+.host-local-home
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+    [type="color"]
+  ) {
   background-color: var(--bg-inset);
   color: var(--ink);
   border: 1px solid var(--border);
