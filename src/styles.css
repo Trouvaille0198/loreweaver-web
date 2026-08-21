@@ -408,6 +408,13 @@ body {
   display: none;
 }
 
+/* The scene + vitals strips are the mobile context lines; on wide screens the
+   desk column already shows the scene card and character card. */
+.scene-strip,
+.vitals-strip {
+  display: none;
+}
+
 /* The input dock wraps the drawer toggle + the input row. On wide screens it
    is just the input row (the toggle is hidden); on phones it becomes the
    bottom thumb dock. */
@@ -4158,6 +4165,59 @@ code {
     order: 0;
   }
 
+  /* --- scene + vitals strips: the always-visible context lines --- */
+  .scene-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 6px 12px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border-soft);
+    font: 600 12px/1.4 var(--font-ui);
+    color: var(--ink);
+    flex-shrink: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .scene-strip-glyph {
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .scene-strip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .vitals-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    flex-shrink: 0;
+  }
+
+  .vitals-strip .meter {
+    grid-template-columns: auto minmax(40px, 90px) auto;
+    gap: 6px;
+    font-size: 11px;
+    flex: 1;
+    min-width: 90px;
+    max-width: 150px;
+  }
+
+  .vitals-strip .meter-track {
+    height: 5px;
+  }
+
+  .vitals-strip .meter-value {
+    font-size: 10px;
+  }
+
   /* --- input row: iOS-safe font size (16px stops the focus zoom) + home bar --- */
   .input-box {
     padding: 8px 12px;
@@ -4326,4 +4386,3 @@ code {
     padding: 10px;
   }
 }
-

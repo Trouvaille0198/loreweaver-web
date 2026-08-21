@@ -539,8 +539,29 @@ function PresenceCard() {
   )
 }
 
-export default function StatePanel() {
+export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawer" }) {
   const game = useSessionStore((s) => s.game)
+  if (order === "drawer") {
+    // The phone drawer: what a player reaches for first comes first — the
+    // character (vitals already float above the story, this is the full card),
+    // then module panels, then everything else. The scene line is dropped here
+    // because the mobile SceneLine strip already shows it.
+    return (
+      <div className="desk-stack">
+        {game?.character ? <CharacterCard character={game.character} /> : null}
+        <UiPanelCards />
+        {game ? <VariablesCard game={game} /> : null}
+        {game ? <PartyCard game={game} /> : null}
+        {game ? <PregenCard game={game} /> : null}
+        <PackImportCard />
+        {game ? <InitiativeCard game={game} /> : null}
+        <PresenceCard />
+        <MediaDeck />
+        <AudioDeck />
+        {game ? <UsageCard game={game} /> : null}
+      </div>
+    )
+  }
   return (
     <div className="desk-stack">
       <UiPanelCards />

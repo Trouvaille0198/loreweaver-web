@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { stripControlChars } from "@loreweaver/protocol"
 import { useConnectionStore } from "../../store/connection"
+import { useSessionStore } from "../../store/session"
 import { quitTable } from "../../store/hostLocal"
 import InputBox from "./InputBox"
 import NarrativeLog from "./NarrativeLog"
@@ -12,6 +14,66 @@ import StatePanel from "./StatePanel"
 import StatusPill from "./StatusPill"
 import VersionBadge from "./VersionBadge"
 import TurnStatus from "./TurnStatus"
+import Meter from "./Meter"
+
+/** "Where am I, what time is it" — the one context line a player always wants.
+ * Mobile-only: on wide screens the scene card already lives in the desk. */
+function SceneLine() {
+  const { t } = useTranslation()
+  const game = useSessionStore((s) => s.game)
+  if (!game?.scene && !game?.clock) return null
+  const parts: string[] = []
+  if (game.scene) {
+    parts.push(stripControlChars(game.scene.name))
+    if (game.scene.focus) parts.push(stripControlChars(game.scene.focus))
+  }
+  if (game.clock) {
+    parts.push(stripControlChars(game.clock.time))
+    if (typeof game.clock.round === "number") parts.push(t("session.round", { n: game.clock.round }))
+  }
+  if (parts.length === 0) return null
+  return (
+    <p className="scene-strip">
+      <span className="scene-strip-glyph" aria-hidden="true">
+        ◎
+      </span>
+      <span className="scene-strip-text">{parts.join(" · ")}</span>
+    </p>
+  )
+}
+
+/** The player's vitals, kept in sight above the story. Mobile-only: the full
+ * character card (with all resources and status effects) lives in the drawer. */
+function VitalsStrip() {
+  const game = useSessionStore((s) => s.game)
+  const character = game?.character
+  if (!character) return null
+  const resources = character.resources.filter(
+    (resource) => typeof resource.max === "number" && resource.max > 0,
+  )
+  if (resources.length === 0) return null
+  return (
+    <div className="vitals-strip" role="group" aria-label="vitals">
+      {resources.map((resource) => (
+        <Meter
+          key={resource.id}
+          label={stripControlChars(resource.label)}
+          value={resource.value}
+          max={resource.max as number}
+          tone={
+            resource.id === "hp"
+              ? "hp"
+              : resource.id === "mp"
+                ? "mp"
+                : resource.id === "san"
+                  ? "san"
+                  : "accent"
+          }
+        />
+      ))}
+    </div>
+  )
+}
 
 export default function SessionView({ onMenu }: { onMenu?: () => void }) {
   const { t } = useTranslation()
@@ -26,8 +88,8 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
   const closeDesk = () => setDeskOpen(false)
   const toggleDesk = () => setDeskOpen((open) => !open)
 
-  // Mobile "⋯" menu: the connection status, version readout and panels menu
-  // fold into it so the chat header stays one row on a phone.
+  // Mobile "⋯" menu: the connection status, version readout, panels menu and
+  // Disconnect fold into it so the chat header stays one row on a phone.
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement | null>(null)
 
@@ -116,6 +178,8 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
             {t("connect.disconnect")}
           </button>
         </header>
+        <SceneLine />
+        <VitalsStrip />
         <PanelNotice />
         <TurnStatus />
         <NarrativeLog />
@@ -150,9 +214,9 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
             </button>
           </div>
         </div>
+        <StatePanel order="drawer" />
         <PanelTray flavor="mobile" />
         <PanelSidebar />
-        <StatePanel />
       </aside>
       <PanelModalHost />
     </div>
