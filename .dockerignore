@@ -1,0 +1,8 @@
+# The web build context — keep the image lean.
+node_modules
+dist
+.git
+.github
+*.md
+Dockerfile
+docker-compose.yml

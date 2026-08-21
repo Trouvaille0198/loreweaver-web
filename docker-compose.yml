@@ -1,0 +1,33 @@
+# Loreweaver web — browser client + server in one container.
+#
+# The engine is mounted as the BuildKit context `engine` (the sibling
+# checkout), so the image always contains the local fork's `--web` mode.
+#   docker compose up --build
+#
+# Point the model at a provider via environment variables (see the engine's
+# `.env.example`): TRPG_LLM__PROVIDER / TRPG_LLM__API_KEY / TRPG_LLM__CHAT_MODEL.
+# Without one, the offline demo Keeper serves the sample adventure.
+
+services:
+  loreweaver-web:
+    build:
+      context: .
+      additional_contexts:
+        engine: ../loreweaver
+    image: loreweaver-web:local
+    ports:
+      - "8787:8787"
+    volumes:
+      # The one persistent volume: campaign DB, keys, media, backups.
+      - loreweaver-data:/data
+    environment:
+      # TUI locale of the server (en/zh).
+      - LANG=C.UTF-8
+      # Example provider wiring — uncomment and fill in:
+      # - TRPG_LLM__PROVIDER=deepseek
+      # - TRPG_LLM__API_KEY=sk-…
+      # - TRPG_LLM__CHAT_MODEL=deepseek-v4-pro
+    restart: unless-stopped
+
+volumes:
+  loreweaver-data:

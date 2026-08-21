@@ -1,0 +1,103 @@
+// The browser WebSocket transport: the `loreweaver-protocol` `WsClient`
+// (browser-safe, zero deps) wired into the same event surface the Tauri bridge
+// uses, so the play UI is transport-agnostic.
+//
+// The desktop app dials an Iroh p2p ticket through the Rust core; a browser
+// cannot run Iroh QUIC, so the web client connects over the WebSocket carrier
+// (`ws(s)://host:port`) with a keystore `key`. The protocol is identical — the
+// same frames, the same `join` handshake, the same binary media channel — only
+// the carrier differs.
+
+import {
+  WsClient,
+  type ClientFrame,
+  type MediaFrame,
+  type MediaPayload,
+  type MediaUpload,
+  type WebSocketLike,
+} from "@loreweaver/protocol"
+import type { TransportEvent } from "./transport"
+
+let client: WsClient | null = null
+const eventHandlers = new Set<(event: TransportEvent) => void>()
+
+function emit(event: TransportEvent): void {
+  for (const handler of eventHandlers) handler(event)
+}
+
+/** A browser `WebSocket` delivers binary messages as `Blob` by default; the
+ * protocol's media channel rides binary messages, and `WsClient` only accepts
+ * `ArrayBuffer`/`Uint8Array`. Opting into `arraybuffer` here is the one
+ * browser-specific knob the library needs — everything else is standard. The
+ * DOM `WebSocket`'s wider `send` signature bridges via the library's own
+ * `WebSocketLike` structural type. */
+function makeSocket(url: string): WebSocketLike {
+  const socket = new WebSocket(url)
+  socket.binaryType = "arraybuffer"
+  return socket as unknown as WebSocketLike
+}
+
+/** The singleton `WsClient`. Reconnects and re-joins are handled inside the
+ * library (exponential backoff, `lastJoin` replay); the app only observes the
+ * `status`/`frame` events. */
+export function webClient(): WsClient {
+  if (client === null) {
+    client = new WsClient({
+      // The app refuses a protocol-major mismatch itself on the `welcome`
+      // frame (`store/connection.ts`); the library's default `console.warn`
+      // would double-report.
+      onProtocolMismatch: () => {},
+      webSocketFactory: (url) => makeSocket(url),
+    })
+    client.onStatus((status) =>
+      emit({
+        kind: "status",
+        status,
+        attempt: 0,
+        // `reconnecting` is the one status the app shows verbatim; the
+        // library gives no reason, so supply the generic line.
+        error: status === "reconnecting" ? "connection lost" : null,
+      }),
+    )
+    client.onMessage((frame) => emit({ kind: "frame", frame }))
+  }
+  return client
+}
+
+export interface WebConnectParams {
+  /** `ws://host:port` (or `wss://` behind TLS). */
+  url: string
+  key: string
+  name?: string
+}
+
+export async function webConnect(params: WebConnectParams): Promise<void> {
+  const ws = webClient()
+  await ws.connect(params.url)
+  ws.join(params.key, params.name)
+}
+
+export async function webDisconnect(): Promise<void> {
+  if (client === null) return
+  client.close()
+  client = null
+}
+
+export async function webSend(frame: ClientFrame): Promise<void> {
+  webClient().send(frame)
+}
+
+export function webGetMedia(hash: string): Promise<MediaPayload> {
+  return webClient().getMedia(hash)
+}
+
+export function webUploadMedia(upload: MediaUpload): Promise<MediaFrame | undefined> {
+  return webClient().uploadMedia(upload)
+}
+
+export function onWebEvent(handler: (event: TransportEvent) => void): () => void {
+  eventHandlers.add(handler)
+  return () => {
+    eventHandlers.delete(handler)
+  }
+}
