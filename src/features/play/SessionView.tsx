@@ -12,7 +12,7 @@ import { PanelSidebar, PanelTray } from "./panels/PanelDeck"
 import PanelMenu from "./panels/PanelMenu"
 import PanelModalHost from "./panels/PanelModalHost"
 import PanelNotice from "./panels/PanelNotice"
-import StatePanel from "./StatePanel"
+import StatePanel, { CharacterCard } from "./StatePanel"
 import StatusPill from "./StatusPill"
 import VersionBadge from "./VersionBadge"
 import TurnStatus from "./TurnStatus"
@@ -80,6 +80,7 @@ function VitalsStrip() {
 export default function SessionView({ onMenu }: { onMenu?: () => void }) {
   const { t } = useTranslation()
   const welcome = useConnectionStore((s) => s.welcome)
+  const game = useSessionStore((s) => s.game)
 
   // On narrow screens the desk (panels + state) is a bottom drawer. The toggle
   // lives in the INPUT dock — the thumb's home on a phone — not the top header;
@@ -221,9 +222,15 @@ export default function SessionView({ onMenu }: { onMenu?: () => void }) {
             </button>
           </div>
         </div>
-        <StatePanel order="drawer" />
-        <PanelTray />
-        <PanelSidebar />
+        {/* The desk column: the player's own character card at the very top,
+            then the module's panels (trackers the author wants in sight), then
+            the room's state cards below. */}
+        <div className="desk-stack">
+          {game?.character ? <CharacterCard character={game.character} /> : null}
+          <PanelSidebar />
+          <PanelTray />
+          <StatePanel order="drawer" />
+        </div>
       </aside>
       <PanelModalHost />
     </div>
