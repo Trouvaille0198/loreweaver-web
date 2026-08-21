@@ -119,7 +119,8 @@
     "quickMenuSearch": "Filter commands…",
     "quickMenuEmpty": "No matching commands",
     "quickMenuClose": "Close",
-    "quickMenuKeys": "↑↓ select · Enter insert · Esc close"
+    "quickMenuKeys": "↑↓ select · Enter insert · Esc close",
+    "deskReset": "Reset order"
   },
   "panels": {
     "menu": "Panels ({{n}})",

@@ -119,7 +119,8 @@
     "quickMenuSearch": "过滤指令…",
     "quickMenuEmpty": "没有匹配的指令",
     "quickMenuClose": "关闭",
-    "quickMenuKeys": "↑↓ 选择 · Enter 插入 · Esc 关闭"
+    "quickMenuKeys": "↑↓ 选择 · Enter 插入 · Esc 关闭",
+    "deskReset": "恢复默认顺序"
   },
   "panels": {
     "menu": "面板({{n}})",

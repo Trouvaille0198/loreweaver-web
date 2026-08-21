@@ -243,7 +243,7 @@ function VariableWrite({ variable }: { variable: ModuleVariable }) {
   )
 }
 
-function VariablesCard({ game }: { game: StateFrame }) {
+export function VariablesCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
   // Off by default: a keeper reads this panel far more often than they write
@@ -286,7 +286,7 @@ function VariablesCard({ game }: { game: StateFrame }) {
 }
 
 /** Persistent sidebar regions fed by hook-emitted `ui` frames. */
-function UiPanelCards() {
+export function UiPanelCards() {
   const panels = useSessionStore((s) => s.uiPanels)
   return (
     <>
@@ -334,7 +334,7 @@ export function PartyCard({ game }: { game: StateFrame }) {
  * module ships. Claiming goes through the ordinary command path (`.pc claim
  * <name>`, `gateway/commands.py::cmd_pc`), which is a PLAYER action: claiming
  * is the whole point of a pregen roster. */
-function PregenCard({ game }: { game: StateFrame }) {
+export function PregenCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   const you = useConnectionStore((s) => s.welcome?.you.name ?? "")
   const online = useConnectionStore((s) => s.status === "online")
@@ -431,7 +431,7 @@ export const PACK_CARDS_REPLY_TIMEOUT_MS = 8_000
 /** v2.2 "import from installed pack" picker: opening it asks the server for
  * the card files installed packs ship (`list_pack_cards`), so a player never
  * types a path. `packCards === null` means no reply yet. */
-function PackImportCard() {
+export function PackImportCard() {
   const { t } = useTranslation()
   const online = useConnectionStore((s) => s.status === "online")
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
@@ -497,7 +497,7 @@ function PackImportCard() {
   )
 }
 
-function SceneCard({ game }: { game: StateFrame }) {
+export function SceneCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   if (!game.scene && !game.clock) return null
   return (
@@ -521,7 +521,7 @@ function SceneCard({ game }: { game: StateFrame }) {
   )
 }
 
-function InitiativeCard({ game }: { game: StateFrame }) {
+export function InitiativeCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   if (game.initiative.length === 0) return null
   return (
@@ -546,7 +546,7 @@ function formatTokens(n: number): string {
   return String(n)
 }
 
-function UsageCard({ game }: { game: StateFrame }) {
+export function UsageCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   const usage = game.usage
   if (!usage || usage.context_window <= 0) return null
@@ -580,7 +580,7 @@ function UsageCard({ game }: { game: StateFrame }) {
 /** The rule systems this room plays by (protocol 2.3) — the same list the
  * character screen's creation picker uses, surfaced so players can see what
  * the table runs at a glance. */
-function SystemsCard({ game }: { game: StateFrame }) {
+export function SystemsCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   const systems = game.systems ?? []
   if (systems.length === 0) return null

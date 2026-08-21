@@ -7,14 +7,13 @@ import { useSessionStore } from "../../store/session"
 import { quitTable } from "../../store/hostLocal"
 import AppMenu from "./AppMenu"
 import AudioDeck from "./AudioDeck"
+import DeskColumn from "./DeskColumn"
 import InputBox from "./InputBox"
 import MediaDeck from "./MediaDeck"
 import NarrativeLog from "./NarrativeLog"
-import { PanelSidebar, PanelTray } from "./panels/PanelDeck"
 import PanelMenu from "./panels/PanelMenu"
 import PanelModalHost from "./panels/PanelModalHost"
 import PanelNotice from "./panels/PanelNotice"
-import StatePanel, { CharacterCard, PartyCard } from "./StatePanel"
 import StatusPill from "./StatusPill"
 import VersionBadge from "./VersionBadge"
 import TurnStatus from "./TurnStatus"
@@ -135,7 +134,6 @@ function OnboardingBanner({ onNavigate }: { onNavigate: (screen: PlayScreen) => 
 export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayScreen) => void }) {
   const { t } = useTranslation()
   const welcome = useConnectionStore((s) => s.welcome)
-  const game = useSessionStore((s) => s.game)
 
   // On narrow screens the desk (panels + state) is a bottom drawer. The toggle
   // lives in the INPUT dock — the thumb's home on a phone — not the top header;
@@ -274,17 +272,9 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
             </button>
           </div>
         </div>
-        {/* The desk column: the player's own character card at the very top,
-            with the party right below it (who is at the table belongs next to
-            who you are), then the module's panels (trackers the author wants
-            in sight), then the room's state cards below. */}
-        <div className="desk-stack">
-          {game?.character ? <CharacterCard character={game.character} /> : null}
-          {game ? <PartyCard game={game} /> : null}
-          <PanelSidebar />
-          <PanelTray />
-          <StatePanel order="drawer" />
-        </div>
+        {/* The desk column: every card is a draggable slot — grab a card's
+            body (not its buttons) to reorder, the layout persists per room. */}
+        <DeskColumn />
       </aside>
       <PanelModalHost />
     </div>
