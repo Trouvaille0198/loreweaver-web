@@ -18,6 +18,9 @@ const WELCOME: WelcomeFrame = {
 
 function reset() {
   localStorage.clear()
+  // The URL hash now carries the screen; wipe it so a test that navigated to
+  // #/keys does not leak "keys" into the next test's first render.
+  window.history.replaceState(null, "", window.location.pathname + window.location.search)
   useConnectionStore.setState({ status: "offline", attempt: 0, lastError: null, welcome: null })
   useSessionStore.getState().clear()
 }
@@ -160,5 +163,45 @@ describe("PlayView", () => {
     await user.type(screen.getByLabelText(/access key/i), "k-1")
     await user.click(screen.getByRole("button", { name: "Connect" }))
     expect(localStorage.getItem("loreweaver-web.connect")).toBeNull()
+  })
+
+  it("restores the screen from the URL hash, and writes it on navigation", async () => {
+    const user = userEvent.setup()
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    // A shared #/keys URL (or a reload mid-screen) lands on that screen.
+    window.history.replaceState(null, "", "#/keys")
+    render(<PlayView />)
+    expect(screen.getByRole("heading", { name: /Rooms & invites/ })).toBeInTheDocument()
+
+    // In-app navigation writes the hash, so the URL and the screen stay in step.
+    await user.click(screen.getByRole("button", { name: "← Menu" }))
+    expect(window.location.hash).toBe("#/menu")
+    expect(screen.getByText(/Table “r1”/)).toBeInTheDocument()
+  })
+
+  it("drives the screen from hashchange — the browser back/forward path", async () => {
+    const user = userEvent.setup()
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    render(<PlayView />)
+    await user.click(screen.getByRole("menuitem", { name: /Enter game/ }))
+    expect(screen.getByText("r1 · Nyx")).toBeInTheDocument()
+    expect(window.location.hash).toBe("#/game")
+
+    // The browser's Back button changes the hash without any React click.
+    window.history.replaceState(null, "", "#/menu")
+    window.dispatchEvent(new HashChangeEvent("hashchange"))
+    expect(await screen.findByText(/Table “r1”/)).toBeInTheDocument()
+  })
+
+  it("sends a player on a stale keeper hash to the menu instead", () => {
+    useConnectionStore.setState({
+      status: "online",
+      welcome: { ...WELCOME, you: { ...WELCOME.you, role: "player" } },
+    })
+    window.history.replaceState(null, "", "#/keys")
+    render(<PlayView />)
+    // No admin screens for a player — the menu (and no Rooms & invites row).
+    expect(screen.getByText(/Table “r1”/)).toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: /Rooms & invites/ })).not.toBeInTheDocument()
   })
 })

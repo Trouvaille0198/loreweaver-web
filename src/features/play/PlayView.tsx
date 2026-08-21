@@ -2,7 +2,7 @@
 // item among character/settings and the keeper screens) → the chronicle or a
 // management screen. Esc anywhere below the menu returns to it.
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { pickDirectory } from "../../lib/native"
 import { isTauri } from "../../lib/transport"
@@ -22,6 +22,41 @@ import StatusPill from "./StatusPill"
 
 export type PlayScreen =
   "menu" | "game" | "character" | "settings" | "keys" | "module" | "rules" | "skills" | "model"
+
+/** Every play screen, keyed by the URL hash that selects it. The hash is the
+ * single source of truth for which screen is up: browser back/forward and a
+ * reload both just read it, and every in-app navigation writes it. */
+const SCREEN_HASHES: Record<PlayScreen, string> = {
+  menu: "#/menu",
+  game: "#/game",
+  character: "#/character",
+  settings: "#/settings",
+  keys: "#/keys",
+  module: "#/module",
+  rules: "#/rules",
+  skills: "#/skills",
+  model: "#/model",
+}
+
+const SCREENS = Object.keys(SCREEN_HASHES) as PlayScreen[]
+
+/** Parse the current hash back into a screen; unknown/empty hashes fall back
+ * to the menu (e.g. a plain bookmark or the first visit). */
+function screenFromHash(): PlayScreen {
+  if (typeof window === "undefined") return "menu"
+  const hash = window.location.hash
+  const hit = SCREENS.find((screen) => SCREEN_HASHES[screen] === hash)
+  return hit ?? "menu"
+}
+
+/** The keeper-only management screens — a player landing on one of these
+ * (stale hash from a keeper session on the same browser) falls back to the
+ * menu, since the server refuses every admin frame they would send. */
+const KEEPER_SCREENS: readonly PlayScreen[] = ["keys", "module", "rules", "skills", "model"]
+
+function isKeeperScreen(screen: PlayScreen): boolean {
+  return KEEPER_SCREENS.includes(screen)
+}
 
 /** The TUI's green button: bring a local server up and log straight in as
  * Keeper. While it's starting the real bring-up log streams below. */
@@ -104,24 +139,62 @@ function HostLocalBlock() {
 }
 
 function OnlineView() {
-  const [screen, setScreen] = useState<PlayScreen>("menu")
+  const role = useConnectionStore((s) => s.welcome?.you.role ?? "player")
+  const isKeeper = role === "keeper"
+
+  // The hash IS the screen: initialize from it (so a reload or a shared
+  // #/keys URL lands where it says), and keep it in sync both ways — every
+  // in-app navigation sets it (which is what makes back/forward work), and
+  // every popstate/hashchange from the browser re-renders from it.
+  const [screen, setScreen] = useState<PlayScreen>(() => {
+    const fromHash = screenFromHash()
+    // A stale keeper hash on a player connection would land them on a screen
+    // whose every admin frame the server refuses — fall back to the menu.
+    return isKeeperScreen(fromHash) && !isKeeper ? "menu" : fromHash
+  })
+
+  // Setting location.hash pushes a history entry — the browser back/forward
+  // buttons then walk the screens in order, exactly like any app. Writing the
+  // same hash is a no-op (no entry, no event), so an identical re-navigate is
+  // safe to skip via the early return. State updates synchronously here; the
+  // hashchange listener below only fires for BACK/FORWARD (and manual edits).
+  const navigate = useCallback(
+    (next: PlayScreen) => {
+      if (next === screen) return
+      window.location.hash = SCREEN_HASHES[next]
+      setScreen(next)
+    },
+    [screen],
+  )
+
+  // Browser back/forward (and manual hash edits) land here.
+  useEffect(() => {
+    const onHash = () => {
+      const next = screenFromHash()
+      // Same guard as the initializer: a player must never land on a keeper
+      // screen, no matter how the hash got there.
+      setScreen(isKeeperScreen(next) && !isKeeper ? "menu" : next)
+    }
+    window.addEventListener("hashchange", onHash)
+    return () => window.removeEventListener("hashchange", onHash)
+  }, [isKeeper])
 
   // Esc backs out of any screen to the menu — the TUI's navigation spine.
   // The game screen keeps Esc too (its input is a plain textarea; Esc there
   // is not otherwise meaningful).
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setScreen("menu")
+      if (event.key === "Escape") navigate("menu")
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [])
+  }, [navigate])
 
-  const back = () => setScreen("menu")
+  const back = useCallback(() => navigate("menu"), [navigate])
 
   switch (screen) {
     case "menu":
-      return <MainMenuScreen onNavigate={setScreen} />
+      return <MainMenuScreen onNavigate={navigate} />
     case "game":
       return <SessionView onMenu={back} />
     case "character":
