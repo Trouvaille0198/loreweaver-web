@@ -103,7 +103,8 @@
     "deskToggle": "Status",
     "deskTitle": "Table status",
     "deskClose": "Close",
-    "attributes": "Attributes"
+    "attributes": "Attributes",
+    "skills": "Skills ({{n}})"
   },
   "panels": {
     "menu": "Panels ({{n}})",

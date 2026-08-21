@@ -48,9 +48,11 @@ export function ResourceRow({ resource }: { resource: ResourceState }) {
   )
 }
 
-function CharacterCard({ character }: { character: CharacterState }) {
+export function CharacterCard({ character }: { character: CharacterState }) {
   const { t } = useTranslation()
   const attributeEntries = Object.entries(character.attributes ?? {})
+  const skillEntries = Object.entries(character.skills ?? {})
+  const [skillsOpen, setSkillsOpen] = useState(false)
   return (
     <section className="desk-card character-card">
       <header className="desk-title">
@@ -71,6 +73,31 @@ function CharacterCard({ character }: { character: CharacterState }) {
       {character.resources.map((resource) => (
         <ResourceRow key={resource.id} resource={resource} />
       ))}
+      {skillEntries.length > 0 ? (
+        <div className="skills-fold">
+          <button
+            type="button"
+            className="skills-fold-toggle"
+            aria-expanded={skillsOpen}
+            onClick={() => setSkillsOpen((open) => !open)}
+          >
+            <span>{t("session.skills", { n: skillEntries.length })}</span>
+            <span className="skills-fold-caret" aria-hidden="true">
+              {skillsOpen ? "▾" : "▸"}
+            </span>
+          </button>
+          {skillsOpen ? (
+            <div className="skills-grid" role="list">
+              {skillEntries.map(([name, value]) => (
+                <span key={name} className="skill-cell" role="listitem" title={name}>
+                  <span className="skill-name">{stripControlChars(name)}</span>
+                  <span className="skill-value">{String(value)}</span>
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       {character.status_effects.length > 0 ? (
         <div className="chip-row">
           {character.status_effects.map((effect) => (
@@ -554,14 +581,13 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
   const game = useSessionStore((s) => s.game)
   if (order === "drawer") {
     // The phone drawer is the PLAYER's desk, not the keeper's dashboard. The
-    // module's own panels render ABOVE this stack (SessionView's PanelSidebar /
-    // PanelTray, so the author's trackers stay in sight); this is the room
-    // around you: the character card, the trackers and the table. System
-    // furniture — audio, media, presence, usage — is NOT state and does not
-    // live here; the mobile "⋯" menu hosts it.
+    // character card renders ABOVE this stack (SessionView places it at the
+    // very top of the desk column), then the module's own panels (SessionView's
+    // PanelSidebar / PanelTray); this is the room around you: the trackers and
+    // the table. System furniture — audio, media, presence, usage — is NOT
+    // state and does not live here; the mobile "⋯" menu hosts it.
     return (
       <div className="desk-stack">
-        {game?.character ? <CharacterCard character={game.character} /> : null}
         <UiPanelCards />
         {game ? <VariablesCard game={game} /> : null}
         {game ? <PartyCard game={game} /> : null}

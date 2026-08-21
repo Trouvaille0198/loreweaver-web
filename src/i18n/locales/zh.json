@@ -103,7 +103,8 @@
     "deskToggle": "状态",
     "deskTitle": "桌面状态",
     "deskClose": "关闭",
-    "attributes": "属性"
+    "attributes": "属性",
+    "skills": "技能（{{n}}）"
   },
   "panels": {
     "menu": "面板({{n}})",
