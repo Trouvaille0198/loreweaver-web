@@ -419,7 +419,8 @@
       "room": "房间生命周期",
       "panels": "UI 面板",
       "audio": "音频分层",
-      "avatar": "设置头像"
+      "avatar": "设置头像",
+      "keeper": "守密人"
     },
     "onboarding": {
       "title": "这张牌桌还是空的",

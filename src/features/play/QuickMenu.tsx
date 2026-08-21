@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react"
 import { useTranslation } from "react-i18next"
+import { useConnectionStore } from "../../store/connection"
 import { QUICK_COMMANDS, type QuickCommand } from "./commands"
 
 export interface QuickMenuProps {
@@ -58,28 +59,45 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
   const rootRef = useRef<HTMLDivElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
 
+  const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
+
   const labelOf = (key: string) => t(`play.commands.${key}`)
 
-  const rows = useMemo(() => flatten(QUICK_COMMANDS), [])
+  const rows = useMemo(() => flatten(QUICK_COMMANDS, isKeeper), [isKeeper])
 
   /** Filtered palette: a section header survives only when at least one of
-   * its rows matches, so an empty section never lingers above the results. */
+   * its rows matches, so an empty section never lingers above the results.
+   * Keeper-only rows are dropped for players; for a keeper they get their own
+   * "Keeper" header so the palette reads as two clear zones. */
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return rows
     const match = (row: PaletteRow) =>
       row.labelKey.includes(q) ||
       row.line.toLowerCase().includes(q) ||
       t(`play.commands.${row.labelKey}`).toLowerCase().includes(q)
     const out: PaletteRow[] = []
     let header: PaletteRow | null = null
+    let keeperHeader: PaletteRow | null = null
+    const pushKeeperHeader = () => {
+      if (!keeperHeader) {
+        keeperHeader = { labelKey: "keeper", line: "", header: true, keeper: true }
+        out.push(keeperHeader)
+      }
+    }
     for (const row of rows) {
+      if (row.keeper && !isKeeper) continue // players never see the keeper surface
       if (row.header) {
-        header = row
+        if (row.keeper) {
+          header = null
+          pushKeeperHeader()
+        } else {
+          header = row
+        }
         continue
       }
-      if (match(row)) {
-        if (header) {
+      if (!q || match(row)) {
+        if (row.keeper) pushKeeperHeader()
+        else if (header) {
           out.push(header)
           header = null
         }
@@ -88,7 +106,7 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
     }
     return out
     // `t` is stable across renders; the memo recomputes on language change.
-  }, [rows, query, t])
+  }, [rows, query, t, isKeeper])
 
   // Display list carries each row's pickable index (headers are not pickable).
   const display = useMemo(() => {
@@ -206,7 +224,11 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
             ) : (
               display.map(({ row, pick }) =>
                 row.header ? (
-                  <div key={`section-${row.labelKey}`} className="quick-menu-section" role="presentation">
+                  <div
+                    key={`section-${row.labelKey}`}
+                    className={`quick-menu-section${row.keeper ? " is-keeper" : ""}`}
+                    role="presentation"
+                  >
                     {labelOf(row.labelKey)}
                   </div>
                 ) : (

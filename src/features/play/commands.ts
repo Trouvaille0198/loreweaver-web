@@ -73,6 +73,8 @@ export interface QuickCommand {
   line?: string
   /** Sub-commands shown when the row is expanded. */
   children?: readonly QuickCommand[]
+  /** Keeper-only: hidden from players, and separated under a "Keeper" header. */
+  keeper?: boolean
 }
 
 export const QUICK_COMMANDS: readonly QuickCommand[] = [
@@ -123,6 +125,49 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   },
   { word: "recap", line: ".recap" },
   { word: "help", line: ".help" },
+  // --- Keeper-only surface (hidden from player seats) ---
+  {
+    word: "module",
+    line: ".module ",
+    keeper: true,
+    children: [
+      { word: "module", line: ".module /data/", keeper: true }, // i18n-exempt: a path is data
+      { word: "pack", line: ".pack install gh:author/repo", keeper: true },
+    ],
+  },
+  {
+    word: "var",
+    line: ".var list",
+    keeper: true,
+    children: [
+      { word: "var", line: ".var list", keeper: true },
+      { word: "var", line: ".var expose ", keeper: true },
+      { word: "var", line: ".var add 信物 1", keeper: true }, // i18n-exempt: a variable name is data
+      { word: "var", line: ".var set 信物 1", keeper: true }, // i18n-exempt
+    ],
+  },
+  {
+    word: "skill",
+    line: ".skill list",
+    keeper: true,
+    children: [
+      { word: "skill", line: ".skill list", keeper: true },
+      { word: "skill", line: ".skill enable ", keeper: true },
+      { word: "skill", line: ".skill disable ", keeper: true },
+    ],
+  },
+  {
+    word: "room",
+    line: ".room",
+    keeper: true,
+    children: [
+      { word: "room", line: ".room list", keeper: true },
+      { word: "room", line: ".room reset", keeper: true },
+    ],
+  },
+  { word: "panels", line: ".panels", keeper: true },
+  { word: "audio", line: ".audio", keeper: true },
+  { word: "import", line: ".import list", keeper: true },
 ]
 
 /** Flatten for tests: every leaf line reachable from the menu. */

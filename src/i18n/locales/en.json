@@ -419,7 +419,8 @@
       "room": "Room lifecycle",
       "panels": "UI panels",
       "audio": "Audio layers",
-      "avatar": "Set your avatar"
+      "avatar": "Set your avatar",
+      "keeper": "Keeper"
     },
     "onboarding": {
       "title": "This table is still empty",

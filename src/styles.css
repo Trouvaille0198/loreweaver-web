@@ -934,6 +934,10 @@ body {
   gap: 1px;
 }
 
+.quick-menu-section.is-keeper {
+  color: var(--lw-system);
+}
+
 .quick-menu-section {
   font: 600 10px/1 var(--font-ui);
   letter-spacing: 0.12em;
