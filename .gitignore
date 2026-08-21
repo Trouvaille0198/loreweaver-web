@@ -9,3 +9,6 @@ src-tauri/gen/schemas/
 # Local files
 .DS_Store
 *.local
+
+# 运行时数据（bind mount 的目标：钥匙/战役库/媒体/备份——绝不进 git）
+data/

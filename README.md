@@ -48,13 +48,14 @@ fork feature not necessarily on the published upstream:
 docker compose up --build        # uses ../loreweaver as the engine context
 # or plain docker:
 docker build --build-context engine=../loreweaver -t loreweaver-web .
-docker run --rm -p 8787:8787 -v loreweaver-data:/data loreweaver-web
+docker run --rm -p 8787:8787 -v "$PWD/data:/data" loreweaver-web
 ```
 
 Then open `http://<host>:8787/` — the SPA loads, the keeper key is printed on first start, and
-players join with minted invite keys. Campaign data, keys and media live in the `loreweaver-data`
-volume. Point the model at a provider with `TRPG_LLM__*` environment variables (see the engine's
-`.env.example`).
+players join with minted invite keys. Campaign data, keys and media live in **`./data` on the
+host** (a bind mount, not a named volume): scp a module straight into `./data/`, back it up with
+a plain `tar`, read `keys.toml` — no `docker exec` required. Point the model at a provider with
+`TRPG_LLM__*` environment variables (see the engine's `.env.example`).
 
 ### 3. Development
 

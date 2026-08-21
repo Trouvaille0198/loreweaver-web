@@ -18,8 +18,12 @@ services:
     ports:
       - "8787:8787"
     volumes:
-      # The one persistent volume: campaign DB, keys, media, backups.
-      - loreweaver-data:/data
+      # BIND MOUNT, not a named volume: every record — keys.toml, the campaign
+      # SQLite DB, media, packs, backups — lives at ./data on the HOST and is
+      # visible inside the container at /data. Operations then happen on the
+      # host directly (scp a module into ./data/, back up ./data, read keys)
+      # with no `docker exec` needed.
+      - ./data:/data
     environment:
       # TUI locale of the server (en/zh).
       - LANG=C.UTF-8
@@ -28,6 +32,3 @@ services:
       # - TRPG_LLM__API_KEY=sk-…
       # - TRPG_LLM__CHAT_MODEL=deepseek-v4-pro
     restart: unless-stopped
-
-volumes:
-  loreweaver-data:
