@@ -817,6 +817,39 @@ body {
   white-space: nowrap;
 }
 
+.attr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.attr-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+}
+
+.attr-key {
+  font: 9px/1 var(--font-ui);
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.attr-value {
+  font: 600 13px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
 .meter {
   display: grid;
   grid-template-columns: 42px 1fr auto;
@@ -1934,7 +1967,9 @@ body {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border: 1px solid var(--border);
+  /* Same shell as .desk-card: module panels stack beside the state cards in
+     the desk column and must read as the same card family. */
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   min-width: 0;
 }
@@ -2231,9 +2266,8 @@ body {
   margin-bottom: 12px;
 }
 
-.panel-card-head {
-  gap: 6px;
-}
+/* The module-panel header IS the .desk-title look — no tighter gap override,
+   so every card header in the desk column has the same rhythm. */
 
 .panel-card-title {
   flex: 1;
@@ -2271,7 +2305,8 @@ body {
 .panel-tray {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  /* Same 12px rhythm as .desk-stack / .panel-deck above it. */
+  gap: 12px;
   margin-bottom: 12px;
 }
 

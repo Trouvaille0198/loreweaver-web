@@ -102,7 +102,8 @@
     "commandHints": "Commands",
     "deskToggle": "Status",
     "deskTitle": "Table status",
-    "deskClose": "Close"
+    "deskClose": "Close",
+    "attributes": "Attributes"
   },
   "panels": {
     "menu": "Panels ({{n}})",

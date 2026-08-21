@@ -102,7 +102,8 @@
     "commandHints": "命令提示",
     "deskToggle": "状态",
     "deskTitle": "桌面状态",
-    "deskClose": "关闭"
+    "deskClose": "关闭",
+    "attributes": "属性"
   },
   "panels": {
     "menu": "面板({{n}})",
