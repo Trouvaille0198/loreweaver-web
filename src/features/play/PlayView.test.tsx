@@ -82,7 +82,7 @@ describe("PlayView", () => {
     expect(screen.getByText(/attempt 2/i)).toBeInTheDocument()
   })
 
-  it("rejoins automatically when the tab returns, using the remembered connection", () => {
+  it("rejoins automatically on a cold load and when the tab returns, using the remembered connection", () => {
     const connect = vi.fn().mockResolvedValue(undefined)
     useConnectionStore.setState({ connect })
     localStorage.setItem(
@@ -92,13 +92,27 @@ describe("PlayView", () => {
         version: 1,
       }),
     )
-    // The page is freshly built (a discarded mobile tab): store is offline,
-    // nothing was dialed yet, the form would otherwise be showing.
+    // The page is freshly built (a discarded mobile tab): the app dials the
+    // remembered connection right away instead of stranding on the form.
     render(<PlayView />)
-    expect(connect).not.toHaveBeenCalled()
-    // The tab becomes visible again → the app dials the remembered connection.
-    document.dispatchEvent(new Event("visibilitychange"))
     expect(connect).toHaveBeenCalledWith({ ticket: "ws://localhost:8787", key: "k-saved", name: "Nyx" })
+    // And again when the tab returns after a later drop.
+    connect.mockClear()
+    document.dispatchEvent(new Event("visibilitychange"))
+    expect(connect).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows a connecting placeholder instead of the form while rejoining", () => {
+    const connect = vi.fn().mockResolvedValue(undefined)
+    useConnectionStore.setState({ connect })
+    localStorage.setItem(
+      "loreweaver-web.connect",
+      JSON.stringify({ state: { url: "ws://localhost:8787", key: "k-saved", name: "Nyx" }, version: 1 }),
+    )
+    render(<PlayView />)
+    // The form must NOT flash during the rejoin dial — only a quiet status.
+    expect(screen.queryByRole("button", { name: "Connect" })).not.toBeInTheDocument()
+    expect(screen.getByText(/connecting/i)).toBeInTheDocument()
   })
 
   it("does not rejoin after a deliberate disconnect", () => {
@@ -156,6 +170,9 @@ describe("PlayView", () => {
         version: 1,
       }),
     )
+    // A deliberate disconnect shows the form (no auto-rejoin), with the
+    // remembered values still in the fields for a one-click rejoin.
+    sessionStorage.setItem("loreweaver-web.manual-disconnect", "1")
     render(<PlayView />)
     expect(screen.getByLabelText(/server url/i)).toHaveValue("ws://localhost:8787")
     expect(screen.getByLabelText(/access key/i)).toHaveValue("k-saved")

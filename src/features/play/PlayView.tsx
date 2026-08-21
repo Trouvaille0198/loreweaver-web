@@ -257,6 +257,13 @@ export default function PlayView() {
   // dial an Iroh p2p ticket — it connects to a WebSocket endpoint instead.
   const web = !isTauri()
 
+  // A saved connection and no deliberate-disconnect marker means a cold load
+  // (refresh, discarded tab) should rejoin on its own. While that dial is in
+  // flight we hold a quiet "connecting" screen — the connect form would
+  // otherwise flash for the whole handshake on every refresh.
+  const refused = useConnectionStore((s) => s.refused)
+  const [autoDial, setAutoDial] = useState(() => saved !== null && !hasManualDisconnect())
+
   // Remember the connection that ACTUALLY worked (status only turns online
   // after the welcome handshake), so a typo never overwrites a good key and
   // the next visit is one click. The form's state survives into the online
@@ -282,6 +289,7 @@ export default function PlayView() {
       if (hasManualDisconnect()) return
       const saved = loadSavedConnect()
       if (saved === null) return
+      setAutoDial(true)
       void connect({ ticket: saved.url, key: saved.key, name: saved.name })
     }
     const onVisibility = () => {
@@ -294,6 +302,9 @@ export default function PlayView() {
     }
     document.addEventListener("visibilitychange", onVisibility)
     window.addEventListener("pageshow", onPageShow)
+    // Cold load (refresh, discarded tab): dial right away instead of waiting
+    // for an event — otherwise the connect form flashes for the whole dial.
+    rejoin()
     return () => {
       document.removeEventListener("visibilitychange", onVisibility)
       window.removeEventListener("pageshow", onPageShow)
@@ -304,6 +315,24 @@ export default function PlayView() {
   // the transport has given up (offline) or is dialing the very first time.
   if (status === "online" || status === "reconnecting") {
     return <OnlineView />
+  }
+
+  // While a saved-connection rejoin is in flight, hold a quiet connecting
+  // screen instead of flashing the connect form for the whole handshake. The
+  // form returns when the dial fails (lastError), the handshake was refused,
+  // or there is nothing remembered to rejoin with.
+  if (autoDial && !refused && lastError === null) {
+    return (
+      <div className="play-view">
+        <section className="connect-card">
+          <header className="connect-head">
+            <h2>{t("connect.title")}</h2>
+            <StatusPill />
+          </header>
+          <p>{t("connect.status.connecting")}</p>
+        </section>
+      </div>
+    )
   }
 
   const offline = status === "offline"
