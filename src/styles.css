@@ -443,7 +443,7 @@ body {
 .dice-line,
 .system-line {
   width: 100%;
-  max-width: 72ch;
+  max-width: 110ch;
   margin-inline: auto;
 }
 
@@ -715,7 +715,7 @@ body {
   gap: 10px;
   margin: 10px auto 0;
   width: 100%;
-  max-width: 72ch;
+  max-width: 110ch;
   padding: 8px 14px;
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
@@ -969,7 +969,7 @@ body {
 
 .log-ui {
   width: 100%;
-  max-width: 72ch;
+  max-width: 110ch;
   margin-inline: auto;
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
