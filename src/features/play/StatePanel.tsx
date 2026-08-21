@@ -299,7 +299,7 @@ function UiPanelCards() {
   )
 }
 
-function PartyCard({ game }: { game: StateFrame }) {
+export function PartyCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   if (game.party.length === 0) return null
   return (
@@ -581,8 +581,9 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
   const game = useSessionStore((s) => s.game)
   if (order === "drawer") {
     // The phone drawer is the PLAYER's desk, not the keeper's dashboard. The
-    // character card renders ABOVE this stack (SessionView places it at the
-    // very top of the desk column), then the module's own panels (SessionView's
+    // character card AND the party render ABOVE this stack (SessionView places
+    // them at the very top of the desk column — who is at the table belongs
+    // next to who you are), then the module's own panels (SessionView's
     // PanelSidebar / PanelTray); this is the room around you: the scene, the
     // trackers and the table. System furniture — audio, media, presence,
     // usage — is NOT state and does not live here; the mobile "⋯" menu hosts
@@ -594,7 +595,6 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
         {game ? <SceneCard game={game} /> : null}
         <UiPanelCards />
         {game ? <VariablesCard game={game} /> : null}
-        {game ? <PartyCard game={game} /> : null}
         {game ? <InitiativeCard game={game} /> : null}
         {game ? <PregenCard game={game} /> : null}
         <PackImportCard />

@@ -303,6 +303,100 @@ body {
   }
 }
 
+/* The pill doubles as a presence button: while a room presence frame is
+   known it opens a member list, so "who is online" is one click away. */
+.status-pill-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.status-pill-btn {
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.status-pill-btn:hover {
+  border-color: var(--ink-faint);
+  color: var(--ink);
+}
+
+.presence-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 45;
+  min-width: 190px;
+  max-width: 260px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+.presence-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 8px 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+  font: 600 11px/1 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.presence-pop-count {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink-faint);
+}
+
+.presence-pop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.presence-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.presence-pop-row.is-offline {
+  opacity: 0.55;
+}
+
+.presence-pop-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presence-pop-state {
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
 /* ---- Session layout ---- */
 
 .session {
@@ -3806,7 +3900,7 @@ code {
   }
 
   /* The inline wide-screen extras fold into the ⋯ popup on a phone. */
-  .session-head > .status-pill,
+  .session-head > .status-pill-wrap,
   .session-head > .panel-menu {
     display: none;
   }
