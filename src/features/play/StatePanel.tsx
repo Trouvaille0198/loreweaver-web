@@ -51,7 +51,7 @@ export function ResourceRow({ resource }: { resource: ResourceState }) {
 function CharacterCard({ character }: { character: CharacterState }) {
   const { t } = useTranslation()
   return (
-    <section className="desk-card">
+    <section className="desk-card character-card">
       <header className="desk-title">
         <Avatar ref={character.avatar} name={character.name} />
         {stripControlChars(character.name)}
