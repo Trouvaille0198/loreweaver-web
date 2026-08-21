@@ -270,6 +270,7 @@
       "deleteDataHint": "Deletes this room's access keys, its room-scoped state, and its document and worldbook vectors.",
       "deleteDataConfirm": "Delete the data",
       "backupFirst": "Back up before deleting (deletion only proceeds if the backup write succeeds)",
+      "cancel": "Cancel",
       "noBackupWarning": "With this off there is nothing to restore from afterwards.",
       "deleteKeys": "Delete the room's keys",
       "deleteKeysHint": "Deletes every access key bound to this room. The room's DATA is left untouched — nobody can get back in until you mint a new key, and you will be disconnected too.",

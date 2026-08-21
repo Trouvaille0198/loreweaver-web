@@ -154,12 +154,23 @@ body {
 }
 
 .lang-select {
-  background: var(--bg-inset);
+  background-color: var(--bg-inset);
   color: var(--ink);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 4px 24px 4px 8px;
   font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-dim) 50%),
+    linear-gradient(135deg, var(--ink-dim) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) calc(50% + 1px),
+    calc(100% - 10px) calc(50% + 1px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
 }
 
 .app-main {
@@ -3466,4 +3477,279 @@ body {
   min-width: 0;
   padding: 1px 6px;
   font: 11px/1.6 var(--font-mono);
+}
+
+/* ============================================================
+   Web polish — shared form controls
+   The play screens reach for plain <input>/<select>/<textarea>
+   inside `.field` labels, tables, dialogs and the deck. This
+   section gives every one of them the same inset, bordered,
+   theme-derived look the connect card already had, plus themed
+   checkboxes, range sliders, scrollbars and selection.
+   ============================================================ */
+
+/* ---- text fields (inputs, textareas, selects) ---- */
+
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.field select,
+.field textarea,
+.dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.play-table select,
+.play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.var-set-input,
+.host-local-home input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]) {
+  background-color: var(--bg-inset);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 9px;
+  font: 13px/1.4 var(--font-ui);
+}
+
+/* The keeper's one-line tracker setter stays a slim inline field. */
+.var-set-input {
+  padding: 2px 7px;
+  font: 12px/1.5 var(--font-mono);
+  flex: 1;
+  min-width: 0;
+}
+
+.field textarea,
+.dialog-row textarea {
+  resize: vertical;
+}
+
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.field select:focus,
+.field textarea:focus,
+.dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.play-table select:focus,
+.play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.var-set-input:focus,
+.host-local-home input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):disabled,
+.field select:disabled,
+.field textarea:disabled,
+.dialog-row input:disabled,
+.play-table select:disabled,
+.play-table input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- selects: theme chevron instead of the OS arrow ---- */
+
+.field select,
+.play-table select,
+.dialog-row select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 24px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-dim) 50%),
+    linear-gradient(135deg, var(--ink-dim) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% + 1px),
+    calc(100% - 9px) calc(50% + 1px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* The dropdown list itself inherits the theme in engines that style it. */
+select option {
+  background-color: var(--bg-raised);
+  color: var(--ink);
+}
+
+/* ---- checkboxes & radios: theme-accented ---- */
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.audio-mute,
+.pack-checkbox,
+.play-skill-row,
+.panel-menu-setting,
+.flag {
+  cursor: pointer;
+}
+
+/* ---- range sliders (audio gain) ---- */
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-inset);
+  outline-offset: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-inset);
+}
+
+.audio-gain {
+  width: 96px;
+}
+
+/* ---- scrollbars: thin, on-theme ---- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ---- placeholder & selection ---- */
+
+::placeholder {
+  color: var(--ink-faint);
+  opacity: 1;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ---- inline code chips (minted keys, system ids) ---- */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.play-minted-key {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+}
+
+/* ---- play tables: real header row, hover affordance ---- */
+
+.play-table thead th {
+  background: var(--bg-inset);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.play-table tbody tr:hover {
+  background: color-mix(in srgb, var(--bg-raised) 60%, transparent);
+}
+
+/* ---- buttons: hover lift + press feedback ---- */
+
+.primary-button,
+.ghost-button,
+.choice-button,
+.icon-button,
+.mode-tab,
+.pack-step,
+.wb-item,
+.play-menu-item {
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    filter 120ms ease,
+    transform 60ms ease;
+}
+
+.primary-button:hover:not(:disabled),
+.ghost-button:hover:not(:disabled),
+.choice-button:hover:not(:disabled),
+.icon-button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.primary-button:active:not(:disabled),
+.ghost-button:active:not(:disabled),
+.choice-button:active:not(:disabled),
+.icon-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary-button,
+  .ghost-button,
+  .choice-button,
+  .icon-button,
+  .mode-tab,
+  .pack-step,
+  .wb-item,
+  .play-menu-item {
+    transition: none;
+  }
+}
+
+/* ---- dialogs & the connect card: depth, not flat panels ---- */
+
+.connect-card,
+.dialog,
+.panel-modal {
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.35);
 }

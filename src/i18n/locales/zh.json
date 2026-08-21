@@ -270,6 +270,7 @@
       "deleteDataHint": "删除本房间的访问密钥、房间级状态，以及文档与世界书向量。",
       "deleteDataConfirm": "删除数据",
       "backupFirst": "删除前先备份（备份写入成功后才会真正删除）",
+      "cancel": "取消",
       "noBackupWarning": "关闭后，事后将无处可恢复。",
       "deleteKeys": "删除房间密钥",
       "deleteKeysHint": "删除绑定到本房间的所有访问密钥。房间「数据」不受影响——在你新铸一把密钥之前没人能再进来，包括你自己也会掉线。",

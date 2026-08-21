@@ -93,6 +93,7 @@ export default function RoomLifecycle() {
   const [importPath, setImportPath] = useState("")
   const [scope, setScope] = useState<AdminResetScope>("story")
   const [backupBeforeDelete, setBackupBeforeDelete] = useState(true)
+  const [armUpdate, setArmUpdate] = useState(false)
 
   const canUpdate = (welcome?.features ?? []).includes("update")
 
@@ -227,16 +228,34 @@ export default function RoomLifecycle() {
         <p className="studio-hint">
           {canUpdate ? t("play.rooms.selfUpdateHint") : t("play.rooms.selfUpdateUnavailable")}
         </p>
-        <button
-          type="button"
-          className="ghost-button"
-          disabled={!canUpdate || admin.busy}
-          onClick={() => {
-            if (window.confirm(t("play.rooms.selfUpdateConfirm"))) admin.updateServer()
-          }}
-        >
-          {t("play.rooms.selfUpdateRun")}
-        </button>
+        {armUpdate ? (
+          <div className="dialog-row" role="status">
+            <span className="studio-hint">{t("play.rooms.selfUpdateConfirm")}</span>
+            <button
+              type="button"
+              className="primary-button"
+              disabled={admin.busy}
+              onClick={() => {
+                setArmUpdate(false)
+                admin.updateServer()
+              }}
+            >
+              {t("play.rooms.selfUpdateRun")}
+            </button>
+            <button type="button" className="ghost-button" onClick={() => setArmUpdate(false)}>
+              {t("play.rooms.cancel")}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="ghost-button"
+            disabled={!canUpdate || admin.busy}
+            onClick={() => setArmUpdate(true)}
+          >
+            {t("play.rooms.selfUpdateRun")}
+          </button>
+        )}
       </div>
     </section>
   )
