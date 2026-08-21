@@ -168,6 +168,81 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "panels", line: ".panels", keeper: true },
   { word: "audio", line: ".audio", keeper: true },
   { word: "import", line: ".import list", keeper: true },
+  // --- Keeper: the cast & world ---
+  {
+    word: "npc",
+    line: ".npc ",
+    keeper: true,
+    children: [
+      { word: "npc", line: ".npc list", keeper: true },
+      { word: "npc", line: ".npc add ", keeper: true },
+      { word: "npc", line: ".npc speak ", keeper: true },
+    ],
+  },
+  {
+    word: "companion",
+    line: ".companion ",
+    keeper: true,
+    children: [
+      { word: "companion", line: ".companion add ", keeper: true },
+      { word: "companion", line: ".companion list", keeper: true },
+    ],
+  },
+  {
+    word: "lore",
+    line: ".lore list",
+    keeper: true,
+    children: [
+      { word: "lore", line: ".lore list", keeper: true },
+      { word: "lore", line: ".lore add ", keeper: true },
+      { word: "lore", line: ".lore query ", keeper: true },
+    ],
+  },
+  {
+    word: "chronicle",
+    line: ".chronicle list",
+    keeper: true,
+    children: [
+      { word: "chronicle", line: ".chronicle list", keeper: true },
+      { word: "chronicle", line: ".chronicle summary", keeper: true },
+      { word: "chronicle", line: ".chronicle note ", keeper: true },
+    ],
+  },
+  {
+    word: "rule",
+    line: ".rule list",
+    keeper: true,
+    children: [
+      { word: "rule", line: ".rule list", keeper: true },
+      { word: "rule", line: ".rule coc7", keeper: true },
+    ],
+  },
+  {
+    word: "preset",
+    line: ".preset list",
+    keeper: true,
+    children: [
+      { word: "preset", line: ".preset list", keeper: true },
+      { word: "preset", line: ".preset import ", keeper: true },
+    ],
+  },
+  { word: "model", line: ".model list", keeper: true },
+  { word: "reset", line: ".reset", keeper: true },
+  // --- Keeper: session & housekeeping ---
+  {
+    word: "save",
+    line: ".save",
+    keeper: true,
+    children: [
+      { word: "save", line: ".save", keeper: true },
+      { word: "undo", line: ".undo", keeper: true },
+    ],
+  },
+  { word: "bot", line: ".bot", keeper: true },
+  { word: "botlist", line: ".botlist", keeper: true },
+  { word: "language", line: ".language", keeper: true },
+  { word: "dev", line: ".dev", keeper: true },
+  { word: "habits", line: ".habits", keeper: true },
 ]
 
 /** Flatten for tests: every leaf line reachable from the menu. */
