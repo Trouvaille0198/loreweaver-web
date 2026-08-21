@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { pickDirectory } from "../../lib/native"
 import { isTauri } from "../../lib/transport"
+import { clearSavedConnect, loadSavedConnect, saveConnect } from "../../lib/savedConnect"
 import { useConnectionStore } from "../../store/connection"
 import { useHostLocalStore } from "../../store/hostLocal"
 import CharacterScreen from "./screens/CharacterScreen"
@@ -157,11 +158,30 @@ export default function PlayView() {
   const lastError = useConnectionStore((s) => s.lastError)
   const connect = useConnectionStore((s) => s.connect)
 
+  // The last successful connection is remembered (browser only) so the next
+  // visit lands with the fields already filled — one click to rejoin.
+  const [saved] = useState(() => loadSavedConnect())
+  const [remembered, setRemembered] = useState(saved !== null)
+
   // The native app dials an Iroh ticket and has no same-origin concept —
   // pre-fill only in the browser.
-  const [ticket, setTicket] = useState(isTauri() ? "" : defaultServerUrl())
-  const [key, setKey] = useState("")
-  const [name, setName] = useState("")
+  const [ticket, setTicket] = useState(saved?.url ?? (isTauri() ? "" : defaultServerUrl()))
+  const [key, setKey] = useState(saved?.key ?? "")
+  const [name, setName] = useState(saved?.name ?? "")
+
+  // The browser cannot spawn or reach a local server process, and it cannot
+  // dial an Iroh p2p ticket — it connects to a WebSocket endpoint instead.
+  const web = !isTauri()
+
+  // Remember the connection that ACTUALLY worked (status only turns online
+  // after the welcome handshake), so a typo never overwrites a good key and
+  // the next visit is one click. The form's state survives into the online
+  // render — the component stays mounted — so this reads the submitted values.
+  useEffect(() => {
+    if (status !== "online" || !web) return
+    saveConnect({ url: ticket.trim(), key: key.trim(), name: name.trim() || undefined })
+    setRemembered(true)
+  }, [status, web, ticket, key, name])
 
   // The session stays visible through reconnects; the form only returns once
   // the transport has given up (offline) or is dialing the very first time.
@@ -171,9 +191,6 @@ export default function PlayView() {
 
   const offline = status === "offline"
   const canSubmit = offline && ticket.trim().length > 0 && key.trim().length > 0
-  // The browser cannot spawn or reach a local server process, and it cannot
-  // dial an Iroh p2p ticket — it connects to a WebSocket endpoint instead.
-  const web = !isTauri()
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -183,6 +200,14 @@ export default function PlayView() {
       key: key.trim(),
       name: name.trim() ? name.trim() : undefined,
     })
+  }
+
+  const forget = () => {
+    clearSavedConnect()
+    setRemembered(false)
+    setTicket(isTauri() ? "" : defaultServerUrl())
+    setKey("")
+    setName("")
   }
 
   return (
@@ -230,6 +255,15 @@ export default function PlayView() {
             {t("connect.submit")}
           </button>
         </form>
+
+        {remembered ? (
+          <div className="connect-forget">
+            <span className="connect-forget-hint">{t("connect.remembered")}</span>
+            <button type="button" className="ghost-button" onClick={forget}>
+              {t("connect.forget")}
+            </button>
+          </div>
+        ) : null}
 
         {lastError ? (
           <p className="connect-error" role="alert">

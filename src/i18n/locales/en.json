@@ -47,7 +47,9 @@
     "protocolMatch": "Both ends speak protocol {{protocol}}.",
     "protocolDrift": "This server speaks protocol {{server}}; the studio was built against {{client}}. The connection is sound — same major — but one side knows frames the other does not.",
     "serverUrl": "Server URL",
-    "serverUrlPlaceholder": "ws://host:port — your loreweaver server's --web endpoint"
+    "serverUrlPlaceholder": "ws://host:port — your loreweaver server's --web endpoint",
+    "remembered": "Saved for this browser",
+    "forget": "Forget"
   },
   "session": {
     "empty": "The chronicle is empty. Say something to begin.",

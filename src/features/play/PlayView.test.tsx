@@ -17,6 +17,7 @@ const WELCOME: WelcomeFrame = {
 }
 
 function reset() {
+  localStorage.clear()
   useConnectionStore.setState({ status: "offline", attempt: 0, lastError: null, welcome: null })
   useSessionStore.getState().clear()
 }
@@ -108,5 +109,56 @@ describe("PlayView", () => {
     useConnectionStore.setState({ lastError: "bad_key: unknown key" })
     render(<PlayView />)
     expect(screen.getByRole("alert")).toHaveTextContent("bad_key")
+  })
+
+  it("pre-fills the form from a remembered connection, and can forget it", async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      "loreweaver-web.connect",
+      JSON.stringify({
+        state: { url: "ws://localhost:8787", key: "k-saved", name: "Nyx" },
+        version: 1,
+      }),
+    )
+    render(<PlayView />)
+    expect(screen.getByLabelText(/server url/i)).toHaveValue("ws://localhost:8787")
+    expect(screen.getByLabelText(/access key/i)).toHaveValue("k-saved")
+    expect(screen.getByLabelText(/display name/i)).toHaveValue("Nyx")
+    // One click rejoins: the submit is already enabled.
+    expect(screen.getByRole("button", { name: "Connect" })).toBeEnabled()
+
+    await user.click(screen.getByRole("button", { name: "Forget" }))
+    expect(screen.getByLabelText(/access key/i)).toHaveValue("")
+    expect(screen.getByLabelText(/server url/i)).toHaveValue("ws://localhost:3000/")
+    expect(localStorage.getItem("loreweaver-web.connect")).toBeNull()
+  })
+
+  it("remembers the connection once it actually comes online", async () => {
+    const user = userEvent.setup()
+    const connect = vi.fn().mockImplementation(async () => {
+      useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    })
+    useConnectionStore.setState({ connect })
+    render(<PlayView />)
+    await user.clear(screen.getByLabelText(/server url/i))
+    await user.type(screen.getByLabelText(/server url/i), "ws://localhost:8787")
+    await user.type(screen.getByLabelText(/access key/i), " k-1 ")
+    await user.type(screen.getByLabelText(/display name/i), " Nyx ")
+    await user.click(screen.getByRole("button", { name: "Connect" }))
+    // The welcome turned the store online; the effect then persisted the
+    // trimmed values that actually worked.
+    expect(localStorage.getItem("loreweaver-web.connect")).toBe(
+      JSON.stringify({ state: { url: "ws://localhost:8787", key: "k-1", name: "Nyx" }, version: 1 }),
+    )
+  })
+
+  it("does not remember a connection that never came online", async () => {
+    const user = userEvent.setup()
+    const connect = vi.fn().mockResolvedValue(undefined)
+    useConnectionStore.setState({ connect })
+    render(<PlayView />)
+    await user.type(screen.getByLabelText(/access key/i), "k-1")
+    await user.click(screen.getByRole("button", { name: "Connect" }))
+    expect(localStorage.getItem("loreweaver-web.connect")).toBeNull()
   })
 })

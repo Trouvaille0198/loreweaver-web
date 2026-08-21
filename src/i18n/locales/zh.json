@@ -47,7 +47,9 @@
     "protocolMatch": "两端都使用协议 {{protocol}}。",
     "protocolDrift": "这台服务器使用协议 {{server}}，而本工作室基于 {{client}} 构建。连接本身没有问题——主版本相同——但一方认识另一方不认识的帧。",
     "serverUrl": "服务器地址",
-    "serverUrlPlaceholder": "ws://host:port —— 你的 loreweaver 服务器 --web 端点"
+    "serverUrlPlaceholder": "ws://host:port —— 你的 loreweaver 服务器 --web 端点",
+    "remembered": "已在本浏览器记住",
+    "forget": "忘记"
   },
   "session": {
     "empty": "编年史还是空白。说点什么，让故事开始。",
