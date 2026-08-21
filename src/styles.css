@@ -4389,116 +4389,7 @@ code {
     white-space: nowrap;
   }
 
-  /* --- drawer cards: hierarchy, not a wall of identical boxes ---
-     The character is the hero of the drawer: its name leads, its vitals are
-     big and colored, its card carries the accent. Trackers read as an
-     instrument panel (number first, label second). Everything else — party,
-     panels — recedes into quieter cards. */
-  .session .desk-pane .desk-stack {
-    gap: 10px;
-  }
 
-  .session .desk-pane .desk-card {
-    border-radius: 10px;
-    padding: 12px 14px;
-    gap: 8px;
-  }
-
-  /* The character card: bigger name, bigger portrait, accent presence. */
-  .session .desk-pane .character-card {
-    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%),
-      var(--bg-raised);
-    gap: 10px;
-  }
-
-  .session .desk-pane .character-card .desk-title {
-    font-size: 17px;
-    letter-spacing: 0.01em;
-    text-transform: none;
-    color: var(--ink);
-    font-weight: 700;
-    gap: 10px;
-  }
-
-  .session .desk-pane .character-card .member-avatar {
-    width: 34px;
-    height: 34px;
-    border-width: 2px;
-  }
-
-  /* Vitals inside the character card: the numbers lead, bars thicken. */
-  .session .desk-pane .character-card .meter {
-    grid-template-columns: auto minmax(48px, 1fr) auto;
-    gap: 8px;
-  }
-
-  .session .desk-pane .character-card .meter-label {
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .session .desk-pane .character-card .meter-track {
-    height: 8px;
-    border-radius: 4px;
-  }
-
-  .session .desk-pane .character-card .meter-value {
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  .session .desk-pane .character-card .chip-row {
-    gap: 6px;
-  }
-
-  .session .desk-pane .character-card .chip {
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: 999px;
-  }
-
-  /* Trackers: number-forward instrument rows, not label-forward lists. */
-  .session .desk-pane .var-row {
-    font-size: 14px;
-  }
-
-  .session .desk-pane .var-value {
-    font-size: 17px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .session .desk-pane .meter {
-    grid-template-columns: auto minmax(48px, 1fr) auto;
-  }
-
-  .session .desk-pane .meter-value {
-    font-size: 14px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .session .desk-pane .meter-track {
-    height: 7px;
-    border-radius: 4px;
-  }
-
-  /* Party and module cards: quiet, compact. */
-  .session .desk-pane .party-row {
-    font-size: 14px;
-    gap: 10px;
-  }
-
-  .session .desk-pane .party-stat {
-    font-size: 12px;
-  }
-
-  .session .desk-pane .panel-card .desk-title,
-  .session .desk-pane .desk-card:not(.character-card) .desk-title {
-    letter-spacing: 0.06em;
-  }
 }
 
 /* Small phones: drop the version readout (debug chrome) and tighten further. */
@@ -4518,4 +4409,115 @@ code {
   .play-screen {
     padding: 10px;
   }
+}
+
+/* --- drawer cards: hierarchy, not a wall of identical boxes ---
+   The character is the hero of the drawer: its name leads, its vitals are
+   big and colored, its card carries the accent. Trackers read as an
+   instrument panel (number first, label second). Everything else — party,
+   panels — recedes into quieter cards. */
+.session .desk-pane .desk-stack {
+  gap: 10px;
+}
+
+.session .desk-pane .desk-card {
+  border-radius: 10px;
+  padding: 12px 14px;
+  gap: 8px;
+}
+
+/* The character card: bigger name, bigger portrait, accent presence. */
+.session .desk-pane .character-card {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%),
+    var(--bg-raised);
+  gap: 10px;
+}
+
+.session .desk-pane .character-card .desk-title {
+  font-size: 17px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--ink);
+  font-weight: 700;
+  gap: 10px;
+}
+
+.session .desk-pane .character-card .member-avatar {
+  width: 34px;
+  height: 34px;
+  border-width: 2px;
+}
+
+/* Vitals inside the character card: the numbers lead, bars thicken. */
+.session .desk-pane .character-card .meter {
+  grid-template-columns: auto minmax(48px, 1fr) auto;
+  gap: 8px;
+}
+
+.session .desk-pane .character-card .meter-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.session .desk-pane .character-card .meter-track {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.session .desk-pane .character-card .meter-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.session .desk-pane .character-card .chip-row {
+  gap: 6px;
+}
+
+.session .desk-pane .character-card .chip {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+/* Trackers: number-forward instrument rows, not label-forward lists. */
+.session .desk-pane .var-row {
+  font-size: 14px;
+}
+
+.session .desk-pane .var-value {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.session .desk-pane .meter {
+  grid-template-columns: auto minmax(48px, 1fr) auto;
+}
+
+.session .desk-pane .meter-value {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.session .desk-pane .meter-track {
+  height: 7px;
+  border-radius: 4px;
+}
+
+/* Party and module cards: quiet, compact. */
+.session .desk-pane .party-row {
+  font-size: 14px;
+  gap: 10px;
+}
+
+.session .desk-pane .party-stat {
+  font-size: 12px;
+}
+
+.session .desk-pane .panel-card .desk-title,
+.session .desk-pane .desk-card:not(.character-card) .desk-title {
+  letter-spacing: 0.06em;
 }
