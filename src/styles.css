@@ -1495,389 +1495,6 @@ body {
   white-space: pre;
 }
 
-/* ---- Small screens: the desk becomes a bottom drawer ---- */
-
-/* Tablet: two columns survive but the desk stops hogging width. */
-@media (max-width: 1024px) {
-  .desk-pane {
-    width: clamp(240px, 30vw, 320px);
-    padding: 12px;
-  }
-}
-
-/* Phone: one column. The session desk is a bottom drawer opened from the
-   INPUT dock (the thumb's home) — never the top header; the menu desk simply
-   stacks under the menu list. */
-@media (max-width: 760px) {
-  .session {
-    flex-direction: column;
-  }
-
-  .chronicle-pane {
-    border-right: none;
-  }
-
-  /* --- session desk → bottom drawer --- */
-  .session .desk-pane {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 35;
-    width: auto;
-    max-height: 70dvh;
-    max-height: 70vh;
-    padding: 6px 16px calc(14px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -8px 32px rgb(0 0 0 / 0.45);
-    transform: translateY(105%);
-    transition: transform 220ms ease;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .session .desk-pane.desk-open {
-    transform: translateY(0);
-  }
-
-  /* Lock the chronicle scroll while the drawer is up — the story must not
-     keep rolling behind the sheet. */
-  .session.desk-active .narrative-log {
-    overflow: hidden;
-  }
-
-  .desk-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 34;
-    background: rgb(0 0 0 / 0.55);
-  }
-
-  .desk-toggle,
-  .desk-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .desk-drawer-head {
-    display: block;
-    margin-bottom: 10px;
-  }
-
-  /* The grab handle: the universal "this sheet pulls up/down" affordance. */
-  .desk-drawer-grip {
-    display: block;
-    width: 40px;
-    height: 4px;
-    margin: 0 auto 10px;
-    border-radius: 999px;
-    background: var(--border);
-  }
-
-  .desk-drawer-title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .desk-drawer-title {
-    font: 600 11px/1.3 var(--font-ui);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-dim);
-  }
-
-  /* --- input dock: toggle beside the send row, inside the thumb zone --- */
-  .input-dock {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .input-dock .input-wrap {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .input-dock .input-box {
-    padding: 0;
-    border-top: none;
-  }
-
-  .input-dock .desk-toggle {
-    flex: 0 0 auto;
-    min-width: 48px;
-    padding: 0 12px;
-  }
-
-  /* Command hints are positioned against the input wrapper; inside the dock
-     they should hug the dock's own padding instead of the desktop 24px. */
-  .input-dock .command-hints {
-    left: 0;
-    right: 0;
-  }
-
-  /* --- menu desk stays stacked (not a drawer) --- */
-  .play-menu {
-    flex-direction: column;
-  }
-
-  .play-menu .desk-pane {
-    margin-left: 0;
-    width: auto;
-    align-self: stretch;
-    max-height: 40vh;
-    border: 1px solid var(--border-soft);
-    border-radius: 8px;
-  }
-
-  /* --- tray panels: off the input strip, into the drawer --- */
-  .panel-tray {
-    display: none;
-  }
-
-  .panel-tray-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .panel-tray-mobile .panel-card {
-    width: 100%;
-  }
-
-  /* --- header: chat-style on a phone — one row, the rest folds into "⋯" --- */
-  .session-head {
-    gap: 8px;
-    padding: 8px 12px;
-  }
-
-  .session-quit-wide {
-    display: none;
-  }
-
-  .session-more {
-    display: block;
-    position: relative;
-  }
-
-  .session-more-toggle {
-    min-width: 36px;
-    padding: 0 8px;
-    font-size: 15px;
-    line-height: 1;
-  }
-
-  .session-more-pop {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    z-index: 30;
-    width: 260px;
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .session-more-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .session-more-quit {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .session-head .status-pill,
-  .session-head .version-badge {
-    order: 0;
-  }
-
-  /* --- input row: iOS-safe font size (16px stops the focus zoom) + home bar --- */
-  .input-box {
-    padding: 8px 12px;
-    border-top: none;
-  }
-
-  .input-box input {
-    font-size: 16px;
-  }
-
-  .input-box button {
-    padding: 0 14px;
-  }
-
-  /* --- narrative: chat-style on a phone --- */
-  .narrative-log {
-    padding: 10px 10px;
-    gap: 8px;
-  }
-
-  .log-entry,
-  .dice-line,
-  .system-line {
-    max-width: 100%;
-  }
-
-  /* Chat bubbles: the speaker label floats above its own bubble, the story
-     text gets the room instead of the desktop left rail. */
-  .log-entry {
-    border-left: none;
-    padding-left: 0;
-  }
-
-  .entry-speaker {
-    font-size: 11px;
-    margin-bottom: 3px;
-    padding: 0 4px;
-  }
-
-  .entry-body {
-    font-size: 16px;
-    line-height: 1.6;
-    background: var(--bg-raised);
-    border: 1px solid var(--border-soft);
-    border-radius: 10px;
-    padding: 10px 12px;
-  }
-
-  /* The player's own bubble sits on the right, like a sent message. */
-  .speaker-player .entry-body {
-    background: color-mix(in srgb, var(--lw-player) 12%, var(--bg-raised));
-  }
-
-  /* Pending echoes and dice lines stay flat lines, not bubbles. */
-  .log-entry.pending .entry-body,
-  .dice-line,
-  .system-line {
-    background: none;
-    border: none;
-    padding: 0;
-    border-radius: 0;
-  }
-
-  .turn-status {
-    margin-top: 6px;
-  }
-
-  /* --- connect / menu / screens: breathe on a phone --- */
-  .play-view {
-    padding: 16px;
-  }
-
-  .connect-card {
-    padding: 16px;
-  }
-
-  .play-menu {
-    padding: 14px;
-  }
-
-  .play-screen {
-    padding: 12px 14px;
-  }
-
-  /* --- dialogs & modals: edge-to-edge --- */
-  .dialog-backdrop,
-  .panel-modal-backdrop {
-    padding: 12px;
-  }
-
-  .dialog {
-    width: min(480px, calc(100vw - 24px));
-  }
-
-  .panel-menu-pop {
-    width: min(300px, calc(100vw - 24px));
-  }
-
-  /* --- form fields: no iOS zoom, easier thumbs --- */
-  .field
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
-  .field select,
-  .field textarea,
-  .dialog-row
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
-  .play-table select,
-  .play-table
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
-  .var-set-input,
-  .connect-form input,
-  .connect-form textarea,
-  .host-local-home
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ) {
-    font-size: 16px;
-  }
-
-  /* --- touch targets: at least thumb-sized --- */
-  .ghost-button,
-  .primary-button,
-  .icon-button,
-  .play-menu-item,
-  .input-box button,
-  .connect-form button {
-    min-height: 40px;
-  }
-
-  .play-menu-item {
-    padding: 10px;
-  }
-
-  .input-box input {
-    min-height: 44px;
-  }
-
-  /* --- wide tables scroll sideways instead of squashing --- */
-  .play-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-}
-
-/* Small phones: drop the version readout (debug chrome) and tighten further. */
-@media (max-width: 420px) {
-  .session-head .version-badge {
-    display: none;
-  }
-
-  .narrative-log {
-    padding: 10px 8px;
-  }
-
-  .log-entry {
-    padding-left: 0;
-  }
-
-  .play-screen {
-    padding: 10px;
-  }
-}
-
 /* ---- Shared buttons / fields introduced with the split-era forge ---- */
 
 .primary-button {
@@ -4328,3 +3945,385 @@ code {
   gap: 6px;
   margin-top: 2px;
 }
+
+/* Tablet: two columns survive but the desk stops hogging width. */
+@media (max-width: 1024px) {
+  .desk-pane {
+    width: clamp(240px, 30vw, 320px);
+    padding: 12px;
+  }
+}
+
+/* Phone: one column. The session desk is a bottom drawer opened from the
+   INPUT dock (the thumb's home) — never the top header; the menu desk simply
+   stacks under the menu list. */
+@media (max-width: 760px) {
+  .session {
+    flex-direction: column;
+  }
+
+  .chronicle-pane {
+    border-right: none;
+  }
+
+  /* --- session desk → bottom drawer --- */
+  .session .desk-pane {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 35;
+    width: auto;
+    max-height: 70dvh;
+    max-height: 70vh;
+    padding: 6px 16px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 32px rgb(0 0 0 / 0.45);
+    transform: translateY(105%);
+    transition: transform 220ms ease;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .session .desk-pane.desk-open {
+    transform: translateY(0);
+  }
+
+  /* Lock the chronicle scroll while the drawer is up — the story must not
+     keep rolling behind the sheet. */
+  .session.desk-active .narrative-log {
+    overflow: hidden;
+  }
+
+  .desk-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 34;
+    background: rgb(0 0 0 / 0.55);
+  }
+
+  .desk-toggle,
+  .desk-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .desk-drawer-head {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  /* The grab handle: the universal "this sheet pulls up/down" affordance. */
+  .desk-drawer-grip {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto 10px;
+    border-radius: 999px;
+    background: var(--border);
+  }
+
+  .desk-drawer-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .desk-drawer-title {
+    font: 600 11px/1.3 var(--font-ui);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
+  /* --- input dock: toggle beside the send row, inside the thumb zone --- */
+  .input-dock {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .input-dock .input-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .input-dock .input-box {
+    padding: 0;
+    border-top: none;
+  }
+
+  .input-dock .desk-toggle {
+    flex: 0 0 auto;
+    min-width: 48px;
+    padding: 0 12px;
+  }
+
+  /* Command hints are positioned against the input wrapper; inside the dock
+     they should hug the dock's own padding instead of the desktop 24px. */
+  .input-dock .command-hints {
+    left: 0;
+    right: 0;
+  }
+
+  /* --- menu desk stays stacked (not a drawer) --- */
+  .play-menu {
+    flex-direction: column;
+  }
+
+  .play-menu .desk-pane {
+    margin-left: 0;
+    width: auto;
+    align-self: stretch;
+    max-height: 40vh;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+  }
+
+  /* --- tray panels: off the input strip, into the drawer --- */
+  .panel-tray {
+    display: none;
+  }
+
+  .panel-tray-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .panel-tray-mobile .panel-card {
+    width: 100%;
+  }
+
+  /* --- header: chat-style on a phone — one row, the rest folds into "⋯" --- */
+  .session-head {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .session-quit-wide {
+    display: none;
+  }
+
+  .session-more {
+    display: block;
+    position: relative;
+  }
+
+  .session-more-toggle {
+    min-width: 36px;
+    padding: 0 8px;
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .session-more-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    width: 260px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .session-more-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .session-more-quit {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .session-head .status-pill,
+  .session-head .version-badge {
+    order: 0;
+  }
+
+  /* --- input row: iOS-safe font size (16px stops the focus zoom) + home bar --- */
+  .input-box {
+    padding: 8px 12px;
+    border-top: none;
+  }
+
+  .input-box input {
+    font-size: 16px;
+  }
+
+  .input-box button {
+    padding: 0 14px;
+  }
+
+  /* --- narrative: chat-style on a phone --- */
+  .narrative-log {
+    padding: 10px 10px;
+    gap: 8px;
+  }
+
+  .log-entry,
+  .dice-line,
+  .system-line {
+    max-width: 100%;
+  }
+
+  /* Chat bubbles: the speaker label floats above its own bubble, the story
+     text gets the room instead of the desktop left rail. */
+  .log-entry {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .entry-speaker {
+    font-size: 11px;
+    margin-bottom: 3px;
+    padding: 0 4px;
+  }
+
+  .entry-body {
+    font-size: 16px;
+    line-height: 1.6;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  /* The player's own bubble sits on the right, like a sent message. */
+  .speaker-player .entry-body {
+    background: color-mix(in srgb, var(--lw-player) 12%, var(--bg-raised));
+  }
+
+  /* Pending echoes and dice lines stay flat lines, not bubbles. */
+  .log-entry.pending .entry-body,
+  .dice-line,
+  .system-line {
+    background: none;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .turn-status {
+    margin-top: 6px;
+  }
+
+  /* --- connect / menu / screens: breathe on a phone --- */
+  .play-view {
+    padding: 16px;
+  }
+
+  .connect-card {
+    padding: 16px;
+  }
+
+  .play-menu {
+    padding: 14px;
+  }
+
+  .play-screen {
+    padding: 12px 14px;
+  }
+
+  /* --- dialogs & modals: edge-to-edge --- */
+  .dialog-backdrop,
+  .panel-modal-backdrop {
+    padding: 12px;
+  }
+
+  .dialog {
+    width: min(480px, calc(100vw - 24px));
+  }
+
+  .panel-menu-pop {
+    width: min(300px, calc(100vw - 24px));
+  }
+
+  /* --- form fields: no iOS zoom, easier thumbs --- */
+  .field
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
+  .field select,
+  .field textarea,
+  .dialog-row
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
+  .play-table select,
+  .play-table
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
+  .var-set-input,
+  .connect-form input,
+  .connect-form textarea,
+  .host-local-home
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ) {
+    font-size: 16px;
+  }
+
+  /* --- touch targets: at least thumb-sized --- */
+  .ghost-button,
+  .primary-button,
+  .icon-button,
+  .play-menu-item,
+  .input-box button,
+  .connect-form button {
+    min-height: 40px;
+  }
+
+  .play-menu-item {
+    padding: 10px;
+  }
+
+  .input-box input {
+    min-height: 44px;
+  }
+
+  /* --- wide tables scroll sideways instead of squashing --- */
+  .play-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Small phones: drop the version readout (debug chrome) and tighten further. */
+@media (max-width: 420px) {
+  .session-head .version-badge {
+    display: none;
+  }
+
+  .narrative-log {
+    padding: 10px 8px;
+  }
+
+  .log-entry {
+    padding-left: 0;
+  }
+
+  .play-screen {
+    padding: 10px;
+  }
+}
+
