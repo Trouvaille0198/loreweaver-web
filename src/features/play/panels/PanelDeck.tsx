@@ -24,12 +24,20 @@ export function PanelSidebar() {
   )
 }
 
-/** Tray slot: a bottom strip of cards between the log and the input line. */
-export function PanelTray() {
+/**
+ * Tray slot: a bottom strip of cards between the log and the input line.
+ *
+ * On phones that strip is exactly where the tray cards feel bolted on — a
+ * horizontal carousel wedged between the story and the keyboard. The chat
+ * layout folds tray panels into the bottom drawer instead (see SessionView:
+ * the drawer hosts a `panel-tray-mobile` copy), so the component renders two
+ * flavors and CSS shows whichever the screen size wants.
+ */
+export function PanelTray({ flavor = "desktop" }: { flavor?: "desktop" | "mobile" }) {
   const panels = useOpenPanels("tray")
   if (panels.length === 0) return null
   return (
-    <div className="panel-tray" data-slot="tray">
+    <div className={flavor === "mobile" ? "panel-tray-mobile" : "panel-tray"} data-slot="tray">
       {panels.map((panel) => (
         <PanelCard key={panel.id} panel={panel} />
       ))}

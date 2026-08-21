@@ -1638,6 +1638,22 @@ body {
     border-radius: 8px;
   }
 
+  /* --- tray panels: off the input strip, into the drawer --- */
+  .panel-tray {
+    display: none;
+  }
+
+  .panel-tray-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .panel-tray-mobile .panel-card {
+    width: 100%;
+  }
+
   /* --- header: chat-style on a phone — one row, the rest folds into "⋯" --- */
   .session-head {
     gap: 8px;
@@ -2638,6 +2654,14 @@ body {
   width: 280px;
   flex-shrink: 0;
   overflow-y: auto;
+}
+
+/* The mobile flavor of the tray lives INSIDE the bottom drawer (see
+   SessionView): cards stack full-width under the drawer head instead of
+   wedging a horizontal carousel between the story and the keyboard. Hidden
+   on wide screens, where the desktop strip is the one that exists. */
+.panel-tray-mobile {
+  display: none;
 }
 
 /* Tier-2 iframe: the sandboxed document owns its own visuals. */
