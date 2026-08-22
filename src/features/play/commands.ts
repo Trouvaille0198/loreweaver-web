@@ -220,42 +220,53 @@ export interface ArgSpec {
 }
 
 export const ARG_SPECS: Record<string, ArgSpec> = {
+  // Dice family
   r: { dice: true },
   roll: { dice: true },
   rd: { dice: true },
   rh: { dice: true },
   hroll: { dice: true },
   hidden_roll: { dice: true },
+  // Checks
   ra: { tokens: COMMON_SKILLS },
   rav: { tokens: COMMON_SKILLS },
   rc: { tokens: COMMON_SKILLS },
   rcv: { tokens: COMMON_SKILLS },
   check: { tokens: COMMON_SKILLS },
   attack: { tokens: COMMON_SKILLS },
-  sheet: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
   sanity: { tokens: ["1/1d6", "1/d6", "0/1d4", "1/1d8"] },
   sc: { tokens: ["1/1d6", "1/d6", "0/1d4", "1/1d8"] },
   st: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
+  sheet: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
+  // Cast & party (gateway/commands/cast.py's word sets)
   pc: { tokens: ["list", "claim", "release"] },
   roster: { tokens: ["list", "claim", "release"] },
-  party: { tokens: ["add", "act", "auto", "remove"] },
-  avatar: { tokens: ["gen", "clear"] },
-  bgm: { tokens: ["stop", "pause", "resume", "volume"] },
-  ambience: { tokens: ["stop", "pause", "resume", "volume"] },
-  amb: { tokens: ["stop", "pause", "resume", "volume"] },
-  sfx: { tokens: ["stop", "pause", "resume", "volume"] },
-  var: { tokens: ["list", "expose", "add", "set"] },
-  vars: { tokens: ["list", "expose", "add", "set"] },
-  skill: { tokens: ["list", "enable", "disable"] },
-  room: { tokens: ["list", "reset"] },
-  npc: { tokens: ["list", "add", "speak"] },
-  companion: { tokens: ["add", "list"] },
-  lore: { tokens: ["list", "add", "query"] },
-  chronicle: { tokens: ["list", "summary", "note"] },
-  rule: { tokens: ["list", "coc7"] },
-  preset: { tokens: ["list", "import"] },
-  pack: { tokens: ["install"] },
+  party: { tokens: ["add", "new", "recruit", "act", "go", "auto", "remove", "list"] },
+  npc: { tokens: ["list", "show", "delete"] },
+  companion: { tokens: ["list", "delete"] },
+  avatar: { tokens: ["gen", "generate", "clear"] },
+  // World & records (world.py's word sets)
+  var: { tokens: ["list", "expose", "show", "hide", "add", "set"] },
+  vars: { tokens: ["list", "expose", "show", "hide", "add", "set"] },
+  lore: { tokens: ["list", "add", "query", "search", "import"] },
+  chronicle: { tokens: ["list", "summary", "threads", "fold", "note", "edit"] },
+  report: { tokens: ["detailed", "full", "log"] },
+  // Rules & skills (rules.py's word sets)
+  skill: { tokens: ["list", "status", "enable", "on", "disable", "off"] },
+  pack: { tokens: ["install", "add"] },
   import: { tokens: ["list"] },
+  // Rooms & lifecycle (rooms.py's word sets)
+  room: { tokens: ["show", "open", "link", "leave"] },
+  reset: { tokens: ["chars", "all", "confirm"] },
+  // Model & operator (llm.py / rooms.py's word sets)
+  model: { tokens: ["show", "list", "set", "key", "reset", "login", "logout"] },
+  dev: { tokens: ["mount", "unmount"] },
+  // Audio layers (media.py's word sets)
+  audio: { tokens: ["list", "set", "import", "play", "stop", "volume"] },
+  bgm: { tokens: ["play", "stop", "pause", "resume", "volume"] },
+  ambience: { tokens: ["play", "stop", "pause", "resume", "volume"] },
+  amb: { tokens: ["play", "stop", "pause", "resume", "volume"] },
+  sfx: { tokens: ["play", "stop", "pause", "resume", "volume"] },
 }
 
 /** One inline completion candidate. */
