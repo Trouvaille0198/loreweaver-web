@@ -264,6 +264,7 @@
       "importRoom": "导入当前房间",
       "delete": "删除源文件",
       "deleteConfirm": "确定删除这个源文件吗？",
+      "deleteUnavailable": "当前房间正在使用这个模组，无法删除；请先导入其他模组。",
       "sourceText": "源文件内容",
       "knowledgePool": "已分析的模组知识库（守秘人视角）",
       "detailTitle": "模组详情",

@@ -58,7 +58,11 @@ export default function ModuleDetailScreen({ moduleName, onBack }: { moduleName:
                   <button type="button" className="ghost-button danger-button" onClick={remove} disabled={busy || deleting}>
                     {deleting ? t("play.busy") : t("play.module.delete")}
                   </button>
-                ) : null}
+                ) : (
+                  <button type="button" className="ghost-button module-delete-disabled" disabled title={t("play.module.deleteUnavailable")}>
+                    {t("play.module.delete")}
+                  </button>
+                )}
               </div>
             </header>
 

@@ -350,6 +350,30 @@ describe("PlayView", () => {
     expect(window.location.hash).toBe("#/keeper-settings")
   })
 
+  it("shows why an active module cannot be deleted", () => {
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    useAdminStore.setState({
+      moduleDetail: {
+        name: "scene.md",
+        size: 42,
+        modified: 1,
+        content: "A foggy scene",
+        current: true,
+        status: "ready",
+        pool: null,
+      },
+    })
+    window.history.replaceState(null, "", "#/module-detail/scene.md")
+    render(<PlayView />)
+
+    const deleteButton = screen.getByRole("button", { name: "Delete source" })
+    expect(deleteButton).toBeDisabled()
+    expect(deleteButton).toHaveAttribute(
+      "title",
+      "This module is active in the room. Import another module before deleting it.",
+    )
+  })
+
   it("sends a player on a stale keeper hash to the game instead", async () => {
     const user = userEvent.setup()
     useConnectionStore.setState({

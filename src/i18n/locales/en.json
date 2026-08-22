@@ -264,6 +264,7 @@
       "importRoom": "Import into this room",
       "delete": "Delete source",
       "deleteConfirm": "Delete this source file?",
+      "deleteUnavailable": "This module is active in the room. Import another module before deleting it.",
       "sourceText": "Source text",
       "knowledgePool": "Analyzed module knowledge (Keeper view)",
       "detailTitle": "Module details",
