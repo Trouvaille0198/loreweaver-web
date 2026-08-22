@@ -8,6 +8,7 @@ vi.mock("../lib/transport", () => ({
   },
 }))
 
+import i18n from "../i18n"
 import { useAdminStore } from "./admin"
 
 describe("admin model requests", () => {
@@ -123,5 +124,22 @@ describe("admin model requests", () => {
       current: true,
       pool: { keeper: { summary: "A foggy pier" } },
     })
+  })
+  it("sends the web UI language with module generation", async () => {
+    const previous = i18n.resolvedLanguage
+    await i18n.changeLanguage("zh")
+    try {
+      useAdminStore.getState().generateModule("一座雾港小镇")
+      expect(sent).toEqual([
+        {
+          type: "admin_generate",
+          kind: "module",
+          description: "一座雾港小镇",
+          locale: "zh",
+        },
+      ])
+    } finally {
+      await i18n.changeLanguage(previous === "zh" ? "zh" : "en")
+    }
   })
 })

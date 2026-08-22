@@ -10,10 +10,35 @@ import SkillsScreen from "./SkillsScreen"
 type KeeperSection = "keys" | "module" | "rules" | "skills" | "model"
 
 const SECTION_KEYS: KeeperSection[] = ["keys", "module", "rules", "skills", "model"]
+const SECTION_STORAGE_KEY = "loreweaver-web.keeper-settings-section"
+
+function readInitialSection(): KeeperSection {
+  if (typeof window !== "undefined") {
+    const match = window.location.hash.match(/^#\/keeper-settings\/(keys|module|rules|skills|model)$/)
+    if (match) return match[1] as KeeperSection
+    try {
+      const stored = window.sessionStorage.getItem(SECTION_STORAGE_KEY)
+      if (stored && SECTION_KEYS.includes(stored as KeeperSection)) return stored as KeeperSection
+    } catch {
+      // Private-mode storage is best effort; the default section remains usable.
+    }
+  }
+  return "keys"
+}
 
 export default function KeeperSettingsScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
-  const [section, setSection] = useState<KeeperSection>("keys")
+  const [section, setSection] = useState<KeeperSection>(readInitialSection)
+
+  const selectSection = (next: KeeperSection) => {
+    setSection(next)
+    try {
+      window.sessionStorage.setItem(SECTION_STORAGE_KEY, next)
+      window.history.replaceState(null, "", `#/keeper-settings/${next}`)
+    } catch {
+      // URL/session persistence is best effort.
+    }
+  }
 
   const content = (() => {
     switch (section) {
@@ -42,7 +67,6 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
     <ScreenShell title={t("play.menu.keeperSettings")} onBack={onBack} showAdminError wide>
       <div className="keeper-settings-layout">
         <nav className="keeper-settings-nav" aria-label={t("play.menu.keeperSettings")}>
-          <p className="keeper-settings-nav-title">{t("play.menu.keeperSettings")}</p>
           <div role="tablist" aria-orientation="vertical">
             {SECTION_KEYS.map((key) => (
               <button
@@ -51,7 +75,7 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
                 role="tab"
                 aria-selected={section === key}
                 className={section === key ? "keeper-settings-tab is-selected" : "keeper-settings-tab"}
-                onClick={() => setSection(key)}
+                onClick={() => selectSection(key)}
               >
                 {t(`play.menu.${key}`)}
               </button>

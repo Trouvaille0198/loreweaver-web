@@ -55,7 +55,13 @@ function screenFromHash(): PlayScreen {
   if (typeof window === "undefined") return "game"
   const hash = window.location.hash
   if (hash.startsWith("#/module-detail/")) return "moduleDetail"
-  if (["#/keys", "#/module", "#/rules", "#/skills", "#/model"].includes(hash)) return "keeperSettings"
+  if (
+    hash.startsWith("#/keeper-settings/") ||
+    hash === "#/keeper-settings" ||
+    ["#/keys", "#/module", "#/rules", "#/skills", "#/model"].includes(hash)
+  ) {
+    return "keeperSettings"
+  }
   return SCREENS.find((screen) => SCREEN_HASHES[screen] === hash) ?? "game"
 }
 

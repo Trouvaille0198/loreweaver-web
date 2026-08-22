@@ -291,12 +291,14 @@ describe("PlayView", () => {
     expect(screen.getByRole("heading", { name: "Keeper settings" })).toBeInTheDocument()
     await user.click(screen.getByRole("tab", { name: "Import module" }))
     expect(screen.getByText("Module source library")).toBeInTheDocument()
+    expect(window.location.hash).toBe("#/keeper-settings/module")
 
     window.history.replaceState(null, "", window.location.pathname + window.location.search)
     first.unmount()
     render(<PlayView />)
 
     expect(screen.getByRole("heading", { name: "Keeper settings" })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Import module" })).toHaveAttribute("aria-selected", "true")
   })
 
   it("drives the screen from hashchange — the browser back/forward path", async () => {

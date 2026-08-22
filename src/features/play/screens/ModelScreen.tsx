@@ -47,11 +47,8 @@ function ProfileCard({
       <button type="button" className="play-llm-profile-main" onClick={onSelect}>
         <span className="play-llm-profile-dot" aria-hidden="true" />
         <span className="play-llm-profile-copy">
-          <strong>{profile.provider}</strong>
-          <span>{profile.chat_model || t("play.model.noModel")}</span>
-        </span>
-        <span className="play-llm-profile-key">
-          {profile.api_key_masked || t("play.model.noKey")}
+          <strong>{profile.chat_model || t("play.model.noModel")}</strong>
+          <span>{profile.api_key_masked || t("play.model.noKey")}</span>
         </span>
       </button>
       <button type="button" className="ghost-button play-llm-delete" onClick={onDelete}>
@@ -101,6 +98,15 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
 
   const profiles = useMemo(() => (config?.llms ?? []) as LLMProfile[], [config?.llms])
   const providers = config?.providers ?? []
+  const providerGroups = useMemo(() => {
+    const grouped = new Map<string, LLMProfile[]>()
+    for (const profile of profiles) {
+      const group = grouped.get(profile.provider) ?? []
+      group.push(profile)
+      grouped.set(profile.provider, group)
+    }
+    return Array.from(grouped, ([provider, groupProfiles]) => ({ provider, profiles: groupProfiles }))
+  }, [profiles])
   const [selectedProvider, setSelectedProvider] = useState("")
   const [selectedProfileId, setSelectedProfileId] = useState("")
   const [chatModel, setChatModel] = useState("")
@@ -202,26 +208,41 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
             <h3 className="play-form-title">{t("play.model.globalSection")}</h3>
             <p className="studio-hint">{t("play.model.globalHint")}</p>
           </div>
-          <span className="play-model-status is-active">{t("play.model.globalStatus")}</span>
         </div>
 
-        <div className="play-llm-profile-list">
-          {profiles.length > 0 ? (
-            profiles.map((profile) => (
-              <ProfileCard
-                key={profile.id}
-                profile={profile}
-                selected={selectedProfileId === profile.id}
-                onSelect={() => selectProfile(profile.id)}
-                onDelete={() => removeProfile(profile.id)}
-              />
+        <div className="play-llm-provider-list">
+          {providerGroups.length > 0 ? (
+            providerGroups.map((group) => (
+              <section className="play-llm-provider" key={group.provider} aria-label={group.provider}>
+                <div className="play-llm-provider-head">
+                  <strong>{group.provider}</strong>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => selectProvider(group.provider)}
+                  >
+                    {t("play.model.addModel")}
+                  </button>
+                </div>
+                <div className="play-llm-profile-list">
+                  {group.profiles.map((profile) => (
+                    <ProfileCard
+                      key={profile.id}
+                      profile={profile}
+                      selected={selectedProfileId === profile.id}
+                      onSelect={() => selectProfile(profile.id)}
+                      onDelete={() => removeProfile(profile.id)}
+                    />
+                  ))}
+                </div>
+              </section>
             ))
           ) : (
             <p className="play-model-switcher-empty">{t("play.model.noLlms")}</p>
           )}
         </div>
-
-        <div className="play-form play-model-fields">
+        <div className="play-model-editor">
+          <div className="play-form play-model-fields">
           <label className="field">
             {t("play.model.provider")}
             <select
@@ -278,6 +299,7 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
           >
             {t("play.model.saveLlm")}
           </button>
+        </div>
         </div>
       </section>
 

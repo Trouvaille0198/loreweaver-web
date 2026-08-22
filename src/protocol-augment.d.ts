@@ -25,6 +25,10 @@ declare module "@loreweaver/protocol" {
      * chat-binding rows never carry it. */
     key?: string
   }
+  /** v2.4 additive field: select the language used by forge authoring prompts. */
+  interface AdminGenerateFrame {
+    locale?: "en" | "zh"
+  }
 
   // --- v2.4 wire: per-room LLM override (admin_get_room_config /
   // admin_set_room_model, answered by the engine's `admin_room_config` frame).

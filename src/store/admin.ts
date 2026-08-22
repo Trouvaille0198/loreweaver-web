@@ -21,6 +21,7 @@ import type {
   ServerFrame,
 } from "@loreweaver/protocol"
 import { transportSend } from "../lib/transport"
+import i18n from "../i18n"
 import type { ClientFrame } from "@loreweaver/protocol"
 
 export interface ModuleSource {
@@ -427,7 +428,10 @@ export const useAdminStore = create<AdminState>((set) => ({
   enableSkill: (id, on, locale) =>
     send({ type: "admin_enable_skill", id, on, ...(locale ? { locale } : {}) }, set),
   listRules: () => send({ type: "admin_list_rules" }, set),
-  generateModule: (description) => send({ type: "admin_generate", kind: "module", description }, set),
+  generateModule: (description) => {
+    const locale = i18n.resolvedLanguage === "zh" ? "zh" : "en"
+    send({ type: "admin_generate", kind: "module", description, locale }, set)
+  },
   listModules: () => moduleAction("module_list", {}, set),
   getModuleDetail: (name) => moduleAction("module_detail", { name }, set),
   uploadModule: (name, content) => moduleAction("module_upload", { name, content }, set),

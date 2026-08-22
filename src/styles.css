@@ -604,9 +604,13 @@ body {
 }
 
 .log-entry {
-  border-left: 2px solid var(--rail, var(--border));
-  padding-left: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--bg-raised);
+  box-shadow: 0 5px 18px rgb(0 0 0 / 0.1);
 }
+
 
 .speaker-kp {
   --rail: var(--lw-kp);
@@ -623,6 +627,13 @@ body {
 .speaker-system {
   --rail: var(--lw-system);
 }
+
+.log-entry .entry-speaker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
 
 .entry-speaker {
   font: 600 11px/1 var(--font-ui);
@@ -659,9 +670,11 @@ body {
 }
 
 .entry-body blockquote {
-  margin: 0.5em 0;
-  padding-left: 12px;
-  border-left: 2px solid var(--border);
+  margin: 0.7em 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: var(--bg-inset);
   color: var(--ink-dim);
 }
 
@@ -1628,8 +1641,10 @@ body {
 
 .ui-text.is-quote {
   font: italic 14px/1.6 var(--font-story);
-  border-left: 2px solid var(--border);
-  padding-left: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--bg-inset);
   color: var(--ink-dim);
 }
 
@@ -1711,12 +1726,12 @@ body {
 
 .ui-letter {
   margin: 0;
-  padding: 12px 16px;
+  padding: 14px 16px;
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
-  border-left: 3px solid var(--accent);
-  border-radius: 4px;
+  border-radius: 8px;
   font: 14px/1.7 var(--font-story);
+  box-shadow: 0 5px 18px rgb(0 0 0 / 0.1);
 }
 
 .ui-letter-to {
@@ -2290,7 +2305,9 @@ body {
 
 .keeper-settings-tab.is-selected {
   color: var(--accent);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-raised));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-soft));
+  box-shadow: none;
 }
 
 .keeper-settings-detail {
@@ -2309,11 +2326,7 @@ body {
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 12px;
 }
-
 /* Model configuration is a two-level workspace: one primary model card, then
    a grouped set of assignment cards. Keep the hierarchy visible instead of
    making every field look like an unrelated form row. */
@@ -2333,8 +2346,9 @@ body {
   box-shadow: 0 10px 30px color-mix(in srgb, black 18%, transparent);
 }
 
-.play-model-global {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border) 55%);
+.play-model-global,
+.play-model-usage {
+  border-color: var(--border-soft);
 }
 
 .play-model-card-head,
@@ -2394,6 +2408,62 @@ body {
   flex-wrap: wrap;
   gap: 8px;
 }
+.play-llm-provider-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.play-llm-provider {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.play-llm-provider-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.play-llm-provider-head strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.play-llm-provider .play-llm-profile-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.play-model-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.play-model-editor .play-model-fields {
+  gap: 12px;
+}
+
+.play-model-editor .play-model-apply {
+  min-height: 38px;
+  align-self: flex-start;
+}
 
 .play-model-chip {
   display: inline-flex;
@@ -2405,11 +2475,7 @@ body {
   background: var(--bg-inset);
   border: 1px solid var(--border-soft);
   border-radius: 999px;
-  font: 600 12px/1.2 var(--font-ui);
-  cursor: pointer;
   transition:
-    color 120ms ease,
-    border-color 120ms ease,
     background 120ms ease,
     transform 120ms ease;
 }
@@ -2458,24 +2524,15 @@ body {
 }
 
 .play-model-usage {
-  gap: 18px;
-  padding: 0;
-  background: none;
-  border: 0;
-  box-shadow: none;
-}
-
-.play-model-assignment-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .play-model-assignment {
   min-width: 0;
-  padding: 16px;
-  background: color-mix(in srgb, var(--bg-raised) 72%, var(--bg-inset) 28%);
-  border-color: var(--border-soft);
+  padding: 14px;
+  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
   box-shadow: none;
 }
 
@@ -3579,17 +3636,14 @@ code {
   color: var(--ink-dim);
 }
 
-/* ---- empty-table onboarding card ---- */
-
 .menu-onboarding {
   /* margin-block only: .onboarding-banner (same element) owns the horizontal
      auto-centering — a full `margin` shorthand here would clobber it. */
   margin-block: 10px 14px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
-  border-left: 3px solid var(--accent);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -3958,8 +4012,7 @@ code {
   /* Chat bubbles: the speaker label floats above its own bubble, the story
      text gets the room instead of the desktop left rail. */
   .log-entry {
-    border-left: none;
-    padding-left: 0;
+    padding: 12px 14px;
   }
 
   .entry-speaker {
@@ -4326,7 +4379,63 @@ code {
 }
 
 @media (max-width: 760px) {
+  .play-llm-provider-list,
   .play-llm-profile-list {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Model settings spacing scale: 24 / 20 / 12 / 8px. */
+.keeper-settings-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.keeper-settings-detail > .play-model-card,
+.keeper-settings-detail > .play-model-usage {
+  gap: 20px;
+  padding: 20px;
+}
+
+.play-model-card-head,
+.play-model-section-head {
+  gap: 12px;
+}
+
+.play-llm-provider-list,
+.play-model-assignment-grid {
+  gap: 12px;
+}
+
+.play-llm-provider {
+  gap: 10px;
+  padding: 12px;
+}
+
+.play-llm-profile-list {
+  gap: 8px;
+}
+
+.play-model-editor {
+  gap: 16px;
+  padding-top: 20px;
+}
+
+.play-model-fields,
+.play-model-editor .play-model-fields,
+.play-model-assignment .play-form {
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .keeper-settings-detail {
+    gap: 16px;
+  }
+
+  .keeper-settings-detail > .play-model-card,
+  .keeper-settings-detail > .play-model-usage {
+    gap: 16px;
+    padding: 14px;
   }
 }
