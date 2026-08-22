@@ -68,6 +68,17 @@ bun run i18n:lint    # en/zh parity, no hardcoded user-facing strings
 bun run build        # production bundle → dist/
 ```
 
+## Design and frontend development
+
+UI work follows two repository-level references:
+
+- [Design language](docs/DESIGN_LANGUAGE.md) — product character, visual hierarchy, page patterns,
+  themes, responsive behavior, interaction, and writing rules.
+- [Frontend implementation guidelines](docs/FRONTEND_GUIDELINES.md) — component contracts, code
+  ownership, CSS conventions, reusable recipes, validation, and the definition of done.
+
+Read both before adding or changing a page, component, interaction, or theme.
+
 ## What differs from Studio / the TUI
 
 | Capability               | Web                                  | Studio (desktop)  | TUI             |
