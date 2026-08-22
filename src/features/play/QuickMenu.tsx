@@ -51,11 +51,13 @@ function flatten(commands: readonly QuickCommand[], keeper = false): PaletteRow[
 }
 
 /** A 24px-grid lightning bolt — the "quick" glyph, drawn with currentColor so
- * it inherits the theme instead of shipping a platform emoji. */
+ * it inherits the theme instead of shipping a platform emoji. The path spans
+ * 15×18 of the 24-grid so the bolt reads as a fat, legible glyph at button
+ * size (the Material bolt only spans 10×20 and renders as a thin sliver). */
 function BoltIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
-      <path d="M7 2v11h3v9l7-12h-4l4-8z" />
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+      <path d="M13 2 3 14h7l-1 8 12-14h-7l1-6z" />
     </svg>
   )
 }
