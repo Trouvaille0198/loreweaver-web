@@ -189,23 +189,17 @@ export interface ArgSuggestion {
   mode: "replace" | "append"
 }
 
-/** The dice grammar: what may follow the expression typed so far. */
+/**
+ * The dice grammar — GLUE ONLY, never concrete data. The player types the
+ * numbers (`3`, the die size, the keep count); the completions offer only
+ * the structural tokens that may follow what's typed: `d` after the count,
+ * `kh`/`kl`/`+`/`-` after a complete roll. No example expressions, no die
+ * sizes, no keep counts.
+ */
 export function diceSuggestions(token: string): ArgSuggestion[] {
-  if (token === "") {
-    // Cold start: the classic expressions, one tap away.
-    return ["3d6", "1d100", "4d6kh3", "2d20kl1"].map((text) => ({ text, mode: "replace" as const }))
-  }
   if (/^\d+$/.test(token)) return [{ text: "d", mode: "append" }]
-  if (/^\d+d$/i.test(token)) {
-    return ["3", "4", "6", "8", "10", "12", "20", "100"].map((text) => ({ text, mode: "append" as const }))
-  }
   if (/^\d+d\d+$/i.test(token)) {
     return ["kh", "kl", "+", "-"].map((text) => ({ text, mode: "append" as const }))
-  }
-  const keep = /^(\d+)d\d+k[hl]$/i.exec(token)
-  if (keep) {
-    // The keep count: at most the number of dice rolled.
-    return [{ text: keep[1], mode: "append" }]
   }
   return []
 }

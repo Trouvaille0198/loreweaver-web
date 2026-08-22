@@ -207,21 +207,25 @@ describe("InputBox quick commands sub-menus", () => {
     expect(transportSend).not.toHaveBeenCalled()
   })
 
-  it("suggests the dice grammar while typing an expression", async () => {
+  it("suggests only dice-grammar glue, never concrete numbers", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
     const field = screen.getByRole("textbox")
-    // `3` → `d`; Tab appends it.
-    await user.type(field, ".r 3")
+    // Cold start: nothing — the numbers are the player's to type.
+    await user.type(field, ".r ")
+    expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
+    // `3` → `d`; Tab appends it. The die size is typed, not suggested.
+    await user.type(field, "3")
     await user.keyboard("{Tab}")
     expect(field).toHaveValue(".r 3d")
-    // `3d6` → kh/kl/+/-; the first Tab appends kh.
     await user.type(field, "6")
+    // `3d6` → kh/kl/+/-; the first Tab appends kh. The keep count is typed.
     await user.keyboard("{Tab}")
     expect(field).toHaveValue(".r 3d6kh")
-    // The keep count is suggested after kh.
-    await user.keyboard("{Tab}")
+    await user.type(field, "3")
     expect(field).toHaveValue(".r 3d6kh3")
+    // A complete modifier takes no further suggestions.
+    expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
   })
 
   it("suggests fixed argument tokens, filtered by the typed prefix", async () => {
