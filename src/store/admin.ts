@@ -82,12 +82,13 @@ export interface WorldbookOperation {
 }
 
 export interface ModuleOperation {
-  kind: "module_upload" | "module_import" | "module_delete"
+  kind: "module_upload" | "module_bundle_upload" | "module_import" | "module_delete"
   ok: boolean
   name: string
   error?: string
   receipt?: string
   status?: string
+  files?: number
 }
 
 function parseModuleDetail(frame: AdminGeneratedFrame): Record<string, unknown> {
@@ -308,6 +309,7 @@ interface AdminState {
   listModules: () => void
   getModuleDetail: (name: string) => void
   uploadModule: (name: string, content: string) => void
+  uploadModuleBundle: (name: string, archive: string) => void
   importModule: (name: string) => void
   deleteModule: (name: string) => void
   listWorldbooks: () => void
@@ -582,6 +584,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   listModules: () => moduleAction("module_list", {}, set),
   getModuleDetail: (name) => moduleAction("module_detail", { name }, set),
   uploadModule: (name, content) => moduleAction("module_upload", { name, content }, set),
+  uploadModuleBundle: (name, archive) => moduleAction("module_bundle_upload", { name, archive }, set),
   importModule: (name) => moduleAction("module_import", { name }, set),
   deleteModule: (name) => moduleAction("module_delete", { name }, set),
   exportRoom: (room, path) => send({ type: "admin_export_room", room, ...(path ? { path } : {}) }, set),

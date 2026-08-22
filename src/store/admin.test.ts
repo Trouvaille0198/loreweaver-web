@@ -37,6 +37,72 @@ describe("admin model requests", () => {
     expect(sent[0]).toMatchObject({ api_key: "", base_url: "" })
   })
 
+  it("saves and deletes named LLM profiles through their dedicated frames", () => {
+    const admin = useAdminStore.getState()
+    admin.saveLlm("deepseek", "deepseek-chat", "sk-profile-test", "https://api.example.test")
+    admin.deleteLlm("deepseek::deepseek-chat")
+
+    expect(sent).toEqual([
+      {
+        type: "admin_set_llm",
+        provider: "deepseek",
+        chat_model: "deepseek-chat",
+        api_key: "sk-profile-test",
+        base_url: "https://api.example.test",
+      },
+      { type: "admin_delete_llm", id: "deepseek::deepseek-chat" },
+    ])
+  })
+
+  it("sends and ingests room model assignments as one confirmed operation", () => {
+    const admin = useAdminStore.getState()
+    admin.setRoomModel({
+      main: "deepseek::deepseek-chat",
+      scribe: "",
+      director: "openai::gpt-5-mini",
+      imagegen: "",
+      scribeEnabled: false,
+      directorEnabled: true,
+    })
+
+    expect(sent).toEqual([
+      {
+        type: "admin_set_room_model",
+        main: "deepseek::deepseek-chat",
+        scribe: "",
+        director: "openai::gpt-5-mini",
+        imagegen: "",
+        scribe_enabled: false,
+        director_enabled: true,
+      },
+    ])
+    expect(useAdminStore.getState().busy).toBe(true)
+
+    const frame = {
+      type: "admin_room_config",
+      room: "table",
+      active: true,
+      providers: ["deepseek::deepseek-chat", "openai::gpt-5-mini"],
+      saved_providers: ["deepseek::deepseek-chat", "openai::gpt-5-mini"],
+      stored: {
+        main: "deepseek::deepseek-chat",
+        scribe: "",
+        director: "openai::gpt-5-mini",
+        imagegen: "",
+        scribe_enabled: false,
+        director_enabled: true,
+      },
+    }
+    expect(useAdminStore.getState().ingest(frame as never)).toBe(true)
+    expect(useAdminStore.getState()).toMatchObject({ roomConfig: frame, busy: false, lastError: null })
+  })
+
+  it("clears room assignments with an explicit clear frame", () => {
+    useAdminStore.getState().clearRoomModel()
+
+    expect(sent).toEqual([{ type: "admin_set_room_model", clear: true }])
+  })
+
   it("configures dedicated LLM lanes without exposing them in state", () => {
     useAdminStore.getState().setLlmLane("scribe", {
       enabled: true,

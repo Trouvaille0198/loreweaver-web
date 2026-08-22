@@ -166,12 +166,12 @@ describe("PlayView", () => {
     useConnectionStore.setState({ status: "online", welcome: { ...WELCOME, features: ["demo"] } })
     render(<PlayView />)
     await user.click(screen.getByRole("button", { name: "Main menu" }))
-    expect(screen.getByText("── Keeper ──")).toBeInTheDocument()
+    expect(screen.queryByText(/──.*Keeper.*──/)).not.toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /Play sample adventure/ })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /Keeper settings/ })).toBeInTheDocument()
   })
 
-  it("hides the keeper section from players", async () => {
+  it("hides keeper settings from players", async () => {
     const user = userEvent.setup()
     useConnectionStore.setState({
       status: "online",
@@ -179,8 +179,7 @@ describe("PlayView", () => {
     })
     render(<PlayView />)
     await user.click(screen.getByRole("button", { name: "Main menu" }))
-    expect(screen.queryByText("── Keeper ──")).not.toBeInTheDocument()
-    expect(screen.queryByRole("menuitem", { name: /Rooms & invites/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: /Keeper settings/ })).not.toBeInTheDocument()
   })
 
   it("offers no host-locally button in the browser — the connect form is a plain URL + key", () => {

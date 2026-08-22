@@ -155,6 +155,7 @@ export default function ModuleScreen({
   const listModules = useAdminStore((s) => s.listModules)
   const getModuleDetail = useAdminStore((s) => s.getModuleDetail)
   const uploadModule = useAdminStore((s) => s.uploadModule)
+  const uploadModuleBundle = useAdminStore((s) => s.uploadModuleBundle)
   const importModule = useAdminStore((s) => s.importModule)
   const deleteModule = useAdminStore((s) => s.deleteModule)
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
@@ -166,7 +167,7 @@ export default function ModuleScreen({
   const [pathStatus, setPathStatus] = useState<SendStatus>("idle")
   const [packStatus, setPackStatus] = useState<SendStatus>("idle")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-
+  const bundleInputRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => {
     listModules()
   }, [listModules])
@@ -190,8 +191,9 @@ export default function ModuleScreen({
     if (operation.name) {
       setSelectedName(operation.name)
       getModuleDetail(operation.name)
+      if (operation.kind === "module_bundle_upload") importModule(operation.name)
     }
-  }, [getModuleDetail, listModules, operation])
+  }, [getModuleDetail, importModule, listModules, operation])
 
   const send = async (line: string, mark: (status: SendStatus) => void, clear: () => void): Promise<void> => {
     mark("idle")
@@ -223,6 +225,15 @@ export default function ModuleScreen({
     setSelectedName(file.name)
   }
 
+  const chooseBundle = async (file: File) => {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    let binary = ""
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000))
+    }
+    uploadModuleBundle(file.name, btoa(binary))
+  }
+
   const removeSelected = () => {
     if (!selectedName || !window.confirm(t("play.module.deleteConfirm"))) return
     deleteModule(selectedName)
@@ -246,6 +257,20 @@ export default function ModuleScreen({
         />
         <Button type="button" variant="primary" onClick={() => fileInputRef.current?.click()}>
           {t("play.module.addSource")}
+        </Button>
+        <input
+          ref={bundleInputRef}
+          type="file"
+          accept=".zip,application/zip"
+          hidden
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            event.target.value = ""
+            if (file) void chooseBundle(file)
+          }}
+        />
+        <Button type="button" variant="quiet" onClick={() => bundleInputRef.current?.click()}>
+          {t("play.module.addBundle")}
         </Button>
         {sources.length === 0 ? <p className="studio-hint">{t("play.module.noSources")}</p> : null}
         <ul className="play-list module-source-list">

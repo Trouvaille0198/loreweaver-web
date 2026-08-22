@@ -18,7 +18,6 @@ interface MenuRow {
   key: string
   screen?: PlayScreen
   action?: () => void
-  keeper: boolean
 }
 
 export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScreen) => void }) {
@@ -59,15 +58,11 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
   }
 
   const rows: MenuRow[] = []
-  if (hasDemo) rows.push({ key: "demo", action: startDemo, keeper: false })
-  rows.push(
-    { key: "character", screen: "character", keeper: false },
-    { key: "settings", screen: "settings", keeper: false },
-  )
+  if (hasDemo) rows.push({ key: "demo", action: startDemo })
+  rows.push({ key: "character", screen: "character" }, { key: "settings", screen: "settings" })
   if (isKeeper) {
-    rows.push({ key: "keeperSettings", screen: "keeperSettings", keeper: true })
+    rows.push({ key: "keeperSettings", screen: "keeperSettings" })
   }
-  const firstKeeper = rows.findIndex((row) => row.keeper)
 
   return (
     <div className="app-menu" ref={rootRef}>
@@ -86,11 +81,8 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
       </Button>
       {open ? (
         <div className="app-menu-pop" role="menu" aria-label={t("play.menu.label")}>
-          {rows.map((row, index) => (
+          {rows.map((row) => (
             <div key={row.key}>
-              {index === firstKeeper ? (
-                <p className="app-menu-section">{t("play.menu.keeperSection")}</p>
-              ) : null}
               <Button
                 type="button"
                 role="menuitem"

@@ -10,6 +10,8 @@
 
 import {
   WsClient,
+  isServerFrame,
+  type AdminRoomConfigFrame,
   type ClientFrame,
   type MediaFrame,
   type MediaPayload,
@@ -25,6 +27,47 @@ function emit(event: TransportEvent): void {
   for (const handler of eventHandlers) handler(event)
 }
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+}
+
+/** Validates project-owned additive frames before they enter application state. */
+export function parseAdditiveServerFrame(data: unknown): AdminRoomConfigFrame | null {
+  if (typeof data !== "string") return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(data)
+  } catch {
+    return null
+  }
+  if (isServerFrame(parsed) || typeof parsed !== "object" || parsed === null) return null
+  const frame = parsed as Record<string, unknown>
+  if (frame.type !== "admin_room_config") return null
+  const stored = frame.stored
+  if (
+    typeof frame.room !== "string" ||
+    typeof frame.active !== "boolean" ||
+    !isStringArray(frame.providers) ||
+    !isStringArray(frame.saved_providers) ||
+    typeof stored !== "object" ||
+    stored === null
+  ) {
+    return null
+  }
+  const selection = stored as Record<string, unknown>
+  if (
+    typeof selection.main !== "string" ||
+    typeof selection.scribe !== "string" ||
+    typeof selection.director !== "string" ||
+    typeof selection.imagegen !== "string" ||
+    typeof selection.scribe_enabled !== "boolean" ||
+    typeof selection.director_enabled !== "boolean"
+  ) {
+    return null
+  }
+  return parsed as AdminRoomConfigFrame
+}
+
 /** A browser `WebSocket` delivers binary messages as `Blob` by default; the
  * protocol's media channel rides binary messages, and `WsClient` only accepts
  * `ArrayBuffer`/`Uint8Array`. Opting into `arraybuffer` here is the one
@@ -34,6 +77,10 @@ function emit(event: TransportEvent): void {
 function makeSocket(url: string): WebSocketLike {
   const socket = new WebSocket(url)
   socket.binaryType = "arraybuffer"
+  socket.addEventListener("message", (event) => {
+    const frame = parseAdditiveServerFrame(event.data)
+    if (frame) emit({ kind: "frame", frame })
+  })
   return socket as unknown as WebSocketLike
 }
 

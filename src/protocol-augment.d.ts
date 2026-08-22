@@ -119,6 +119,10 @@ declare module "@loreweaver/protocol" {
   }
 
   interface AdminConfigFrame {
+    provider?: string
+    chat_model?: string
+    embedding_model?: string
+    embedding_dim?: number
     llms?: LLMProfile[]
     scribe?: LLMLaneStatus
     director?: LLMLaneStatus
