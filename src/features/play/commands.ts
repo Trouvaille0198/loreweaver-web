@@ -21,9 +21,10 @@ export interface CommandEntry {
 
 export const COMMANDS: readonly CommandEntry[] = [
   { word: "r", example: "3d6+2" },
-  { word: "ra" },
-  { word: "opposed" },
   { word: "hr" },
+  { word: "ra" },
+  { word: "rav" },
+  { word: "opposed" },
   { word: "st", example: "力量=70" }, // i18n-exempt: a CJK example argument, data not UI
   { word: "var" },
   { word: "module" },
@@ -58,186 +59,54 @@ export function matchCommands(prefix: string): CommandEntry[] {
 }
 
 /**
- * The quick-command menu beside the input box: the commands a player reaches
- * for every session, each with a ready-to-send template, and grouped sub-
- * commands where the word has them (`.pc` → list/claim/release, `.r` → the
- * common dice expressions, `.st` → the sheet actions). The client inserts the
- * line into the input box (not sent) so the player can adjust the argument.
- * `word` keys the i18n label under `play.commands.<word>`; `line` is what
- * lands in the box. `children` renders as an indented sub-menu under the row.
+ * The quick-command menu beside the input box: one row per COMMAND (never per
+ * example of its arguments). Picking a row inserts the line — argument-taking
+ * words end in a space, ready for the input box's live argument completions
+ * (ARG_SPECS below); self-sufficient words carry their usual full line.
+ *
+ * Example data (`3d6`, `侦查`, `HP-1`…) deliberately does NOT live here: it
+ * belongs to the inline completions, suggested as the player types the
+ * argument — not as fixed palette rows.
  */
 export interface QuickCommand {
   /** The command word (i18n label key). */
   word: string
-  /** The full line inserted into the input box (omit to make it a pure group). */
-  line?: string
-  /** Sub-commands shown when the row is expanded. */
-  children?: readonly QuickCommand[]
+  /** The full line inserted into the input box. */
+  line: string
   /** Keeper-only: hidden from players, and separated under a "Keeper" header. */
   keeper?: boolean
 }
 
 export const QUICK_COMMANDS: readonly QuickCommand[] = [
-  {
-    word: "r",
-    line: ".r 3d6",
-    children: [
-      { word: "r", line: ".r 3d6" },
-      { word: "r", line: ".r 4d6kh3" },
-      { word: "r", line: ".r 2d20kl1" },
-      { word: "r", line: ".r 1d100" },
-      { word: "hr", line: ".hr 1d100" },
-    ],
-  },
-  {
-    word: "ra",
-    line: ".ra 侦查 ", // i18n-exempt: a CJK example argument, data not UI
-    children: [
-      { word: "ra", line: ".ra 侦查 " }, // i18n-exempt
-      { word: "ra", line: ".ra 聆听 " }, // i18n-exempt
-      { word: "ra", line: ".ra 图书馆使用 " }, // i18n-exempt
-      { word: "ra", line: ".ra 敏捷 " }, // i18n-exempt
-      { word: "rav", line: ".rav 侦查 隐匿 " }, // i18n-exempt
-    ],
-  },
+  // --- Player surface ---
+  { word: "r", line: ".r " },
+  { word: "hr", line: ".hr " },
+  { word: "ra", line: ".ra " },
+  { word: "rav", line: ".rav " },
   { word: "sanity", line: ".sc 1/1d6" },
   { word: "init", line: ".ri" },
-  {
-    word: "st",
-    line: ".st ",
-    children: [
-      { word: "st", line: ".st " },
-      { word: "st", line: ".st HP-1" },
-      { word: "st", line: ".st 理智-1" }, // i18n-exempt
-      { word: "st", line: ".st finalize" },
-    ],
-  },
-  {
-    word: "pc",
-    line: ".pc list",
-    children: [
-      { word: "pc", line: ".pc list" },
-      { word: "pc", line: ".pc claim 顾晚棠 " }, // i18n-exempt: pregen names are data
-      { word: "pc", line: ".pc claim 白榆生 " }, // i18n-exempt
-      { word: "pc", line: ".pc claim 陈九鲤 " }, // i18n-exempt
-      { word: "pc", line: ".pc release" },
-    ],
-  },
+  { word: "st", line: ".st " },
+  { word: "pc", line: ".pc " },
   { word: "recap", line: ".recap" },
   { word: "help", line: ".help" },
   // --- Keeper-only surface (hidden from player seats) ---
-  {
-    word: "module",
-    line: ".module ",
-    keeper: true,
-    children: [
-      { word: "module", line: ".module /data/", keeper: true }, // i18n-exempt: a path is data
-      { word: "pack", line: ".pack install gh:author/repo", keeper: true },
-    ],
-  },
-  {
-    word: "var",
-    line: ".var list",
-    keeper: true,
-    children: [
-      { word: "var", line: ".var list", keeper: true },
-      { word: "var", line: ".var expose ", keeper: true },
-      { word: "var", line: ".var add 信物 1", keeper: true }, // i18n-exempt: a variable name is data
-      { word: "var", line: ".var set 信物 1", keeper: true }, // i18n-exempt
-    ],
-  },
-  {
-    word: "skill",
-    line: ".skill list",
-    keeper: true,
-    children: [
-      { word: "skill", line: ".skill list", keeper: true },
-      { word: "skill", line: ".skill enable ", keeper: true },
-      { word: "skill", line: ".skill disable ", keeper: true },
-    ],
-  },
-  {
-    word: "room",
-    line: ".room",
-    keeper: true,
-    children: [
-      { word: "room", line: ".room list", keeper: true },
-      { word: "room", line: ".room reset", keeper: true },
-    ],
-  },
+  { word: "module", line: ".module ", keeper: true },
+  { word: "var", line: ".var ", keeper: true },
+  { word: "skill", line: ".skill ", keeper: true },
+  { word: "room", line: ".room ", keeper: true },
   { word: "panels", line: ".panels", keeper: true },
   { word: "audio", line: ".audio", keeper: true },
   { word: "import", line: ".import list", keeper: true },
-  // --- Keeper: the cast & world ---
-  {
-    word: "npc",
-    line: ".npc ",
-    keeper: true,
-    children: [
-      { word: "npc", line: ".npc list", keeper: true },
-      { word: "npc", line: ".npc add ", keeper: true },
-      { word: "npc", line: ".npc speak ", keeper: true },
-    ],
-  },
-  {
-    word: "companion",
-    line: ".companion ",
-    keeper: true,
-    children: [
-      { word: "companion", line: ".companion add ", keeper: true },
-      { word: "companion", line: ".companion list", keeper: true },
-    ],
-  },
-  {
-    word: "lore",
-    line: ".lore list",
-    keeper: true,
-    children: [
-      { word: "lore", line: ".lore list", keeper: true },
-      { word: "lore", line: ".lore add ", keeper: true },
-      { word: "lore", line: ".lore query ", keeper: true },
-    ],
-  },
-  {
-    word: "chronicle",
-    line: ".chronicle list",
-    keeper: true,
-    children: [
-      { word: "chronicle", line: ".chronicle list", keeper: true },
-      { word: "chronicle", line: ".chronicle summary", keeper: true },
-      { word: "chronicle", line: ".chronicle note ", keeper: true },
-    ],
-  },
-  {
-    word: "rule",
-    line: ".rule list",
-    keeper: true,
-    children: [
-      { word: "rule", line: ".rule list", keeper: true },
-      { word: "rule", line: ".rule coc7", keeper: true },
-    ],
-  },
-  {
-    word: "preset",
-    line: ".preset list",
-    keeper: true,
-    children: [
-      { word: "preset", line: ".preset list", keeper: true },
-      { word: "preset", line: ".preset import ", keeper: true },
-    ],
-  },
+  { word: "npc", line: ".npc ", keeper: true },
+  { word: "companion", line: ".companion ", keeper: true },
+  { word: "lore", line: ".lore ", keeper: true },
+  { word: "chronicle", line: ".chronicle ", keeper: true },
+  { word: "rule", line: ".rule list", keeper: true },
+  { word: "preset", line: ".preset list", keeper: true },
   { word: "model", line: ".model list", keeper: true },
   { word: "reset", line: ".reset", keeper: true },
-  // --- Keeper: session & housekeeping ---
-  {
-    word: "save",
-    line: ".save",
-    keeper: true,
-    children: [
-      { word: "save", line: ".save", keeper: true },
-      { word: "undo", line: ".undo", keeper: true },
-    ],
-  },
+  { word: "save", line: ".save", keeper: true },
+  { word: "undo", line: ".undo", keeper: true },
   { word: "bot", line: ".bot", keeper: true },
   { word: "botlist", line: ".botlist", keeper: true },
   { word: "language", line: ".language", keeper: true },
@@ -245,12 +114,110 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "habits", line: ".habits", keeper: true },
 ]
 
-/** Flatten for tests: every leaf line reachable from the menu. */
+/** Flatten for tests: every line reachable from the menu. */
 export function quickCommandLines(commands: readonly QuickCommand[] = QUICK_COMMANDS): string[] {
-  const out: string[] = []
-  for (const command of commands) {
-    if (command.line) out.push(command.line)
-    if (command.children) out.push(...quickCommandLines(command.children))
+  return commands.map((command) => command.line)
+}
+
+// ---------------------------------------------------------------------------
+// Argument completions: suggested inline by the input box as the player types
+// a command's arguments. Two kinds of sources:
+//
+//   - token lists: fixed candidate words for the next argument (subcommands,
+//     common skill names, sanity patterns…), prefix-filtered, inserted whole;
+//   - the dice grammar: what may follow what's already typed (`3` → `d`,
+//     `3d6` → `kh`/`kl`…), appended to the typed expression.
+// ---------------------------------------------------------------------------
+
+/** Curated common CoC skill names (zh) — data, not UI prose (i18n-exempt). */
+export const COMMON_SKILLS: readonly string[] = [
+  "侦查",
+  "聆听",
+  "图书馆使用",
+  "闪避",
+  "攀爬",
+  "游泳",
+  "斗殴",
+  "手枪",
+  "急救",
+  "潜行",
+  "心理学",
+  "母语",
+  "敏捷",
+  "力量",
+  "体质",
+  "外貌",
+  "意志",
+  "教育",
+  "运气",
+]
+
+/** Argument completion spec for one command word. */
+export interface ArgSpec {
+  /** Fixed candidates for the next token, prefix-filtered, inserted whole. */
+  tokens?: readonly string[]
+  /** The dice-expression grammar — suggestions follow what's typed. */
+  dice?: boolean
+}
+
+export const ARG_SPECS: Record<string, ArgSpec> = {
+  r: { dice: true },
+  hr: { dice: true },
+  ra: { tokens: COMMON_SKILLS },
+  rav: { tokens: COMMON_SKILLS },
+  sanity: { tokens: ["1/1d6", "1/d6", "0/1d4", "1/1d8"] },
+  st: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
+  pc: { tokens: ["list", "claim", "release"] },
+  var: { tokens: ["list", "expose", "add", "set"] },
+  skill: { tokens: ["list", "enable", "disable"] },
+  room: { tokens: ["list", "reset"] },
+  npc: { tokens: ["list", "add", "speak"] },
+  companion: { tokens: ["add", "list"] },
+  lore: { tokens: ["list", "add", "query"] },
+  chronicle: { tokens: ["list", "summary", "note"] },
+  rule: { tokens: ["list", "coc7"] },
+  preset: { tokens: ["list", "import"] },
+  pack: { tokens: ["install"] },
+  import: { tokens: ["list"] },
+}
+
+/** One inline completion candidate. */
+export interface ArgSuggestion {
+  /** The candidate text. */
+  text: string
+  /** `replace` swaps the current token; `append` extends it (dice grammar). */
+  mode: "replace" | "append"
+}
+
+/** The dice grammar: what may follow the expression typed so far. */
+export function diceSuggestions(token: string): ArgSuggestion[] {
+  if (token === "") {
+    // Cold start: the classic expressions, one tap away.
+    return ["3d6", "1d100", "4d6kh3", "2d20kl1"].map((text) => ({ text, mode: "replace" as const }))
   }
-  return out
+  if (/^\d+$/.test(token)) return [{ text: "d", mode: "append" }]
+  if (/^\d+d$/i.test(token)) {
+    return ["3", "4", "6", "8", "10", "12", "20", "100"].map((text) => ({ text, mode: "append" as const }))
+  }
+  if (/^\d+d\d+$/i.test(token)) {
+    return ["kh", "kl", "+", "-"].map((text) => ({ text, mode: "append" as const }))
+  }
+  const keep = /^(\d+)d\d+k[hl]$/i.exec(token)
+  if (keep) {
+    // The keep count: at most the number of dice rolled.
+    return [{ text: keep[1], mode: "append" }]
+  }
+  return []
+}
+
+/** Inline completions for the token being typed after `.word `. */
+export function suggestArgs(word: string, token: string): ArgSuggestion[] {
+  const spec = ARG_SPECS[word]
+  if (!spec) return []
+  if (spec.dice) return diceSuggestions(token)
+  const p = token.trim().toLowerCase()
+  return (spec.tokens ?? [])
+    .filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p))
+    .slice(0, 8)
+    .map((text) => ({ text, mode: "replace" as const }))
 }

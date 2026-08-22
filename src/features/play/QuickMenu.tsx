@@ -1,11 +1,9 @@
-// The quick-command palette beside the input box — a searchable, drill-down
-// menu of ready-to-send command lines. The root level shows the FIRST-level
-// commands; a command with children (▸) drills into its sub-commands instead
-// of inserting, so the palette mirrors the tree instead of dumping every leaf
-// in one wall. Typing in the filter searches the whole tree flat. Picking a
-// row inserts the line into the input box (never sends it) so the player can
-// adjust the arguments. Full keyboard support: ↑/↓ to move, Enter to drill or
-// insert, Esc to go up a level (or close at the root).
+// The quick-command palette beside the input box — a searchable menu of the
+// COMMANDS, one row per word (never per example of its arguments: example
+// data lives in the input box's inline completions, suggested as the player
+// types the arguments). Argument-taking words insert "word + space" so the
+// cursor lands right where the completions take over. Full keyboard support:
+// ↑/↓ to move, Enter to insert, Esc to close.
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react"
 import { useTranslation } from "react-i18next"
@@ -16,19 +14,6 @@ export interface QuickMenuProps {
   /** Insert one command line into the input box (never send). */
   onPick: (line: string) => void
   disabled?: boolean
-}
-
-/** One palette row. `group` marks a drillable first-level command; `back` is
- * the "‹ up one level" pseudo-row; `parent` (search results only) carries the
- * first-level group a matched sub-command came from, for context. */
-interface PaletteRow {
-  key: string
-  line: string
-  labelKey: string
-  group?: QuickCommand
-  back?: boolean
-  keeper: boolean
-  parent?: QuickCommand
 }
 
 /** A 24px-grid lightning bolt — the "quick" glyph, drawn with currentColor so
@@ -57,8 +42,6 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [active, setActive] = useState(0)
-  /** The drill-down path of first-level groups (their words). */
-  const [path, setPath] = useState<string[]>([])
   const rootRef = useRef<HTMLDivElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
 
@@ -66,132 +49,45 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
 
   const labelOf = (key: string) => t(`play.commands.${key}`)
 
-  /** Resolve the drill-down path to the group whose children are on screen. */
-  const current = useMemo(() => {
-    let level: readonly QuickCommand[] = QUICK_COMMANDS
-    let group: QuickCommand | undefined
-    for (const word of path) {
-      const next = level.find((command) => command.word === word)
-      if (!next?.children?.length) break
-      group = next
-      level = next.children
-    }
-    return group
-  }, [path])
-
-  /** The rows on screen: search results when typing, the drilled group's
-   * children one level down, the first-level commands at the root. */
-  const rows = useMemo<PaletteRow[]>(() => {
+  /** The commands on screen: filtered by the search field, else the whole
+   * first-level surface for the seat. */
+  const rows = useMemo<QuickCommand[]>(() => {
+    const visible = QUICK_COMMANDS.filter((command) => isKeeper || !command.keeper)
     const q = query.trim().toLowerCase()
-    if (q) {
-      // Search mode: the whole tree, flat. A first-level group matches as its
-      // own default line; sub-commands carry their group for context.
-      const match = (word: string, line: string, labelKey: string) =>
-        word.includes(q) || line.toLowerCase().includes(q) || labelOf(labelKey).toLowerCase().includes(q)
-      const out: PaletteRow[] = []
-      for (const command of QUICK_COMMANDS) {
-        if (command.keeper && !isKeeper) continue
-        if (command.line && match(command.word, command.line, command.word)) {
-          out.push({
-            key: `s-${command.word}`,
-            line: command.line,
-            labelKey: command.word,
-            keeper: command.keeper === true,
-          })
-        }
-        for (const child of command.children ?? []) {
-          if (child.keeper && !isKeeper) continue
-          if (!child.line || !match(child.word, child.line, child.word)) continue
-          out.push({
-            key: `s-${command.word}-${child.word}-${child.line}`,
-            line: child.line,
-            labelKey: child.word,
-            keeper: child.keeper === true,
-            parent: command.children?.length ? command : undefined,
-          })
-        }
-      }
-      return out
-    }
-    if (current) {
-      // Inside a group: the group's own line first (when no child repeats it),
-      // then its sub-commands.
-      const out: PaletteRow[] = [{ key: "back", line: "", labelKey: current.word, back: true, keeper: false }]
-      if (current.line && !(current.children ?? []).some((child) => child.line === current.line)) {
-        out.push({
-          key: `${current.word}-self`,
-          line: current.line,
-          labelKey: current.word,
-          keeper: current.keeper === true,
-        })
-      }
-      for (const child of current.children ?? []) {
-        if (child.keeper && !isKeeper) continue
-        out.push({
-          key: `${current.word}-${child.word}-${child.line}`,
-          line: child.line ?? "",
-          labelKey: child.word,
-          keeper: child.keeper === true,
-        })
-      }
-      return out
-    }
-    // Root: the first-level surface — groups drill, leaves insert.
-    return QUICK_COMMANDS.filter((command) => isKeeper || !command.keeper).map((command) => ({
-      key: `root-${command.word}`,
-      line: command.line ?? "",
-      labelKey: command.word,
-      group: command.children?.length ? command : undefined,
-      keeper: command.keeper === true,
-    }))
+    if (!q) return visible
+    const match = (command: QuickCommand) =>
+      command.word.includes(q) ||
+      command.line.toLowerCase().includes(q) ||
+      labelOf(command.word).toLowerCase().includes(q)
+    return visible.filter(match)
     // `t` is stable across renders; the memo recomputes on language change.
-  }, [query, current, isKeeper, t])
+  }, [query, isKeeper, t])
 
-  // Display list interleaves the Keeper section header at the root level.
+  // Display list interleaves the Keeper section header before the first
+  // keeper row.
   const display = useMemo(() => {
     let pick = -1
     let keeperHeaded = false
     return rows.flatMap((row) => {
-      const entries: { row: PaletteRow | null; pick: number | null; header: string | null }[] = []
-      if (!query.trim() && !current && row.keeper && !keeperHeaded) {
+      const entries: { row: QuickCommand | null; pick: number | null; keeperHeader: boolean }[] = []
+      if (row.keeper && !keeperHeaded) {
         keeperHeaded = true
-        entries.push({ row: null, pick: null, header: "keeper" })
+        entries.push({ row: null, pick: null, keeperHeader: true })
       }
       pick += 1
-      entries.push({ row, pick, header: null })
+      entries.push({ row, pick, keeperHeader: false })
       return entries
     })
-  }, [rows, query, current])
+  }, [rows])
 
   const pickable = display.filter(
-    (entry): entry is { row: PaletteRow; pick: number; header: null } => entry.pick !== null,
+    (entry): entry is { row: QuickCommand; pick: number; keeperHeader: false } => entry.pick !== null,
   )
 
   const close = () => {
     setOpen(false)
     setQuery("")
-    setPath([])
     setActive(0)
-  }
-
-  const goUp = () => {
-    setPath((value) => value.slice(0, -1))
-    setActive(0)
-  }
-
-  const activate = (row: PaletteRow) => {
-    if (row.back) {
-      goUp()
-      return
-    }
-    if (row.group && !query.trim()) {
-      setPath((value) => [...value, row.group!.word])
-      setQuery("")
-      setActive(0)
-      return
-    }
-    onPick(row.line)
-    close()
   }
 
   const toggle = () => {
@@ -200,14 +96,13 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
     setOpen(next)
     if (next) {
       setQuery("")
-      setPath([])
       setActive(0)
       // Move focus into the filter field once the panel is on screen.
       requestAnimationFrame(() => searchRef.current?.focus())
     }
   }
 
-  // Close on outside tap; Escape climbs one level up first, then closes.
+  // Close on outside tap / Escape.
   useEffect(() => {
     if (!open) return
     const onKey = (event: globalThis.KeyboardEvent) => {
@@ -234,34 +129,11 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
     } else if (event.key === "Enter") {
       event.preventDefault()
       const target = pickable[Math.min(active, Math.max(pickable.length - 1, 0))]
-      if (target) activate(target.row)
-    } else if (event.key === "Escape" && (query.trim() || path.length > 0)) {
-      // Consumed here: clear the filter, else climb one level. At the root
-      // with an empty filter it bubbles on and closes the palette.
-      event.stopPropagation()
-      event.preventDefault()
-      if (query.trim()) {
-        setQuery("")
-        setActive(0)
-      } else {
-        goUp()
+      if (target) {
+        onPick(target.row.line)
+        close()
       }
     }
-  }
-
-  const chevron = (row: PaletteRow) =>
-    row.group && !query.trim() ? (
-      <span className="quick-menu-chevron" aria-hidden="true">
-        ▸
-      </span>
-    ) : null
-
-  const rowLabel = (row: PaletteRow) => {
-    if (row.back) return t("session.quickMenuBack")
-    if (row.parent && row.parent.word !== row.labelKey) {
-      return `${labelOf(row.parent.word)} › ${labelOf(row.labelKey)}`
-    }
-    return labelOf(row.labelKey)
   }
 
   return (
@@ -301,24 +173,26 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
             <p className="quick-menu-empty">{t("session.quickMenuEmpty")}</p>
           ) : (
             <div className="quick-menu-list" role="presentation">
-              {display.map(({ row, pick, header }) =>
-                header ? (
+              {display.map(({ row, pick, keeperHeader }) =>
+                keeperHeader ? (
                   <div key="section-keeper" className="quick-menu-section is-keeper" role="presentation">
                     {labelOf("keeper")}
                   </div>
                 ) : row && pick !== null ? (
                   <button
-                    key={row.key}
+                    key={row.word}
                     type="button"
                     role="menuitem"
-                    className={`quick-menu-row${row.back ? " is-back" : ""}${pick === active ? " is-active" : ""}`}
+                    className={`quick-menu-row${pick === active ? " is-active" : ""}`}
                     onMouseDown={(e) => e.preventDefault()}
                     onMouseEnter={() => setActive(pick)}
-                    onClick={() => activate(row)}
+                    onClick={() => {
+                      onPick(row.line)
+                      close()
+                    }}
                   >
-                    <span className="quick-menu-line">{row.back ? "‹" : row.line}</span>
-                    <span className="quick-menu-label">{rowLabel(row)}</span>
-                    {chevron(row)}
+                    <span className="quick-menu-line">{row.line.trim()}</span>
+                    <span className="quick-menu-label">{labelOf(row.word)}</span>
                   </button>
                 ) : null,
               )}

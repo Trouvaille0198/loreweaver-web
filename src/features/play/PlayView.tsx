@@ -24,8 +24,8 @@ export type PlayScreen =
   "game" | "character" | "settings" | "keys" | "module" | "rules" | "skills" | "model"
 
 /** Every play screen, keyed by the URL hash that selects it. The hash is the
- * single source of truth for which screen is up: browser back/forward and a
- * reload both just read it, and every in-app navigation writes it. */
+ * primary source of truth for bookmarks and browser history; the tab-local
+ * fallback covers hosts/webviews that discard fragments during a reload. */
 const SCREEN_HASHES: Record<PlayScreen, string> = {
   game: "#/game",
   character: "#/character",
@@ -37,15 +37,40 @@ const SCREEN_HASHES: Record<PlayScreen, string> = {
   model: "#/model",
 }
 
+const SCREEN_STORAGE_KEY = "loreweaver-web.play-screen"
 const SCREENS = Object.keys(SCREEN_HASHES) as PlayScreen[]
+
+function readStoredScreen(): PlayScreen | null {
+  try {
+    const value = window.sessionStorage.getItem(SCREEN_STORAGE_KEY)
+    return SCREENS.find((screen) => screen === value) ?? null
+  } catch {
+    return null
+  }
+}
+
+function storeScreen(screen: PlayScreen): void {
+  try {
+    window.sessionStorage.setItem(SCREEN_STORAGE_KEY, screen)
+  } catch {
+    // Private-mode storage is best effort; the URL hash still preserves the screen.
+  }
+}
 
 /** Parse the current hash back into a screen; unknown/empty hashes fall back
  * to the game (e.g. a plain bookmark or the first visit). */
 function screenFromHash(): PlayScreen {
   if (typeof window === "undefined") return "game"
   const hash = window.location.hash
-  const hit = SCREENS.find((screen) => SCREEN_HASHES[screen] === hash)
-  return hit ?? "game"
+  return SCREENS.find((screen) => SCREEN_HASHES[screen] === hash) ?? "game"
+}
+
+/** A few embedded hosts rebuild the document without restoring its fragment.
+ * Use the last screen for that cold-load case only; an explicit hash remains
+ * authoritative so browser back/forward can still reach the game. */
+function screenFromInitialLoad(): PlayScreen {
+  if (typeof window === "undefined" || window.location.hash) return screenFromHash()
+  return readStoredScreen() ?? "game"
 }
 
 /** The keeper-only management screens — a player landing on one of these
@@ -143,15 +168,13 @@ function OnlineView() {
   const role = useConnectionStore((s) => s.welcome?.you.role ?? "player")
   const isKeeper = role === "keeper"
 
-  // The hash IS the screen: initialize from it (so a reload or a shared
-  // #/keys URL lands where it says), and keep it in sync both ways — every
-  // in-app navigation sets it (which is what makes back/forward work), and
-  // every popstate/hashchange from the browser re-renders from it.
+  // The hash is the primary source of truth; a tab-local fallback covers
+  // embedded hosts that discard fragments during a reload.
   const [screen, setScreen] = useState<PlayScreen>(() => {
-    const fromHash = screenFromHash()
-    // A stale keeper hash on a player connection would land them on a screen
-    // whose every admin frame the server refuses — fall back to the game.
-    return isKeeperScreen(fromHash) && !isKeeper ? "game" : fromHash
+    const initial = screenFromInitialLoad()
+    const safeScreen = isKeeperScreen(initial) && !isKeeper ? "game" : initial
+    storeScreen(safeScreen)
+    return safeScreen
   })
 
   // The browser tab says where you are: `牌桌 · room` or `Settings · room`.
@@ -172,6 +195,7 @@ function OnlineView() {
     (next: PlayScreen) => {
       if (next === screen) return
       window.location.hash = SCREEN_HASHES[next]
+      storeScreen(next)
       setScreen(next)
     },
     [screen],
@@ -183,7 +207,9 @@ function OnlineView() {
       const next = screenFromHash()
       // Same guard as the initializer: a player must never land on a keeper
       // screen, no matter how the hash got there.
-      setScreen(isKeeperScreen(next) && !isKeeper ? "game" : next)
+      const safeScreen = isKeeperScreen(next) && !isKeeper ? "game" : next
+      storeScreen(safeScreen)
+      setScreen(safeScreen)
     }
     window.addEventListener("hashchange", onHash)
     return () => window.removeEventListener("hashchange", onHash)
@@ -311,7 +337,7 @@ export default function PlayView() {
   // screen instead of flashing the connect form for the whole handshake. The
   // form returns when the dial fails (lastError), the handshake was refused,
   // or there is nothing remembered to rejoin with.
-  if (autoDial && !refused && lastError === null) {
+  if (autoDial && !hasManualDisconnect() && !refused && lastError === null) {
     return (
       <div className="play-view">
         <section className="connect-card">

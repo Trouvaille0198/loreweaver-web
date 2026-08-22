@@ -125,6 +125,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     // A deliberate leave: the auto-rejoin on tab-return must stand down, or
     // quitting would just silently reconnect the moment the page is hidden.
     markManualDisconnect()
+    set({ status: "offline", attempt: 0, welcome: null })
     try {
       await transportDisconnect()
     } catch {

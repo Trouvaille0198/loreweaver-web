@@ -1,73 +1,127 @@
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+const sent: unknown[] = []
+
+vi.mock("../lib/transport", () => ({
+  transportSend: async (frame: unknown) => {
+    sent.push(frame)
+  },
+}))
+
 import { useAdminStore } from "./admin"
 
-function reset() {
-  useAdminStore.getState().reset()
-}
+describe("admin model requests", () => {
+  beforeEach(() => {
+    sent.length = 0
+    useAdminStore.getState().reset()
+  })
 
-describe("admin store ingest", () => {
-  beforeEach(reset)
+  it("keeps the entered API key attached to the selected provider", () => {
+    useAdminStore.getState().setModel("deepseek", "deepseek-v4-flash", "sk-deepseek-test", "")
 
-  it("routes admin replies into state and claims them", () => {
-    const ingest = useAdminStore.getState().ingest
-    expect(
-      ingest({
-        type: "admin_config",
+    expect(sent).toEqual([
+      {
+        type: "admin_set_model",
         provider: "deepseek",
         chat_model: "deepseek-v4-flash",
+        api_key: "sk-deepseek-test",
         base_url: "",
-        api_key_masked: "sk-…9x",
-        providers: ["deepseek", "openai"],
-        saved_providers: ["deepseek"],
-        override_active: false,
-      }),
-    ).toBe(true)
-    expect(useAdminStore.getState().config?.provider).toBe("deepseek")
-
-    expect(
-      ingest({
-        type: "admin_keys",
-        keys: [
-          {
-            id: "k1",
-            key_masked: "UHEY…8P",
-            room: "r1",
-            name: "阿理",
-            role: "player",
-            purpose: "join",
-            expires_at: null,
-          },
-        ],
-        minted: {
-          key: "CLEARTEXT",
-          room: "r1",
-          name: "阿理",
-          role: "player",
-          purpose: "join",
-          expires_at: null,
-        },
-      }),
-    ).toBe(true)
-    const state = useAdminStore.getState()
-    expect(state.keys).toHaveLength(1)
-    expect(state.minted?.key).toBe("CLEARTEXT")
+      },
+    ])
   })
 
-  it("records admin_error and leaves narrative frames unclaimed", () => {
-    const ingest = useAdminStore.getState().ingest
-    expect(ingest({ type: "admin_error", code: "forbidden" })).toBe(true)
-    expect(useAdminStore.getState().lastError).toBe("forbidden")
-    expect(ingest({ type: "narrative", id: "n1", speaker: "kp", text: "…", format: "markdown" })).toBe(false)
+  it("sends an explicit empty key when clearing a provider credential", () => {
+    useAdminStore.getState().setModel("deepseek", "deepseek-v4-flash", "", "")
+
+    expect(sent[0]).toMatchObject({ api_key: "", base_url: "" })
   })
 
-  it("stores skills and rules lists", () => {
+  it("configures dedicated LLM lanes without exposing them in state", () => {
+    useAdminStore.getState().setLlmLane("scribe", {
+      enabled: true,
+      provider: "deepseek",
+      chatModel: "deepseek-chat",
+      baseUrl: "",
+      apiKey: "sk-scribe-test",
+    })
+
+    expect(sent).toEqual([
+      {
+        type: "admin_set_llm_lane",
+        lane: "scribe",
+        enabled: true,
+        provider: "deepseek",
+        chat_model: "deepseek-chat",
+        base_url: "",
+        api_key: "sk-scribe-test",
+      },
+    ])
+  })
+
+  it("sends image generation credentials through the keeper admin frame", () => {
+    useAdminStore.getState().setImagegen("openai", "gpt-image-1", "sk-image-test", "", "1024x1024")
+
+    expect(sent).toEqual([
+      {
+        type: "admin_set_imagegen",
+        provider: "openai",
+        model: "gpt-image-1",
+        api_key: "sk-image-test",
+        base_url: "",
+        size: "1024x1024",
+      },
+    ])
+  })
+
+  it("requests source listing and room import through the generated reply lane", () => {
+    useAdminStore.getState().listModules()
+    useAdminStore.getState().importModule("scene.md")
+
+    expect(sent).toEqual([
+      { type: "admin_generate", kind: "module_list", description: "{}" },
+      { type: "admin_generate", kind: "module_import", description: JSON.stringify({ name: "scene.md" }) },
+    ])
+  })
+
+  it("parses module source lists and keeper details from generated replies", () => {
     const ingest = useAdminStore.getState().ingest
     ingest({
-      type: "admin_skills",
-      skills: [{ id: "s1", name: "Foreshadow", description: "…", content_rating: "", enabled: true }],
+      type: "admin_generated",
+      kind: "module_list",
+      ok: true,
+      id: "",
+      name: "",
+      error: "",
+      detail: JSON.stringify({
+        modules: [{ name: "scene.md", size: 12, modified: 100, current: true }],
+      }),
+    } as never)
+    expect(useAdminStore.getState().moduleSources).toEqual([
+      { name: "scene.md", size: 12, modified: 100, current: true },
+    ])
+
+    ingest({
+      type: "admin_generated",
+      kind: "module_detail",
+      ok: true,
+      id: "scene.md",
+      name: "scene.md",
+      error: "",
+      detail: JSON.stringify({
+        name: "scene.md",
+        size: 12,
+        modified: 100,
+        content: "# Scene",
+        current: true,
+        status: "ready",
+        pool: { keeper: { summary: "A foggy pier" } },
+      }),
+    } as never)
+    expect(useAdminStore.getState().moduleDetail).toMatchObject({
+      name: "scene.md",
+      content: "# Scene",
+      current: true,
+      pool: { keeper: { summary: "A foggy pier" } },
     })
-    ingest({ type: "admin_rules", systems: [{ id: "coc7e", built_in: true }] })
-    expect(useAdminStore.getState().skills[0].enabled).toBe(true)
-    expect(useAdminStore.getState().rules[0].id).toBe("coc7e")
   })
 })

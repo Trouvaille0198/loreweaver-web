@@ -177,34 +177,65 @@ describe("InputBox quick commands sub-menus", () => {
     })
   })
 
-  it("drills into a group's sub-commands and inserts one", async () => {
+  it("drills no more: the palette lists commands, arguments complete inline", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
     const field = screen.getByRole("textbox")
 
     await user.click(screen.getByRole("button", { name: /quick commands/i }))
-    // The root shows first-level commands only — sub-commands wait behind ▸.
+    // One row per command — example data is NOT a palette row any more.
     expect(screen.queryByRole("menuitem", { name: /\.pc release/i })).not.toBeInTheDocument()
-    await user.click(screen.getByRole("menuitem", { name: /\.pc list/i }))
-    expect(screen.getByRole("menuitem", { name: /\.pc release/i })).toBeInTheDocument()
-    await user.click(screen.getByRole("menuitem", { name: /\.pc release/i }))
-    expect(field).toHaveValue(".pc release")
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: /\.r 4d6kh3/i })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("menuitem", { name: /^\.pc/i }))
+    // Picking `.pc` leaves the cursor in argument territory…
+    expect(field).toHaveValue(".pc ")
+    // …where the inline completions immediately suggest the subcommands.
+    expect(screen.getByRole("option", { name: /claim/i })).toBeInTheDocument()
   })
 
-  it("Escape inside a group climbs back to the root before closing", async () => {
+  it("arrow keys walk the command hints and Enter inserts the highlighted word", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    await user.click(screen.getByRole("button", { name: /quick commands/i }))
-    await user.click(screen.getByRole("menuitem", { name: /\.pc list/i }))
-    expect(screen.getByRole("menuitem", { name: /\.pc release/i })).toBeInTheDocument()
-    await user.keyboard("{Escape}")
-    // One level up — the palette is still open at the root.
-    expect(screen.getByRole("menu")).toBeInTheDocument()
-    expect(screen.getByRole("menuitem", { name: /\.pc list/i })).toBeInTheDocument()
-    expect(screen.queryByRole("menuitem", { name: /\.pc release/i })).not.toBeInTheDocument()
-    await user.keyboard("{Escape}")
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    const field = screen.getByRole("textbox")
+    await user.type(field, ".r")
+    // No highlight yet — Enter would send, Tab takes the first row. The
+    // first ArrowDown highlights row 0 (.r), the second walks to .ra.
+    await user.keyboard("{ArrowDown}")
+    await user.keyboard("{ArrowDown}")
+    await user.keyboard("{Enter}")
+    expect(field).toHaveValue(".ra ")
+    expect(transportSend).not.toHaveBeenCalled()
+  })
+
+  it("suggests the dice grammar while typing an expression", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+    // `3` → `d`; Tab appends it.
+    await user.type(field, ".r 3")
+    await user.keyboard("{Tab}")
+    expect(field).toHaveValue(".r 3d")
+    // `3d6` → kh/kl/+/-; the first Tab appends kh.
+    await user.type(field, "6")
+    await user.keyboard("{Tab}")
+    expect(field).toHaveValue(".r 3d6kh")
+    // The keep count is suggested after kh.
+    await user.keyboard("{Tab}")
+    expect(field).toHaveValue(".r 3d6kh3")
+  })
+
+  it("suggests fixed argument tokens, filtered by the typed prefix", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+    await user.type(field, ".pc cl")
+    expect(screen.getByRole("option", { name: /claim/i })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /release/i })).not.toBeInTheDocument()
+    // Enter with nothing highlighted would SEND — highlight first.
+    await user.keyboard("{ArrowDown}")
+    await user.keyboard("{Enter}")
+    expect(field).toHaveValue(".pc claim ")
+    expect(transportSend).not.toHaveBeenCalled()
   })
 
   it("filters the palette as you type, and shows the empty state on no match", async () => {
@@ -224,14 +255,14 @@ describe("InputBox quick commands sub-menus", () => {
 
   it("lists every quick command line as reachable", () => {
     const lines = quickCommandLines()
-    // A sane spread of dice, checks, sheet, cast and session commands.
-    expect(lines).toContain(".r 4d6kh3")
-    expect(lines).toContain(".ra 聆听 ")
+    // One line per command — argument-taking words land ready for typing.
+    expect(lines).toContain(".r ")
+    expect(lines).toContain(".hr ")
+    expect(lines).toContain(".pc ")
     expect(lines).toContain(".sc 1/1d6")
-    expect(lines).toContain(".pc claim 顾晚棠 ")
     expect(lines).toContain(".recap")
     expect(lines).toContain(".help")
-    // More than the old flat list.
+    // The full command surface, player + keeper.
     expect(lines.length).toBeGreaterThan(14)
   })
 })

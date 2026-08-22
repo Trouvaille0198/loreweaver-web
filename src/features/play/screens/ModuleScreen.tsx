@@ -1,39 +1,150 @@
-// Import module — the TUI KeeperModule pair of flows: install from a server
-// path (`.module <path>` over the input channel; the reply is a system line in
-// the chronicle) and describe→generate via the forge (admin_generate, answered
-// by admin_generated with the per-room install outcome in `detail`) — plus the
-// community-pack entry: installing a whole published work is the person who
-// opened the table doing it, not the author in Studio, so `.pack install <ref>`
-// goes out from HERE, as ordinary command text over the same input channel.
-// Everything the player is told about the result — what it installed, what it
-// is allowed to do — is the server's receipt; this screen invents none of it.
+// Keeper module workspace: manage the server's reusable source files, choose the
+// source this room runs, inspect the analyzed knowledge pools, and keep the two
+// existing install/generate paths available.
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { transportSend } from "../../../lib/transport"
-import { useAdminStore } from "../../../store/admin"
+import {
+  useAdminStore,
+  type ModuleDetail,
+  type ModuleOperation,
+  type ModuleSource,
+} from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
 import ScreenShell from "./ScreenShell"
+function itemName(value: unknown): string | null {
+  if (typeof value !== "object" || value === null || !("name" in value)) return null
+  const name = value.name
+  return typeof name === "string" ? name : null
+}
 
-/** Nothing typed yet / the line reached the transport / it never left. */
+function displayValue(value: unknown): string {
+  if (typeof value === "string") return value
+  if (value === null || value === undefined) return ""
+  return JSON.stringify(value, null, 2)
+}
 type SendStatus = "idle" | "sent" | "failed"
+
+
+function KnowledgePool({ detail, label }: { detail: ModuleDetail; label: string }) {
+  const pool = detail.pool?.keeper
+  if (!pool) return null
+  return (
+    <section className="module-knowledge">
+      <h4>{label}</h4>
+      {Object.entries(pool).map(([category, value]) => {
+        if (value === null || value === undefined || value === "") return null
+        return (
+          <article className="module-knowledge-block" key={category}>
+            <h5>{category}</h5>
+            {Array.isArray(value) ? (
+              <ul className="play-list">
+                {value.map((item, index) => (
+                  <li key={`${category}-${index}`}>
+                    {itemName(item) ? <strong>{itemName(item)}</strong> : null}
+                    <pre>{displayValue(item)}</pre>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <pre>{displayValue(value)}</pre>
+            )}
+          </article>
+        )
+      })}
+    </section>
+  )
+}
+
+function ModuleDetailPanel({
+  detail,
+  poolLabel,
+  sourceLabel,
+  currentLabel,
+  readyLabel,
+  bytesLabel,
+}: {
+  detail: ModuleDetail
+  poolLabel: string
+  sourceLabel: string
+  currentLabel: string
+  readyLabel: string
+  bytesLabel: string
+}) {
+  return (
+    <section className="play-form module-detail-card">
+      <div className="module-detail-head">
+        <div>
+          <h3 className="play-form-title">{detail.name}</h3>
+          <p className="studio-hint">
+            {detail.current ? `${detail.status || readyLabel} · ${detail.size} ${bytesLabel}` : `${detail.size} ${bytesLabel}`}
+          </p>
+        </div>
+        {detail.current ? <span className="chip chip-on">{currentLabel}</span> : null}
+      </div>
+      {detail.current ? <KnowledgePool detail={detail} label={poolLabel} /> : null}
+      <details>
+        <summary>{sourceLabel}</summary>
+        <pre className="module-source-preview">{detail.content}</pre>
+      </details>
+    </section>
+  )
+}
+
+function OperationNotice({ operation, t }: { operation: ModuleOperation | null; t: (key: string) => string }) {
+  if (!operation) return null
+  if (!operation.ok) return <p className="connect-error" role="status">{operation.error || t("play.module.operationFailed")}</p>
+  if (operation.kind === "module_import") {
+    return <p className="studio-hint" role="status">{operation.receipt || t("play.module.imported")}</p>
+  }
+  return <p className="studio-hint" role="status">{`${t("play.module.saved")} ${operation.name}`}</p>
+}
 
 export default function ModuleScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
   const generated = useAdminStore((s) => s.generated)
   const busy = useAdminStore((s) => s.busy)
   const generateModule = useAdminStore((s) => s.generateModule)
-
+  const sources = useAdminStore((s) => s.moduleSources)
+  const detail = useAdminStore((s) => s.moduleDetail)
+  const operation = useAdminStore((s) => s.moduleOperation)
+  const listModules = useAdminStore((s) => s.listModules)
+  const getModuleDetail = useAdminStore((s) => s.getModuleDetail)
+  const uploadModule = useAdminStore((s) => s.uploadModule)
+  const importModule = useAdminStore((s) => s.importModule)
+  const deleteModule = useAdminStore((s) => s.deleteModule)
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
 
-  const [path, setPath] = useState("")
+  const [selectedName, setSelectedName] = useState("")
   const [description, setDescription] = useState("")
+  const [path, setPath] = useState("")
   const [packRef, setPackRef] = useState("")
-  // A send that never left the app must not say "submitted": the reply this
-  // screen promises comes from the server, and there is no server in that case.
-  // A failed send keeps what was typed, so the retry is one click.
   const [pathStatus, setPathStatus] = useState<SendStatus>("idle")
   const [packStatus, setPackStatus] = useState<SendStatus>("idle")
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    listModules()
+  }, [listModules])
+
+  useEffect(() => {
+    const preferred = sources.find((source) => source.current)?.name ?? sources[0]?.name ?? ""
+    if (!selectedName || !sources.some((source) => source.name === selectedName)) setSelectedName(preferred)
+  }, [selectedName, sources])
+
+  useEffect(() => {
+    if (selectedName) getModuleDetail(selectedName)
+  }, [getModuleDetail, selectedName])
+
+  useEffect(() => {
+    if (!operation) return
+    listModules()
+    if (operation.ok && operation.name) {
+      setSelectedName(operation.name)
+      getModuleDetail(operation.name)
+    }
+  }, [getModuleDetail, listModules, operation])
 
   const send = async (line: string, mark: (status: SendStatus) => void, clear: () => void): Promise<void> => {
     mark("idle")
@@ -59,8 +170,83 @@ export default function ModuleScreen({ onBack }: { onBack: () => void }) {
     void send(`.pack install ${value}`, setPackStatus, () => setPackRef(""))
   }
 
+  const chooseFile = async (file: File) => {
+    const content = await file.text()
+    uploadModule(file.name, content)
+    setSelectedName(file.name)
+  }
+
+  const removeSelected = () => {
+    if (!selectedName || !window.confirm(t("play.module.deleteConfirm"))) return
+    deleteModule(selectedName)
+  }
+
   return (
     <ScreenShell title={t("play.menu.module")} onBack={onBack} showAdminError>
+      <section className="play-form">
+        <h3 className="play-form-title">{t("play.module.library")}</h3>
+        <p className="studio-hint">{t("play.module.libraryHint")}</p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".md,.markdown,.txt,text/markdown,text/plain"
+          hidden
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            event.target.value = ""
+            if (file) void chooseFile(file)
+          }}
+        />
+        <button type="button" className="primary-button" onClick={() => fileInputRef.current?.click()}>
+          {t("play.module.addSource")}
+        </button>
+        {sources.length === 0 ? <p className="studio-hint">{t("play.module.noSources")}</p> : null}
+        <ul className="play-list module-source-list">
+          {sources.map((source: ModuleSource) => (
+            <li className={`module-source-row${source.name === selectedName ? " is-selected" : ""}`} key={source.name}>
+              <button
+                type="button"
+                className="ghost-button module-source-select"
+                aria-pressed={source.name === selectedName}
+                onClick={() => setSelectedName(source.name)}
+              >
+                <strong>{source.name}</strong>
+                <span className="studio-hint">{source.size} {t("play.module.bytes")}</span>
+                {source.current ? <span className="chip chip-on">{t("play.module.current")}</span> : null}
+              </button>
+              <div className="module-source-actions">
+                <button type="button" className="ghost-button" onClick={() => importModule(source.name)}>
+                  {t("play.module.importRoom")}
+                </button>
+                <button type="button" className="ghost-button" onClick={() => setSelectedName(source.name)}>
+                  {t("play.module.inspect")}
+                </button>
+                {!source.current ? (
+                  <button type="button" className="ghost-button" onClick={() => {
+                    setSelectedName(source.name)
+                    if (window.confirm(t("play.module.deleteConfirm"))) deleteModule(source.name)
+                  }}>
+                    {t("play.module.delete")}
+                  </button>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+        <OperationNotice operation={operation} t={t} />
+      </section>
+
+      {detail ? (
+        <ModuleDetailPanel
+          detail={detail}
+          poolLabel={t("play.module.knowledgePool")}
+          sourceLabel={t("play.module.sourceText")}
+          currentLabel={t("play.module.current")}
+          readyLabel={t("play.module.ready")}
+          bytesLabel={t("play.module.bytes")}
+        />
+      ) : null}
+
       <div className="play-form">
         <label className="field">
           {t("play.module.path")}
@@ -75,11 +261,7 @@ export default function ModuleScreen({ onBack }: { onBack: () => void }) {
           {t("play.module.install")}
         </button>
         {pathStatus === "sent" ? <p className="studio-hint">{t("play.module.sent")}</p> : null}
-        {pathStatus === "failed" ? (
-          <p className="connect-error" role="status">
-            {t("play.sendFailed")}
-          </p>
-        ) : null}
+        {pathStatus === "failed" ? <p className="connect-error" role="status">{t("play.sendFailed")}</p> : null}
       </div>
 
       {isKeeper ? (
@@ -99,11 +281,7 @@ export default function ModuleScreen({ onBack }: { onBack: () => void }) {
             {t("play.pack.install")}
           </button>
           {packStatus === "sent" ? <p className="studio-hint">{t("play.pack.sent")}</p> : null}
-          {packStatus === "failed" ? (
-            <p className="connect-error" role="status">
-              {t("play.sendFailed")}
-            </p>
-          ) : null}
+          {packStatus === "failed" ? <p className="connect-error" role="status">{t("play.sendFailed")}</p> : null}
         </div>
       ) : null}
 

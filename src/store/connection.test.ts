@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { PROTOCOL_VERSION } from "@loreweaver/protocol"
+import { PROTOCOL_VERSION, type WelcomeFrame } from "@loreweaver/protocol"
 import { hasManualDisconnect, sanitizeTicket, useConnectionStore } from "./connection"
 
-const WELCOME = {
+const WELCOME: WelcomeFrame = {
   type: "welcome",
   protocol: PROTOCOL_VERSION,
   room: "r1",
@@ -124,7 +124,10 @@ describe("connection store", () => {
   it("marks a deliberate disconnect so the tab-return rejoin stands down", async () => {
     // Before any disconnect the flag is clear — the auto-rejoin may act.
     expect(hasManualDisconnect()).toBe(false)
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
     await useConnectionStore.getState().disconnect()
+    expect(useConnectionStore.getState().status).toBe("offline")
+    expect(useConnectionStore.getState().welcome).toBeNull()
     // After an explicit leave the flag is set: PlayView's rejoin-on-visible
     // must NOT silently redial into a room the player just quit.
     expect(hasManualDisconnect()).toBe(true)

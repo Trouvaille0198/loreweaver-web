@@ -33,38 +33,40 @@ declare module "@loreweaver/protocol" {
   // JSON already carries them. The ClientFrame/ServerFrame unions are type
   // aliases and cannot be augmented — callers cast at the transport boundary.
 
-  interface RoomLaneStored {
+  interface LLMProfile {
+    id: string
     provider: string
     chat_model: string
     base_url: string
     api_key_masked: string
+    has_key: boolean
+  }
+
+  interface AdminSetLLMFrame {
+    type: "admin_set_llm"
+    provider: string
+    chat_model?: string
+    base_url?: string
+    api_key?: string
+  }
+
+  interface AdminDeleteLLMFrame {
+    type: "admin_delete_llm"
+    id?: string
+    provider?: string
+    chat_model?: string
   }
 
   interface RoomModelStored {
-    provider: string
-    chat_model: string
-    base_url: string
-    api_key_masked: string
-    analysis_model: string
-    npc_model: string
-    scribe: RoomLaneStored
-    director: RoomLaneStored
+    main: string
+    scribe: string
+    director: string
+    imagegen: string
+    scribe_enabled: boolean
+    director_enabled: boolean
   }
 
-  interface RoomModelEffective {
-    provider: string
-    chat_model: string
-    base_url: string
-    api_key_masked: string
-    analysis_model: string
-    npc_model: string
-    main_ok: boolean
-    build_ok: boolean
-  }
-
-  /** Server → client: the caller's room's LLM override state. `stored` is what
-   * the room itself pinned ("" = inherit); `effective` is what a turn actually
-   * resolves to, present only when the room has an override. */
+  /** Server → client: this room's assignment of global LLM profiles. */
   interface AdminRoomConfigFrame {
     type: "admin_room_config"
     room: string
@@ -72,24 +74,50 @@ declare module "@loreweaver/protocol" {
     providers: string[]
     saved_providers: string[]
     stored: RoomModelStored
-    effective?: RoomModelEffective
   }
 
   interface AdminGetRoomConfigFrame {
     type: "admin_get_room_config"
   }
 
-  /** Client → server: mutate the caller's room's LLM override. A field PRESENT
-   * sets (or clears, when empty) the room's stored value; an absent field keeps
-   * the current one. `clear:true` wipes the whole override. */
+  /** Client → server: choose global LLM profiles for this room's jobs. */
   interface AdminSetRoomModelFrame {
     type: "admin_set_room_model"
+    main?: string
+    scribe?: string
+    director?: string
+    imagegen?: string
+    scribe_enabled?: boolean
+    director_enabled?: boolean
+    clear?: boolean
+  }
+
+  interface LLMLaneStatus {
+    enabled: boolean
+    provider: string
+    chat_model: string
+    base_url: string
+    api_key_masked: string
+    override_active: boolean
+  }
+
+  interface AdminSetLLMLaneFrame {
+    type: "admin_set_llm_lane"
+    lane: "scribe" | "director"
+    enabled?: boolean
     provider?: string
     chat_model?: string
     base_url?: string
     api_key?: string
-    analysis_model?: string
-    npc_model?: string
+    clear_api_key?: boolean
+    reasoning_effort?: string
     clear?: boolean
   }
+
+  interface AdminConfigFrame {
+    llms?: LLMProfile[]
+    scribe?: LLMLaneStatus
+    director?: LLMLaneStatus
+  }
+
 }

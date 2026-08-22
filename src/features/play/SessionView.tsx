@@ -4,7 +4,6 @@ import { stripControlChars } from "@loreweaver/protocol"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
-import { quitTable } from "../../store/hostLocal"
 import AppMenu from "./AppMenu"
 import AudioDeck from "./AudioDeck"
 import DeskColumn from "./DeskColumn"
@@ -232,9 +231,6 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
               </div>
             ) : null}
           </div>
-          <button type="button" className="ghost-button session-quit-wide" onClick={() => void quitTable()}>
-            {t("connect.disconnect")}
-          </button>
         </header>
         <OnboardingBanner onNavigate={onNavigate} />
         <SceneLine />

@@ -14,7 +14,6 @@ import type {
   AdminRoomConfigFrame,
   AdminRoomOpFrame,
   AdminRuleInfo,
-  AdminSetModelFrame,
   AdminSkillInfo,
   AdminUpdateFrame,
   MintedKey,
@@ -23,6 +22,103 @@ import type {
 } from "@loreweaver/protocol"
 import { transportSend } from "../lib/transport"
 import type { ClientFrame } from "@loreweaver/protocol"
+
+export interface ModuleSource {
+  name: string
+  size: number
+  modified: number
+  current: boolean
+}
+
+export interface ModuleDetail {
+  name: string
+  size: number
+  modified: number
+  content: string
+  current: boolean
+  status: string
+  pool: {
+    keeper?: Record<string, unknown>
+    player?: Record<string, unknown>
+  } | null
+}
+
+export interface ModuleOperation {
+  kind: "module_upload" | "module_import" | "module_delete"
+  ok: boolean
+  name: string
+  error?: string
+  receipt?: string
+  status?: string
+}
+
+function parseModuleDetail(frame: AdminGeneratedFrame): Record<string, unknown> {
+  if (!frame.detail) return {}
+  try {
+    const parsed: unknown = JSON.parse(frame.detail)
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {}
+    return Object.fromEntries(Object.entries(parsed))
+  } catch {
+    return {}
+  }
+}
+
+function isModuleSource(value: unknown): value is ModuleSource {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "size" in value &&
+    typeof value.size === "number" &&
+    "modified" in value &&
+    typeof value.modified === "number" &&
+    "current" in value &&
+    typeof value.current === "boolean"
+  )
+}
+
+
+function parseModuleSources(value: unknown): ModuleSource[] {
+  return Array.isArray(value) ? value.filter(isModuleSource) : []
+}
+
+function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | null {
+  if (
+    typeof value.name !== "string" ||
+    typeof value.size !== "number" ||
+    typeof value.modified !== "number" ||
+    typeof value.content !== "string" ||
+    typeof value.current !== "boolean"
+  ) {
+    return null
+  }
+  const rawPool = value.pool
+  let pool: ModuleDetail["pool"] = null
+  if (typeof rawPool === "object" && rawPool !== null && !Array.isArray(rawPool)) {
+    const poolRecord = Object.fromEntries(Object.entries(rawPool))
+    const keeper = poolRecord.keeper
+    const player = poolRecord.player
+    pool = {
+      keeper: typeof keeper === "object" && keeper !== null && !Array.isArray(keeper)
+        ? Object.fromEntries(Object.entries(keeper))
+        : undefined,
+      player: typeof player === "object" && player !== null && !Array.isArray(player)
+        ? Object.fromEntries(Object.entries(player))
+        : undefined,
+    }
+  }
+  return {
+    name: value.name,
+    size: value.size,
+    modified: value.modified,
+    content: value.content,
+    current: value.current,
+    status: typeof value.status === "string" ? value.status : "",
+    pool,
+  }
+}
 
 interface AdminState {
   config: AdminConfigFrame | null
@@ -37,6 +133,9 @@ interface AdminState {
   skills: AdminSkillInfo[]
   rules: AdminRuleInfo[]
   generated: AdminGeneratedFrame | null
+  moduleSources: ModuleSource[]
+  moduleDetail: ModuleDetail | null
+  moduleOperation: ModuleOperation | null
   /** The last room lifecycle result (export/import/delete/reset). It carries
    * the counts the operator needs to believe the operation happened — and, for
    * an export, the server-side path the backup landed at. */
@@ -47,24 +146,47 @@ interface AdminState {
   /** Last admin_error, cleared by the next successful reply or request. */
   lastError: string | null
   busy: boolean
-
   ingest: (frame: ServerFrame) => boolean
   refreshConfig: () => void
   setModel: (provider: string, chatModel?: string, apiKey?: string, baseUrl?: string) => void
   listModels: (provider?: string, apiKey?: string, baseUrl?: string) => void
-  /** Fetch the caller's room's LLM override state (admin_room_config reply). */
+  saveLlm: (provider: string, chatModel: string, apiKey?: string, baseUrl?: string) => void
+  deleteLlm: (profileId: string) => void
+  setLlmLane: (
+    lane: "scribe" | "director",
+    patch: {
+      enabled?: boolean
+      provider?: string
+      chatModel?: string
+      baseUrl?: string
+      apiKey?: string
+      clearApiKey?: boolean
+      clear?: boolean
+      reasoningEffort?: string
+    },
+  ) => void
+  setImagegen: (
+    provider: string,
+    model: string,
+    apiKey?: string,
+    baseUrl?: string,
+    size?: string,
+  ) => void
+  /** Fetch the caller's room's LLM override state (admin_get_room_config reply). */
   refreshRoomConfig: () => void
   /** Pin/change the caller's room's own LLM override. Fields present in the
    * frame set (or clear, when empty) the room's stored value; omitted ones keep
    * the current value. The server probes before persisting — a config whose
    * main client cannot build is refused. */
   setRoomModel: (patch: {
-    provider?: string
-    chatModel?: string
-    baseUrl?: string
-    apiKey?: string
+    main?: string
+    scribe?: string
+    director?: string
+    imagegen?: string
+    scribeEnabled?: boolean
+    directorEnabled?: boolean
   }) => void
-  /** Wipe the room override (back to follow-the-global-model). */
+  /** Wipe this room's assignment choices. */
   clearRoomModel: () => void
   listKeys: () => void
   mintKey: (room: string, name: string, role: PlayerRole, purpose?: AdminKeyPurpose) => void
@@ -74,13 +196,18 @@ interface AdminState {
   enableSkill: (id: string, on: boolean, locale?: string) => void
   listRules: () => void
   generateModule: (description: string) => void
+  listModules: () => void
+  getModuleDetail: (name: string) => void
+  uploadModule: (name: string, content: string) => void
+  importModule: (name: string) => void
+  deleteModule: (name: string) => void
   /** Write a room backup JSON server-side. Omitting `path` lets the server
    * choose, under `<data_dir>/room_backups/`. */
   exportRoom: (room: string, path?: string) => void
   /** Restore a server-side backup INTO THE CALLER'S OWN ROOM. There is no
    * remap and there cannot be one: `net/admin.py::_import_room` answers
-   * `forbidden` to any `room` that is not the caller's, and `import_room` then
-   * requires the file to be a backup of that same room. Taking no room here is
+   * `forbidden` to any `room` that is not the caller's, and `import_room`
+   * then requires the file to be a backup of that same room. Taking no room here is
    * what keeps the signature honest about that. */
   importRoom: (path: string) => void
   /** Restart a campaign IN PLACE: keys, bindings, live connections and room
@@ -107,6 +234,17 @@ function send(frame: ClientFrame, set: (patch: Partial<AdminState>) => void): vo
   })
 }
 
+function moduleAction(kind: string, payload: Record<string, unknown>, set: (patch: Partial<AdminState>) => void): void {
+  send(
+    {
+      type: "admin_generate",
+      kind,
+      description: JSON.stringify(payload),
+    } as unknown as ClientFrame,
+    set,
+  )
+}
+
 const EMPTY = {
   config: null,
   modelsProvider: "",
@@ -117,6 +255,9 @@ const EMPTY = {
   skills: [],
   rules: [],
   generated: null,
+  moduleSources: [],
+  moduleDetail: null,
+  moduleOperation: null,
   roomOp: null,
   serverUpdate: null,
   lastError: null,
@@ -135,7 +276,6 @@ export const useAdminStore = create<AdminState>((set) => ({
         set({ modelsProvider: frame.provider, models: frame.models, busy: false })
         return true
       case "admin_room_config" as ServerFrame["type"]:
-        // Augmented frame: not yet a member of the published ServerFrame union.
         set({ roomConfig: frame as unknown as AdminRoomConfigFrame, busy: false, lastError: null })
         return true
       case "admin_keys":
@@ -147,9 +287,42 @@ export const useAdminStore = create<AdminState>((set) => ({
       case "admin_rules":
         set({ rules: frame.systems, busy: false, lastError: null })
         return true
-      case "admin_generated":
+      case "admin_generated": {
+        const kind = String(frame.kind)
+        if (kind.startsWith("module_")) {
+          const detail = parseModuleDetail(frame)
+          if (kind === "module_list") {
+            set({
+              moduleSources: parseModuleSources(detail.modules),
+              moduleDetail: null,
+              busy: false,
+              lastError: null,
+            })
+          } else if (kind === "module_detail") {
+            set({
+              moduleDetail: parseModuleDetailValue(detail),
+              busy: false,
+              lastError: frame.ok ? null : frame.error || "Unable to read module.",
+            })
+          } else {
+            set({
+              moduleOperation: {
+                kind: kind as ModuleOperation["kind"],
+                ok: frame.ok,
+                name: frame.name || frame.id || "",
+                error: frame.ok ? undefined : frame.error,
+                receipt: typeof detail.receipt === "string" ? detail.receipt : undefined,
+                status: typeof detail.status === "string" ? detail.status : undefined,
+              },
+              busy: false,
+              lastError: frame.ok ? null : frame.error || "Module operation failed.",
+            })
+          }
+          return true
+        }
         set({ generated: frame, busy: false })
         return true
+      }
       case "admin_room_op":
         set({ roomOp: frame, busy: false, lastError: null })
         return true
@@ -171,9 +344,50 @@ export const useAdminStore = create<AdminState>((set) => ({
         type: "admin_set_model",
         provider,
         ...(chatModel ? { chat_model: chatModel } : {}),
-        ...(apiKey ? { api_key: apiKey } : {}),
+        ...(apiKey !== undefined ? { api_key: apiKey } : {}),
         ...(baseUrl !== undefined ? { base_url: baseUrl } : {}),
       },
+      set,
+    ),
+  saveLlm: (provider, chatModel, apiKey, baseUrl) =>
+    send(
+      {
+        type: "admin_set_llm",
+        provider,
+        chat_model: chatModel,
+        ...(apiKey !== undefined ? { api_key: apiKey } : {}),
+        ...(baseUrl !== undefined ? { base_url: baseUrl } : {}),
+      } as unknown as ClientFrame,
+      set,
+    ),
+  deleteLlm: (profileId) =>
+    send({ type: "admin_delete_llm", id: profileId } as unknown as ClientFrame, set),
+  setLlmLane: (lane, patch) =>
+    send(
+      {
+        type: "admin_set_llm_lane",
+        lane,
+        ...(patch.clear ? { clear: true } : {}),
+        ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
+        ...(patch.provider !== undefined ? { provider: patch.provider } : {}),
+        ...(patch.chatModel !== undefined ? { chat_model: patch.chatModel } : {}),
+        ...(patch.baseUrl !== undefined ? { base_url: patch.baseUrl } : {}),
+        ...(patch.apiKey !== undefined ? { api_key: patch.apiKey } : {}),
+        ...(patch.clearApiKey ? { clear_api_key: true } : {}),
+        ...(patch.reasoningEffort !== undefined ? { reasoning_effort: patch.reasoningEffort } : {}),
+      } as unknown as ClientFrame,
+      set,
+    ),
+  setImagegen: (provider, model, apiKey, baseUrl, size) =>
+    send(
+      {
+        type: "admin_set_imagegen",
+        provider,
+        model,
+        ...(apiKey !== undefined ? { api_key: apiKey } : {}),
+        ...(baseUrl !== undefined ? { base_url: baseUrl } : {}),
+        ...(size ? { size } : {}),
+      } as unknown as ClientFrame,
       set,
     ),
   listModels: (provider, apiKey, baseUrl) =>
@@ -186,18 +400,19 @@ export const useAdminStore = create<AdminState>((set) => ({
       },
       set,
     ),
-  // The room-override frames are on the wire (server implements them) but not
-  // yet in the published npm union types — cast at this transport boundary.
+  // Room choices reference global LLM profiles; credentials never cross this boundary.
   refreshRoomConfig: () =>
     send({ type: "admin_get_room_config" } as unknown as ClientFrame, set),
   setRoomModel: (patch) =>
     send(
       {
         type: "admin_set_room_model",
-        ...(patch.provider !== undefined ? { provider: patch.provider } : {}),
-        ...(patch.chatModel !== undefined ? { chat_model: patch.chatModel } : {}),
-        ...(patch.baseUrl !== undefined ? { base_url: patch.baseUrl } : {}),
-        ...(patch.apiKey ? { api_key: patch.apiKey } : {}),
+        ...(patch.main !== undefined ? { main: patch.main } : {}),
+        ...(patch.scribe !== undefined ? { scribe: patch.scribe } : {}),
+        ...(patch.director !== undefined ? { director: patch.director } : {}),
+        ...(patch.imagegen !== undefined ? { imagegen: patch.imagegen } : {}),
+        ...(patch.scribeEnabled !== undefined ? { scribe_enabled: patch.scribeEnabled } : {}),
+        ...(patch.directorEnabled !== undefined ? { director_enabled: patch.directorEnabled } : {}),
       } as unknown as ClientFrame,
       set,
     ),
@@ -213,6 +428,11 @@ export const useAdminStore = create<AdminState>((set) => ({
     send({ type: "admin_enable_skill", id, on, ...(locale ? { locale } : {}) }, set),
   listRules: () => send({ type: "admin_list_rules" }, set),
   generateModule: (description) => send({ type: "admin_generate", kind: "module", description }, set),
+  listModules: () => moduleAction("module_list", {}, set),
+  getModuleDetail: (name) => moduleAction("module_detail", { name }, set),
+  uploadModule: (name, content) => moduleAction("module_upload", { name, content }, set),
+  importModule: (name) => moduleAction("module_import", { name }, set),
+  deleteModule: (name) => moduleAction("module_delete", { name }, set),
   exportRoom: (room, path) => send({ type: "admin_export_room", room, ...(path ? { path } : {}) }, set),
   importRoom: (path) => send({ type: "admin_import_room", path }, set),
   resetRoom: (room, scope) => send({ type: "admin_reset_room", room, scope }, set),

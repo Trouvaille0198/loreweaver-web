@@ -45,21 +45,20 @@ describe("QuickMenu keeper surface", () => {
     expect(screen.getByText("Keeper")).toBeInTheDocument()
     // Keeper first-level commands sit in the root list, behind the section.
     expect(screen.getByRole("menuitem", { name: /^\.module/i })).toBeInTheDocument()
-    expect(screen.getByRole("menuitem", { name: /\.var list/i })).toBeInTheDocument()
-    expect(screen.getByRole("menuitem", { name: /\.skill list/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /^\.var/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /^\.skill/i })).toBeInTheDocument()
   })
 
-  it("drills into a keeper group and inserts a sub-command", async () => {
+  it("inserts a keeper command's line on pick, ready for arguments", async () => {
     const user = userEvent.setup()
     const onPick = vi.fn()
     seat("keeper")
     render(<QuickMenu onPick={onPick} />)
     await user.click(screen.getByRole("button", { name: /quick commands/i }))
-    // Sub-commands wait behind their group — the root is first-level only.
+    // One row per command: `.var` is a single row, its subcommands complete
+    // inline in the input box, not as palette rows.
     expect(screen.queryByRole("menuitem", { name: /\.var expose/i })).not.toBeInTheDocument()
-    await user.click(screen.getByRole("menuitem", { name: /\.var list/i }))
-    expect(screen.getByRole("menuitem", { name: /\.var expose/i })).toBeInTheDocument()
-    await user.click(screen.getByRole("menuitem", { name: /\.var expose/i }))
-    expect(onPick).toHaveBeenCalledWith(".var expose ")
+    await user.click(screen.getByRole("menuitem", { name: /^\.var/i }))
+    expect(onPick).toHaveBeenCalledWith(".var ")
   })
 })

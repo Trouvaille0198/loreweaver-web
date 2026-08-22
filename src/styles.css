@@ -441,14 +441,9 @@ body {
 }
 
 /* The "⋯" overflow menu is a NARROW-SCREEN affordance: on wide screens the
-   panels menu, status pill and disconnect sit directly in the header, so the
-   fold-away chrome does not exist. */
+   panels menu and status pill sit directly in the header. */
 .session-more {
   display: none;
-}
-
-.session-quit-wide {
-  display: inline-flex;
 }
 
 /* ---- The ≡ app menu (navigation, replaces the old full-page main menu) ---- */
@@ -1132,22 +1127,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* The ▸ on a first-level row with sub-commands: "this one drills in". */
-.quick-menu-chevron {
-  flex-shrink: 0;
-  color: var(--ink-faint);
-  font: 11px/1 var(--font-ui);
-}
-
-/* The "‹ back" row inside a drilled group: a way out, not a command. */
-.quick-menu-row.is-back .quick-menu-line {
-  color: var(--ink-faint);
-}
-
-.quick-menu-row.is-back .quick-menu-label {
-  color: var(--ink-faint);
 }
 
 .quick-menu-empty {
@@ -2559,6 +2538,80 @@ body {
   gap: 6px;
 }
 
+.module-source-list {
+  width: 100%;
+}
+
+.module-source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.module-source-row.is-selected {
+  border-color: var(--lw-player);
+  background: color-mix(in srgb, var(--bg-raised) 86%, var(--lw-player) 14%);
+}
+
+.module-source-select {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  text-align: left;
+}
+
+.module-source-select strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.module-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.module-knowledge {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.module-knowledge h4,
+.module-knowledge h5 {
+  margin: 0;
+}
+
+.module-knowledge-block {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 8px;
+}
+
+.module-knowledge-block pre,
+.module-source-preview {
+  max-height: 360px;
+  margin: 6px 0 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink-dim);
+  font: 12px/1.5 var(--font-mono);
+}
+
 .play-skill-row {
   display: flex;
   align-items: baseline;
@@ -3304,12 +3357,22 @@ code {
   width: 100%;
   text-align: left;
   background: none;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 8px;
   padding: 6px 9px;
   color: var(--ink);
   font: 13px/1.4 var(--font-ui);
   cursor: pointer;
+  transition:
+    background-color 90ms ease,
+    border-color 90ms ease;
+}
+
+/* The keyboard cursor in the hint list — same selection language as the
+   quick palette (warm tint + soft accent border). */
+.command-hint.is-active {
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-raised));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 
 .command-hint:hover {
@@ -3534,10 +3597,6 @@ code {
   .session-head {
     gap: 8px;
     padding: 8px 12px;
-  }
-
-  .session-quit-wide {
-    display: none;
   }
 
   .session-more {
@@ -3955,6 +4014,109 @@ code {
 
   .play-model-fields,
   .play-model-assignment-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.play-llm-profile-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.play-llm-profile {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.play-llm-profile.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border) 40%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.play-llm-profile-main {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.play-llm-profile-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.play-llm-profile-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+
+.play-llm-profile-copy strong,
+.play-llm-profile-copy span,
+.play-llm-profile-key {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.play-llm-profile-copy strong {
+  font-size: 13px;
+}
+
+.play-llm-profile-copy span,
+.play-llm-profile-key {
+  color: var(--ink-dim);
+  font-size: 11px;
+}
+
+.play-llm-profile-key {
+  flex: 0 1 9ch;
+  margin-left: auto;
+}
+
+.play-llm-delete {
+  align-self: center;
+  margin: 5px;
+  padding: 6px 8px;
+  color: var(--ink-dim);
+  font-size: 11px;
+}
+
+.play-usage-field select {
+  width: 100%;
+}
+
+.play-usage-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 8px 10px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+}
+
+@media (max-width: 760px) {
+  .play-llm-profile-list {
     grid-template-columns: minmax(0, 1fr);
   }
 }

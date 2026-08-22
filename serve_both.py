@@ -40,6 +40,7 @@ from app import (
     get_i18n,
     seed_dice,
 )
+from module_admin import install_module_admin
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -61,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
         port=args.port,
         static_dir=args.static_dir,
     )
+    core.admin = install_module_admin(core.admin)
     if _uses_demo_llm(core.services):
         print(i18n.t("cli.offline_demo_notice"), file=sys.stderr)
     seed_dice(0)

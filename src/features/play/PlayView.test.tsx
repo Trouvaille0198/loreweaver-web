@@ -66,7 +66,6 @@ describe("PlayView", () => {
     expect(screen.queryByText(/Table “r1”/)).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Connect" })).not.toBeInTheDocument()
     expect(screen.getByText("r1 · Nyx")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Disconnect" })).toBeInTheDocument()
     // Named, not "the one textbox": the keeper's audio deck has fields too.
     expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
 
@@ -74,6 +73,7 @@ describe("PlayView", () => {
     await user.click(screen.getByRole("button", { name: "Main menu" }))
     expect(screen.getByRole("menuitem", { name: "My character" })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: "Settings" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Disconnect" })).toBeInTheDocument()
   })
 
   it("Escape does not eject from the game", async () => {
@@ -139,6 +139,25 @@ describe("PlayView", () => {
     render(<PlayView />)
     document.dispatchEvent(new Event("visibilitychange"))
     expect(connect).not.toHaveBeenCalled()
+  })
+
+  it("returns to the connect form after a deliberate disconnect", async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      "loreweaver-web.connect",
+      JSON.stringify({
+        state: { url: "ws://localhost:8787", key: "k-saved", name: "Nyx" },
+        version: 1,
+      }),
+    )
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    render(<PlayView />)
+
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
+    await user.click(screen.getByRole("menuitem", { name: "Disconnect" }))
+
+    expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument()
+    expect(screen.queryByText(/connecting/i)).not.toBeInTheDocument()
   })
 
   it("shows keeper screens and the demo item in the app menu only for a keeper whose server offers it", async () => {
@@ -244,6 +263,38 @@ describe("PlayView", () => {
     await user.click(screen.getByRole("button", { name: /Back to the table/ }))
     expect(window.location.hash).toBe("#/game")
     expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
+  })
+
+  it("restores settings after a reload even when the host drops the fragment", async () => {
+    const user = userEvent.setup()
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    const first = render(<PlayView />)
+
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
+    await user.click(screen.getByRole("menuitem", { name: "Settings" }))
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument()
+
+    window.history.replaceState(null, "", window.location.pathname + window.location.search)
+    first.unmount()
+    render(<PlayView />)
+
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument()
+  })
+
+  it("restores a keeper management subpage after a fragment-less reload", async () => {
+    const user = userEvent.setup()
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    const first = render(<PlayView />)
+
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
+    await user.click(screen.getByRole("menuitem", { name: "Import module" }))
+    expect(screen.getByRole("heading", { name: "Import module" })).toBeInTheDocument()
+
+    window.history.replaceState(null, "", window.location.pathname + window.location.search)
+    first.unmount()
+    render(<PlayView />)
+
+    expect(screen.getByRole("heading", { name: "Import module" })).toBeInTheDocument()
   })
 
   it("drives the screen from hashchange — the browser back/forward path", async () => {
