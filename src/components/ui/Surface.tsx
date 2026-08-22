@@ -5,16 +5,19 @@ export function Surface({
   className,
   tone = "default",
   labelledBy,
+  ariaLabel,
 }: {
   children: ReactNode
   className?: string
   tone?: "default" | "subtle" | "accent" | "danger"
   labelledBy?: string
+  ariaLabel?: string
 }) {
   return (
     <section
       className={`ui-surface ui-surface--${tone}${className ? ` ${className}` : ""}`}
       aria-labelledby={labelledBy}
+      aria-label={ariaLabel}
     >
       {children}
     </section>

@@ -88,54 +88,56 @@ export default function InviteKeysPanel() {
         </div>
       ) : null}
 
-      <table className="play-table">
-        <thead>
-          <tr>
-            <th>{t("play.keys.name")}</th>
-            <th>{t("play.keys.room")}</th>
-            <th>{t("play.keys.role")}</th>
-            <th>{t("play.keys.key")}</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {keys.map((key) => (
-            <tr key={key.id}>
-              <td>{key.name}</td>
-              <td>{key.room}</td>
-              <td>
-                <select
-                  value={key.role}
-                  aria-label={t("play.keys.role")}
-                  onChange={(e) => updateKey(key.id, { role: e.target.value as PlayerRole })}
-                >
-                  <option value="player">{t("play.menu.role.player")}</option>
-                  <option value="keeper">{t("play.menu.role.keeper")}</option>
-                </select>
-              </td>
-              <td>
-                <code className="play-minted-key">{key.key ?? key.key_masked}</code>
-                {key.key ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="quiet"
-                    className="play-copy-inline"
-                    onClick={() => void copyRow(key)}
-                  >
-                    {copiedId === key.id ? t("play.keys.copied") : t("play.keys.copy")}
-                  </Button>
-                ) : null}
-              </td>
-              <td>
-                <Button type="button" size="sm" variant="danger" onClick={() => deleteKey(key.id)}>
-                  {t("play.keys.delete")}
-                </Button>
-              </td>
+      <div className="ui-table-scroll ui-table-scroll--wide">
+        <table className="play-table">
+          <thead>
+            <tr>
+              <th>{t("play.keys.name")}</th>
+              <th>{t("play.keys.room")}</th>
+              <th>{t("play.keys.role")}</th>
+              <th>{t("play.keys.key")}</th>
+              <th />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {keys.map((key) => (
+              <tr key={key.id}>
+                <td>{key.name}</td>
+                <td>{key.room}</td>
+                <td>
+                  <select
+                    value={key.role}
+                    aria-label={t("play.keys.role")}
+                    onChange={(e) => updateKey(key.id, { role: e.target.value as PlayerRole })}
+                  >
+                    <option value="player">{t("play.menu.role.player")}</option>
+                    <option value="keeper">{t("play.menu.role.keeper")}</option>
+                  </select>
+                </td>
+                <td>
+                  <code className="play-minted-key">{key.key ?? key.key_masked}</code>
+                  {key.key ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="quiet"
+                      className="play-copy-inline"
+                      onClick={() => void copyRow(key)}
+                    >
+                      {copiedId === key.id ? t("play.keys.copied") : t("play.keys.copy")}
+                    </Button>
+                  ) : null}
+                </td>
+                <td>
+                  <Button type="button" size="sm" variant="danger" onClick={() => deleteKey(key.id)}>
+                    {t("play.keys.delete")}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {keys.length === 0 ? <p className="placeholder">{t("play.keys.empty")}</p> : null}
     </>
   )

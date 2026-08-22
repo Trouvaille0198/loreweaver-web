@@ -27,7 +27,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { AdminResetScope } from "@loreweaver/protocol"
-import { Button } from "../../../components/ui"
+import { Button, Surface } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
 
@@ -54,7 +54,7 @@ function DangerAction({
   const armed = typed.trim() === room && room !== ""
 
   return (
-    <div className="room-danger">
+    <Surface className="room-action" tone="danger" ariaLabel={label}>
       <h4>{label}</h4>
       <p className="studio-hint">{hint}</p>
       {children}
@@ -80,7 +80,7 @@ function DangerAction({
           {confirmLabel}
         </Button>
       </div>
-    </div>
+    </Surface>
   )
 }
 
@@ -132,131 +132,133 @@ export default function RoomLifecycle() {
         </p>
       ) : null}
 
-      <div className="room-op">
-        <h4>{t("play.rooms.backup")}</h4>
-        <p className="studio-hint">{t("play.rooms.backupHint")}</p>
-        <div className="dialog-row">
-          <label className="field">
-            {t("play.rooms.path")}
-            <input
-              value={exportPath}
-              onChange={(e) => setExportPath(e.target.value)}
-              placeholder={t("play.rooms.pathServerDefault")}
-              spellCheck={false}
-            />
-          </label>
-          <Button
-            type="button"
-            variant="quiet"
-            disabled={admin.busy || !room}
-            onClick={() => admin.exportRoom(room, exportPath.trim() || undefined)}
-          >
-            {t("play.rooms.export")}
-          </Button>
-        </div>
-      </div>
-
-      <DangerAction
-        room={room}
-        label={t("play.rooms.restore")}
-        hint={t("play.rooms.restoreHint")}
-        confirmLabel={t("play.rooms.restoreConfirm")}
-        onConfirm={() => admin.importRoom(importPath.trim())}
-      >
-        <div className="dialog-row">
-          <label className="field">
-            {t("play.rooms.path")}
-            <input
-              value={importPath}
-              onChange={(e) => setImportPath(e.target.value)}
-              placeholder="/…/room_backups/table-2026-08-15.json"
-              spellCheck={false}
-            />
-          </label>
-        </div>
-      </DangerAction>
-
-      <DangerAction
-        room={room}
-        label={t("play.rooms.reset")}
-        hint={t(`play.rooms.resetHint.${scope}`)}
-        confirmLabel={t("play.rooms.resetConfirm")}
-        onConfirm={() => admin.resetRoom(room, scope)}
-      >
-        <label className="field field-narrow">
-          {t("play.rooms.scope")}
-          <select value={scope} onChange={(e) => setScope(e.target.value as AdminResetScope)}>
-            {RESET_SCOPES.map((value) => (
-              <option key={value} value={value}>
-                {t(`play.rooms.scopes.${value}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="studio-hint">{t("play.rooms.resetKeepsHint")}</p>
-      </DangerAction>
-
-      <DangerAction
-        room={room}
-        label={t("play.rooms.deleteData")}
-        hint={t("play.rooms.deleteDataHint")}
-        confirmLabel={t("play.rooms.deleteDataConfirm")}
-        onConfirm={() => admin.deleteRoomData(room, backupBeforeDelete)}
-      >
-        <label className="pack-checkbox">
-          <input
-            type="checkbox"
-            checked={backupBeforeDelete}
-            onChange={(e) => setBackupBeforeDelete(e.target.checked)}
-          />
-          {t("play.rooms.backupFirst")}
-        </label>
-        {!backupBeforeDelete ? (
-          <p className="studio-hint split-error">{t("play.rooms.noBackupWarning")}</p>
-        ) : null}
-      </DangerAction>
-
-      <DangerAction
-        room={room}
-        label={t("play.rooms.deleteKeys")}
-        hint={t("play.rooms.deleteKeysHint")}
-        confirmLabel={t("play.rooms.deleteKeysConfirm")}
-        onConfirm={() => admin.deleteRoom(room)}
-      />
-
-      <div className="room-op">
-        <h4>{t("play.rooms.selfUpdate")}</h4>
-        <p className="studio-hint">
-          {canUpdate ? t("play.rooms.selfUpdateHint") : t("play.rooms.selfUpdateUnavailable")}
-        </p>
-        {armUpdate ? (
-          <div className="dialog-row" role="status">
-            <span className="studio-hint">{t("play.rooms.selfUpdateConfirm")}</span>
+      <div className="room-action-stack">
+        <Surface className="room-action" tone="subtle" ariaLabel={t("play.rooms.backup")}>
+          <h4>{t("play.rooms.backup")}</h4>
+          <p className="studio-hint">{t("play.rooms.backupHint")}</p>
+          <div className="dialog-row">
+            <label className="field">
+              {t("play.rooms.path")}
+              <input
+                value={exportPath}
+                onChange={(e) => setExportPath(e.target.value)}
+                placeholder={t("play.rooms.pathServerDefault")}
+                spellCheck={false}
+              />
+            </label>
             <Button
               type="button"
-              variant="primary"
-              disabled={admin.busy}
-              onClick={() => {
-                setArmUpdate(false)
-                admin.updateServer()
-              }}
+              variant="quiet"
+              disabled={admin.busy || !room}
+              onClick={() => admin.exportRoom(room, exportPath.trim() || undefined)}
+            >
+              {t("play.rooms.export")}
+            </Button>
+          </div>
+        </Surface>
+
+        <DangerAction
+          room={room}
+          label={t("play.rooms.restore")}
+          hint={t("play.rooms.restoreHint")}
+          confirmLabel={t("play.rooms.restoreConfirm")}
+          onConfirm={() => admin.importRoom(importPath.trim())}
+        >
+          <div className="dialog-row">
+            <label className="field">
+              {t("play.rooms.path")}
+              <input
+                value={importPath}
+                onChange={(e) => setImportPath(e.target.value)}
+                placeholder="/…/room_backups/table-2026-08-15.json"
+                spellCheck={false}
+              />
+            </label>
+          </div>
+        </DangerAction>
+
+        <DangerAction
+          room={room}
+          label={t("play.rooms.reset")}
+          hint={t(`play.rooms.resetHint.${scope}`)}
+          confirmLabel={t("play.rooms.resetConfirm")}
+          onConfirm={() => admin.resetRoom(room, scope)}
+        >
+          <label className="field field-narrow">
+            {t("play.rooms.scope")}
+            <select value={scope} onChange={(e) => setScope(e.target.value as AdminResetScope)}>
+              {RESET_SCOPES.map((value) => (
+                <option key={value} value={value}>
+                  {t(`play.rooms.scopes.${value}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="studio-hint">{t("play.rooms.resetKeepsHint")}</p>
+        </DangerAction>
+
+        <DangerAction
+          room={room}
+          label={t("play.rooms.deleteData")}
+          hint={t("play.rooms.deleteDataHint")}
+          confirmLabel={t("play.rooms.deleteDataConfirm")}
+          onConfirm={() => admin.deleteRoomData(room, backupBeforeDelete)}
+        >
+          <label className="pack-checkbox">
+            <input
+              type="checkbox"
+              checked={backupBeforeDelete}
+              onChange={(e) => setBackupBeforeDelete(e.target.checked)}
+            />
+            {t("play.rooms.backupFirst")}
+          </label>
+          {!backupBeforeDelete ? (
+            <p className="studio-hint split-error">{t("play.rooms.noBackupWarning")}</p>
+          ) : null}
+        </DangerAction>
+
+        <DangerAction
+          room={room}
+          label={t("play.rooms.deleteKeys")}
+          hint={t("play.rooms.deleteKeysHint")}
+          confirmLabel={t("play.rooms.deleteKeysConfirm")}
+          onConfirm={() => admin.deleteRoom(room)}
+        />
+
+        <Surface className="room-action" tone="subtle" ariaLabel={t("play.rooms.selfUpdate")}>
+          <h4>{t("play.rooms.selfUpdate")}</h4>
+          <p className="studio-hint">
+            {canUpdate ? t("play.rooms.selfUpdateHint") : t("play.rooms.selfUpdateUnavailable")}
+          </p>
+          {armUpdate ? (
+            <div className="dialog-row" role="status">
+              <span className="studio-hint">{t("play.rooms.selfUpdateConfirm")}</span>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={admin.busy}
+                onClick={() => {
+                  setArmUpdate(false)
+                  admin.updateServer()
+                }}
+              >
+                {t("play.rooms.selfUpdateRun")}
+              </Button>
+              <Button type="button" variant="quiet" onClick={() => setArmUpdate(false)}>
+                {t("play.rooms.cancel")}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="quiet"
+              disabled={!canUpdate || admin.busy}
+              onClick={() => setArmUpdate(true)}
             >
               {t("play.rooms.selfUpdateRun")}
             </Button>
-            <Button type="button" variant="quiet" onClick={() => setArmUpdate(false)}>
-              {t("play.rooms.cancel")}
-            </Button>
-          </div>
-        ) : (
-          <Button
-            type="button"
-            variant="quiet"
-            disabled={!canUpdate || admin.busy}
-            onClick={() => setArmUpdate(true)}
-          >
-            {t("play.rooms.selfUpdateRun")}
-          </Button>
-        )}
+          )}
+        </Surface>
       </div>
     </section>
   )

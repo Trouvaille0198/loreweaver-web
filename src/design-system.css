@@ -14,8 +14,8 @@
   --line-default: var(--lw-border);
   --line-strong: color-mix(in srgb, var(--lw-border) 64%, var(--lw-fg) 36%);
   --text-primary: var(--lw-fg);
-  --text-secondary: var(--lw-dim);
-  --text-tertiary: color-mix(in srgb, var(--lw-dim) 80%, var(--lw-bg) 20%);
+  --text-secondary: color-mix(in srgb, var(--lw-dim) 60%, var(--lw-fg) 40%);
+  --text-tertiary: color-mix(in srgb, var(--lw-dim) 72%, var(--lw-fg) 28%);
   --text-accent: color-mix(in srgb, var(--lw-accent) 72%, var(--lw-fg) 28%);
 
   --space-1: 4px;
@@ -153,7 +153,7 @@ select {
 }
 
 .ui-button--danger {
-  color: color-mix(in srgb, var(--lw-fumble) 74%, var(--lw-fg) 26%);
+  color: color-mix(in srgb, var(--lw-fumble) 52%, var(--lw-fg) 48%);
   background: color-mix(in srgb, var(--lw-fumble) 10%, var(--surface-1));
   border-color: color-mix(in srgb, var(--lw-fumble) 54%, var(--line-default));
 }
@@ -218,6 +218,9 @@ select {
 /* Surfaces and sections */
 
 .ui-surface {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
   padding: var(--space-5);
   background: var(--surface-1);
   border: 1px solid var(--line-subtle);
@@ -864,6 +867,11 @@ select {
   letter-spacing: -0.025em;
 }
 
+.play-screen-head h2:focus-visible {
+  outline: none;
+  color: var(--text-accent);
+}
+
 .play-screen-back {
   margin-left: -10px;
   color: var(--text-secondary);
@@ -1047,14 +1055,16 @@ select {
 }
 
 .settings-section-card {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-5);
-  padding: clamp(var(--space-5), 3vw, var(--space-7));
+  padding: clamp(var(--space-5), 2.2vw, var(--space-6));
 }
 
 .settings-section-card .ui-section-description {
   color: var(--text-primary);
+}
+
+.keeper-settings-card {
+  gap: var(--space-4);
 }
 
 .keeper-settings-panel-head {
@@ -1078,10 +1088,46 @@ select {
 }
 
 .play-model-card {
+  gap: var(--space-5);
   padding: var(--space-5);
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--lw-accent) 5%, transparent), transparent 68%),
     var(--surface-1);
+}
+
+.play-room-lifecycle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--line-subtle);
+}
+
+.play-room-lifecycle > h3,
+.room-action > h4 {
+  margin: 0;
+}
+
+.room-action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-1);
+}
+
+.room-action {
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.room-action > .dialog-row,
+.room-action > .ui-button {
+  align-self: flex-start;
+}
+
+.room-action > .dialog-row {
+  width: 100%;
 }
 
 .play-list {
@@ -1157,6 +1203,10 @@ select {
   font-weight: 600;
 }
 
+.pack-checkbox {
+  color: var(--text-secondary);
+}
+
 .field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .field select,
 .field textarea,
@@ -1183,6 +1233,22 @@ select {
   background: var(--surface-canvas);
   border-color: var(--lw-accent);
   box-shadow: var(--focus-ring);
+}
+
+.ui-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  scrollbar-gutter: stable;
+}
+
+.ui-table-scroll > .play-table {
+  width: 100%;
+}
+
+.ui-table-scroll--wide > .play-table {
+  min-width: 680px;
 }
 
 .play-table {
@@ -1632,6 +1698,34 @@ select {
 
   .settings-section-card {
     padding: var(--space-4);
+  }
+
+  .play-mint-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .play-mint-row .field,
+  .play-mint-row .field-narrow {
+    width: 100%;
+    max-width: none;
+  }
+
+  .play-mint-row > .ui-button {
+    width: 100%;
+  }
+
+  .room-action > .dialog-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .room-action > .dialog-row > .field,
+  .room-action > .dialog-row > .ui-button {
+    width: 100%;
+    max-width: none;
   }
 
   .settings-language-grid {
