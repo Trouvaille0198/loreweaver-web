@@ -29,6 +29,9 @@ WORKDIR /srv
 # py3-none wheel. No compiler needed for either.
 COPY --from=engine / /repo
 RUN pip install --no-cache-dir "/repo[vector]" && rm -rf /repo
+# The combined runner is bind-mounted from the web checkout, while its
+# web-only engine extension lives in the sibling engine checkout.
+COPY --from=engine /module_admin.py /srv/module_admin.py
 # Campaign data, keys, media — the one volume that survives container death.
 VOLUME /data
 EXPOSE 8787
