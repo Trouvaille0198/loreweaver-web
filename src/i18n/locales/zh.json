@@ -117,6 +117,7 @@
     "quickCommands": "快捷命令",
     "quickMenuHint": "点选插入输入框，发送前可再修改",
     "quickMenuSearch": "过滤指令…",
+    "quickMenuBack": "返回上一级",
     "quickMenuEmpty": "没有匹配的指令",
     "deskReset": "恢复默认顺序",
     "deskGrip": "拖动排序"

@@ -1134,6 +1134,22 @@ body {
   white-space: nowrap;
 }
 
+/* The ▸ on a first-level row with sub-commands: "this one drills in". */
+.quick-menu-chevron {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+  font: 11px/1 var(--font-ui);
+}
+
+/* The "‹ back" row inside a drilled group: a way out, not a command. */
+.quick-menu-row.is-back .quick-menu-line {
+  color: var(--ink-faint);
+}
+
+.quick-menu-row.is-back .quick-menu-label {
+  color: var(--ink-faint);
+}
+
 .quick-menu-empty {
   margin: 0;
   padding: 16px 10px;

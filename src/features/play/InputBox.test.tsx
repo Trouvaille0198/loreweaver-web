@@ -177,17 +177,33 @@ describe("InputBox quick commands sub-menus", () => {
     })
   })
 
-  it("shows group sub-commands under a section header, and inserts one", async () => {
+  it("drills into a group's sub-commands and inserts one", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
     const field = screen.getByRole("textbox")
 
     await user.click(screen.getByRole("button", { name: /quick commands/i }))
-    // Groups are flattened into labelled sections — a sub-command is
-    // reachable in one pass, with no expansion step.
+    // The root shows first-level commands only — sub-commands wait behind ▸.
+    expect(screen.queryByRole("menuitem", { name: /\.pc release/i })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("menuitem", { name: /\.pc list/i }))
     expect(screen.getByRole("menuitem", { name: /\.pc release/i })).toBeInTheDocument()
     await user.click(screen.getByRole("menuitem", { name: /\.pc release/i }))
     expect(field).toHaveValue(".pc release")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+  })
+
+  it("Escape inside a group climbs back to the root before closing", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    await user.click(screen.getByRole("button", { name: /quick commands/i }))
+    await user.click(screen.getByRole("menuitem", { name: /\.pc list/i }))
+    expect(screen.getByRole("menuitem", { name: /\.pc release/i })).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    // One level up — the palette is still open at the root.
+    expect(screen.getByRole("menu")).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /\.pc list/i })).toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: /\.pc release/i })).not.toBeInTheDocument()
+    await user.keyboard("{Escape}")
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
   })
 

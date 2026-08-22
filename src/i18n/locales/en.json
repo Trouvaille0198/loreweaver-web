@@ -117,6 +117,7 @@
     "quickCommands": "Quick commands",
     "quickMenuHint": "Pick to insert into the box — tweak before sending",
     "quickMenuSearch": "Filter commands…",
+    "quickMenuBack": "Back",
     "quickMenuEmpty": "No matching commands",
     "deskReset": "Reset order",
     "deskGrip": "Drag to reorder"
