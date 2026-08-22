@@ -231,6 +231,29 @@ describe("InputBox quick commands sub-menus", () => {
     expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
   })
 
+  it("suggests only sanity-formula glue, never example formulas", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+    // Cold start: nothing — the formula is the player's to type.
+    await user.type(field, ".sc ")
+    expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
+    // `1` → `d` or the `/` separator; `1d6` (a complete side) → `/`.
+    await user.type(field, "1")
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "dSanity check (alias)",
+      "/Sanity check (alias)",
+    ])
+    await user.type(field, "d6")
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["/Sanity check (alias)"])
+    // After the slash the same digit → d rule applies; complete → silence.
+    await user.keyboard("{Tab}")
+    await user.type(field, "1")
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["dSanity check (alias)"])
+    await user.type(field, "d6")
+    expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
+  })
+
   it("suggests fixed argument tokens, filtered by the typed prefix", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
@@ -252,7 +275,7 @@ describe("InputBox quick commands sub-menus", () => {
     const search = screen.getByLabelText(/filter commands/i)
     // "san" matches the sanity roll's label — the rest of the palette drops out.
     await user.type(search, "san")
-    expect(screen.getByRole("menuitem", { name: /\.sc 1\/1d6/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /^\.sc/i })).toBeInTheDocument()
     expect(screen.queryByRole("menuitem", { name: /\.recap/i })).not.toBeInTheDocument()
     // A nonsense query empties the palette.
     await user.clear(search)
@@ -266,7 +289,7 @@ describe("InputBox quick commands sub-menus", () => {
     expect(lines).toContain(".r ")
     expect(lines).toContain(".rh ")
     expect(lines).toContain(".pc ")
-    expect(lines).toContain(".sc 1/1d6")
+    expect(lines).toContain(".sc ")
     expect(lines).toContain(".recap")
     expect(lines).toContain(".help")
     // The full command surface, player + keeper.

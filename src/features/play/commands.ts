@@ -136,7 +136,7 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "rh", line: ".rh " },
   { word: "ra", line: ".ra " },
   { word: "rav", line: ".rav " },
-  { word: "sanity", line: ".sc 1/1d6" },
+  { word: "sanity", line: ".sc " },
   { word: "init", line: ".ri" },
   { word: "st", line: ".st " },
   { word: "pc", line: ".pc " },
@@ -217,6 +217,8 @@ export interface ArgSpec {
   tokens?: readonly string[]
   /** The dice-expression grammar — suggestions follow what's typed. */
   dice?: boolean
+  /** The sanity-formula grammar (`loss/loss`, each side dice) — glue only. */
+  sanity?: boolean
 }
 
 export const ARG_SPECS: Record<string, ArgSpec> = {
@@ -234,8 +236,8 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   rcv: { tokens: COMMON_SKILLS },
   check: { tokens: COMMON_SKILLS },
   attack: { tokens: COMMON_SKILLS },
-  sanity: { tokens: ["1/1d6", "1/d6", "0/1d4", "1/1d8"] },
-  sc: { tokens: ["1/1d6", "1/d6", "0/1d4", "1/1d8"] },
+  sanity: { sanity: true },
+  sc: { sanity: true },
   st: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
   sheet: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
   // Cast & party (gateway/commands/cast.py's word sets)
@@ -292,11 +294,30 @@ export function diceSuggestions(token: string): ArgSuggestion[] {
   return []
 }
 
+/**
+ * The sanity-formula grammar — GLUE ONLY, same rule as the dice grammar. The
+ * formula is `<success-loss>/<fail-loss>` (e.g. the player types the numbers
+ * and die sizes); the completions offer only the structural tokens: `d` after
+ * a bare count (on either side of the slash), `/` once a side is complete.
+ */
+export function sanitySuggestions(token: string): ArgSuggestion[] {
+  const slash = token.indexOf("/")
+  if (slash < 0) {
+    if (/^\d+$/.test(token)) return ["d", "/"].map((text) => ({ text, mode: "append" as const }))
+    if (/^\d+d\d+$/i.test(token)) return [{ text: "/", mode: "append" }]
+    return []
+  }
+  const right = token.slice(slash + 1)
+  if (/^\d+$/.test(right)) return [{ text: "d", mode: "append" }]
+  return []
+}
+
 /** Inline completions for the token being typed after `.word `. */
 export function suggestArgs(word: string, token: string): ArgSuggestion[] {
   const spec = ARG_SPECS[word]
   if (!spec) return []
   if (spec.dice) return diceSuggestions(token)
+  if (spec.sanity) return sanitySuggestions(token)
   const p = token.trim().toLowerCase()
   return (spec.tokens ?? [])
     .filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p))
