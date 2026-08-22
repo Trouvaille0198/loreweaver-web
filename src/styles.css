@@ -933,7 +933,7 @@ body {
   border-color: var(--accent);
 }
 
-.input-box button {
+.input-box > button {
   background: var(--accent);
   color: var(--accent-ink);
   border: none;
@@ -961,6 +961,7 @@ body {
   color: var(--accent-strong);
   border: 1px solid var(--border);
   border-radius: 6px;
+  font: inherit;
   cursor: pointer;
   transition:
     color 120ms ease,
@@ -985,7 +986,7 @@ body {
   left: 0;
   bottom: calc(100% + 6px);
   z-index: 30;
-  width: min(400px, calc(100vw - 24px));
+  width: min(460px, calc(100vw - 24px));
   max-height: min(65vh, 480px);
   display: flex;
   flex-direction: column;
@@ -1030,7 +1031,7 @@ body {
 }
 
 .quick-menu-search input::placeholder {
-  color: var(--ink-faint);
+  color: var(--ink-dim);
 }
 
 .quick-menu-list {
@@ -1056,26 +1057,32 @@ body {
   background-clip: content-box;
 }
 
-/* Section headers: the desk-title look — small caps rail, keeper zone kept
-   apart by a soft rule in the system tone. */
+/* Section headers: the desk-title look — small caps rail, every zone after
+   the first kept apart by a hairline rule; the keeper zone reads in the
+   system tone. */
 .quick-menu-section {
   font: 600 11px/1 var(--font-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-dim);
-  padding: 8px 9px 4px;
+  padding: 10px 9px 4px;
+}
+
+.quick-menu-section:not(:first-child) {
+  border-top: 1px solid var(--border-soft);
+  margin-top: 6px;
 }
 
 .quick-menu-section.is-keeper {
   color: var(--lw-system);
-  border-top: 1px solid var(--border-soft);
-  margin-top: 4px;
-  padding-top: 10px;
 }
 
-/* Rows: the command-hint anatomy (mono line, dim label) in the app's quiet
-   floating-layer language — dim raised block on hover, a soft accent border
-   marking the keyboard-active row. No loud inverted fill (fb3e062). */
+/* Rows: the command-hint anatomy (mono line, dim label). Hover/active read as
+   a clear but quiet selection — a warm tinted block, and on the keyboard
+   cursor an accent rail down the left edge (the log-entry rail motif). NOTE:
+   the palette lives INSIDE the input row, so these rules only beat the send
+   button's chrome because `.input-box > button` is child-scoped — keep it
+   that way. */
 .quick-menu-row {
   display: flex;
   align-items: center;
@@ -1085,23 +1092,25 @@ body {
   background: none;
   border: 1px solid transparent;
   border-radius: 8px;
-  padding: 7px 10px;
+  padding: 7px 12px 7px 10px;
   cursor: pointer;
   color: var(--ink);
   font: 13px/1.3 var(--font-ui);
   transition:
     background-color 90ms ease,
-    border-color 90ms ease;
+    border-color 90ms ease,
+    box-shadow 90ms ease;
 }
 
-.quick-menu-row:hover,
-.quick-menu-row.is-active {
-  background: var(--bg-inset);
+.quick-menu-row:hover {
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-raised));
   border-color: var(--border-soft);
 }
 
 .quick-menu-row.is-active {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-raised));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .quick-menu-line {
@@ -1140,7 +1149,7 @@ body {
   color: var(--ink-faint);
 }
 
-.input-box button:disabled {
+.input-box > button:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -2238,6 +2247,183 @@ body {
   padding: 12px;
 }
 
+/* Model configuration is a two-level workspace: one primary model card, then
+   a grouped set of assignment cards. Keep the hierarchy visible instead of
+   making every field look like an unrelated form row. */
+.play-model-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-raised) 94%, var(--accent) 6%),
+    var(--bg-raised)
+  );
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px color-mix(in srgb, black 18%, transparent);
+}
+
+.play-model-global {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border) 55%);
+}
+
+.play-model-card-head,
+.play-model-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.play-model-card-head .studio-hint,
+.play-model-section-head .studio-hint {
+  max-width: 620px;
+  margin-top: 6px;
+}
+
+.play-model-status {
+  flex: 0 0 auto;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.play-model-status.is-active,
+.play-model-status.is-custom {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border) 45%);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.play-model-status.is-inherited {
+  color: var(--ink-dim);
+  background: color-mix(in srgb, var(--bg-inset) 75%, transparent);
+}
+
+.play-model-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 0 2px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.play-model-switcher-label {
+  color: var(--ink-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.play-model-switcher-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.play-model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 5px 11px;
+  color: var(--ink-dim);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  font: 600 12px/1.2 var(--font-ui);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.play-model-chip:hover {
+  color: var(--ink);
+  border-color: var(--border);
+  transform: translateY(-1px);
+}
+
+.play-model-chip.is-selected {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.play-model-chip-dot {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.play-model-switcher-empty {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.play-model-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  width: 100%;
+  padding: 0;
+  border: 0;
+}
+
+.play-model-fields .field {
+  min-width: 0;
+}
+
+.play-model-list-button,
+.play-model-apply {
+  align-self: end;
+  min-height: 38px;
+}
+
+.play-model-usage {
+  gap: 18px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.play-model-assignment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.play-model-assignment {
+  min-width: 0;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg-raised) 72%, var(--bg-inset) 28%);
+  border-color: var(--border-soft);
+  box-shadow: none;
+}
+
+.play-model-assignment .play-model-card-head {
+  min-height: 48px;
+}
+
+.play-model-assignment .play-form {
+  gap: 12px;
+}
+
+.play-model-room {
+  background: color-mix(in srgb, var(--bg-raised) 82%, var(--lw-player) 18%);
+}
+
 .play-form .field {
   width: 100%;
 }
@@ -3000,7 +3186,7 @@ code {
 .icon-button,
 .app-menu-row,
 .connect-form button,
-.input-box button,
+.input-box > button,
 .host-local-button {
   transition:
     background-color 120ms ease,
@@ -3015,7 +3201,7 @@ code {
 .choice-button:hover:not(:disabled),
 .icon-button:hover:not(:disabled),
 .connect-form button:hover:not(:disabled),
-.input-box button:hover:not(:disabled),
+.input-box > button:hover:not(:disabled),
 .host-local-button:hover:not(:disabled) {
   filter: brightness(1.12);
 }
@@ -3025,7 +3211,7 @@ code {
 .choice-button:active:not(:disabled),
 .icon-button:active:not(:disabled),
 .connect-form button:active:not(:disabled),
-.input-box button:active:not(:disabled),
+.input-box > button:active:not(:disabled),
 .host-local-button:active:not(:disabled) {
   transform: translateY(1px);
 }
@@ -3037,7 +3223,7 @@ code {
   .icon-button,
   .app-menu-row,
   .connect-form button,
-  .input-box button,
+  .input-box > button,
   .host-local-button {
     transition: none;
   }
@@ -3465,7 +3651,7 @@ code {
     font-size: 16px;
   }
 
-  .input-box button {
+  .input-box > button {
     padding: 0 14px;
   }
 
@@ -3578,7 +3764,7 @@ code {
   .icon-button,
   .app-menu-row,
   .app-menu-toggle,
-  .input-box button,
+  .input-box > button,
   .connect-form button {
     min-height: 44px;
   }
@@ -3731,4 +3917,25 @@ code {
 .session .desk-pane .panel-card .desk-title,
 .session .desk-pane .desk-card:not(.character-card) .desk-title {
   letter-spacing: 0.06em;
+}
+
+@media (max-width: 760px) {
+  .play-model-card {
+    padding: 14px;
+  }
+
+  .play-model-card-head,
+  .play-model-section-head {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .play-model-status {
+    align-self: flex-start;
+  }
+
+  .play-model-fields,
+  .play-model-assignment-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
