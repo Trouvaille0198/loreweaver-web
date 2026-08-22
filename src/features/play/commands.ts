@@ -56,6 +56,7 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "rename" },
   { word: "nn" },
   { word: "avatar" },
+  { word: "image", example: "scene" },
   { word: "bind" },
   { word: "unbind" },
   // The table & the story
@@ -155,6 +156,7 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "room", line: ".room ", keeper: true },
   { word: "panels", line: ".panels", keeper: true },
   { word: "audio", line: ".audio", keeper: true },
+  { word: "image", line: ".image ", keeper: true },
   { word: "import", line: ".import list", keeper: true },
   { word: "npc", line: ".npc ", keeper: true },
   { word: "companion", line: ".companion ", keeper: true },
@@ -215,6 +217,8 @@ export const COMMON_SKILLS: readonly string[] = [
 export interface ArgSpec {
   /** Fixed candidates for the next token, prefix-filtered, inserted whole. */
   tokens?: readonly string[]
+  /** Per-token completion description, keyed by the candidate (`play.commands.<word>.<token>`). */
+  hints?: Record<string, string>
   /** The dice-expression grammar — suggestions follow what's typed. */
   dice?: boolean
   /** The sanity-formula grammar (`loss/loss`, each side dice) — glue only. */
@@ -247,6 +251,15 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   npc: { tokens: ["list", "show", "delete"] },
   companion: { tokens: ["list", "delete"] },
   avatar: { tokens: ["gen", "generate", "clear"] },
+  image: {
+    tokens: ["scene", "portrait", "item", "combat"],
+    hints: {
+      scene: "play.imageArgs.scene",
+      portrait: "play.imageArgs.portrait",
+      item: "play.imageArgs.item",
+      combat: "play.imageArgs.combat",
+    },
+  },
   // World & records (world.py's word sets)
   var: { tokens: ["list", "expose", "show", "hide", "add", "set"] },
   vars: { tokens: ["list", "expose", "show", "hide", "add", "set"] },
@@ -277,6 +290,8 @@ export interface ArgSuggestion {
   text: string
   /** `replace` swaps the current token; `append` extends it (dice grammar). */
   mode: "replace" | "append"
+  /** Optional i18n key for this candidate's own description (defaults to the command's). */
+  hintKey?: string
 }
 
 /**
@@ -322,5 +337,5 @@ export function suggestArgs(word: string, token: string): ArgSuggestion[] {
   return (spec.tokens ?? [])
     .filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p))
     .slice(0, 8)
-    .map((text) => ({ text, mode: "replace" as const }))
+    .map((text) => ({ text, mode: "replace" as const, hintKey: spec.hints?.[text] }))
 }

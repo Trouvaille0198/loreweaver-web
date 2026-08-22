@@ -544,8 +544,8 @@ body {
 
 /* The desk drawer chrome is a NARROW-SCREEN affordance: on wide screens the
    desk is an always-on column and the toggle/close/backdrop do not exist. */
-.desk-toggle,
-.desk-close,
+.ui-button.desk-toggle,
+.ui-button.desk-close,
 .desk-backdrop,
 .desk-drawer-head {
   display: none;
@@ -629,6 +629,34 @@ body {
   text-transform: uppercase;
   color: var(--ink-dim);
   margin-bottom: 4px;
+}
+
+.log-media-img {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  margin-top: 6px;
+}
+
+.log-media-empty {
+  display: block;
+  width: 100%;
+  height: 120px;
+  border-radius: 10px;
+  border: 1px dashed var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-dim);
+  margin-top: 6px;
+}
+
+.log-media-name {
+  font: 500 12px/1.4 var(--font-ui);
+  color: var(--ink-dim);
+  margin-top: 6px;
 }
 
 .speaker-kp .entry-speaker {
@@ -897,11 +925,30 @@ body {
   font-size: 13px;
 }
 
+.turn-status-content {
+  min-width: 0;
+}
+
+.turn-status-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
 /* The 2.3.1 activity hint rides beside the busy line, never louder than it. */
 .turn-activity {
   color: var(--ink-faint);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+.turn-progress {
+  margin-top: 3px;
+  color: var(--ink-faint);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 /* ---- Input box ---- */
@@ -1172,60 +1219,60 @@ body {
    still be selected and copied. */
 .desk-slot-grip {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 8px;
+  right: 8px;
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  min-width: 28px;
+  height: 34px;
+  min-height: 34px;
   padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--bg-inset) 68%, transparent);
   color: var(--ink-faint);
-  font: 11px/1 var(--font-ui);
   cursor: grab;
-  opacity: 0;
-  transition: opacity 120ms ease;
+  opacity: 0.42;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
 }
 
 .desk-slot:hover .desk-slot-grip,
 .desk-slot-grip:focus-visible {
-  opacity: 0.8;
+  opacity: 0.82;
 }
 
 .desk-slot-grip:hover {
   opacity: 1;
   color: var(--ink);
+  border-color: var(--border);
 }
 
-/* Header buttons sit on the right where the grip hint appears — nudge them
-   past the grip's full hit area (right 6px + 18px wide) so nothing overlaps. */
-.desk-sortable .desk-title > button {
-  margin-right: 24px;
+.desk-slot-grip-icon {
+  width: 14px;
+  height: 20px;
+  background-image: radial-gradient(circle, currentColor 1.4px, transparent 1.6px);
+  background-position: 0 0;
+  background-size: 7px 7px;
 }
 
-/* The dragged card stays solid and lifts above the stack — a soft shadow plus
-   an accent border. A half-transparent card reads as broken, not "held", so
-   the drag state never fades the card away. */
+/* The grip owns a narrow rail at the right of every card header. */
+.desk-sortable .desk-title {
+  padding-right: 38px;
+}
+
+/* Dragging marks the source in place; cards never lift or shuffle mid-drag. */
 .desk-slot.is-dragging {
-  position: relative;
-  z-index: 4;
   cursor: grabbing;
 }
 
 .desk-slot.is-dragging .desk-card {
-  border-color: var(--accent);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.4);
-}
-
-/* Smooth the lift on grab and the settle on drop (layout position changes are
-   DOM reorders, not transitions, so this never fights the reorder itself). */
-.desk-sortable .desk-card {
-  transition:
-    border-color 120ms ease,
-    box-shadow 160ms ease;
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 75%, transparent);
 }
 
 .desk-sortable.is-sorting {
@@ -1233,19 +1280,27 @@ body {
   user-select: none;
 }
 
-/* The insertion point: a rounded accent bar with a soft glow, marking exactly
-   where the dragged card will land. */
-.desk-slot.drop-target::before {
+/* One insertion edge moves through the fixed stack. The actual DOM order is
+   committed only on pointer-up. */
+.desk-slot.drop-before::before,
+.desk-slot.drop-after::after {
   content: "";
   position: absolute;
-  top: -7px;
   left: 8px;
   right: 8px;
-  height: 3px;
+  height: 2px;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
   z-index: 3;
+}
+
+.desk-slot.drop-before::before {
+  top: -6px;
+}
+
+.desk-slot.drop-after::after {
+  bottom: -6px;
 }
 
 .desk-order-reset {
@@ -2248,6 +2303,116 @@ body {
   max-width: 1120px;
 }
 
+/* --- Play: room information --- */
+
+.room-info-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.room-info-grid {
+  display: grid;
+  grid-template-columns: minmax(max-content, 22ch) minmax(0, 1fr);
+  gap: var(--space-3) var(--space-4);
+  margin: 0;
+}
+
+.room-info-grid dt {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.room-info-grid dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.room-info-mono {
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.room-info-subhead {
+  margin: 0 0 var(--space-2);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.room-info-members,
+.room-info-system-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.room-info-member,
+.room-info-system-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.room-info-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.room-info-variables {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.room-info-usage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.room-info-usage strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.room-info-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.room-info-link {
+  display: block;
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-primary);
+  text-decoration: none;
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+}
+
+.room-info-link:hover,
+.room-info-link:focus-visible {
+  background: var(--surface-hover);
+}
+
+.room-info-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .play-form {
   display: flex;
   flex-direction: column;
@@ -2601,6 +2766,71 @@ body {
   margin: 0 0 10px;
 }
 
+.play-character-heading .member-avatar {
+  width: 58px;
+  height: 58px;
+  border-width: 2px;
+}
+
+.play-character-section {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.play-character-section h4 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font: 700 15px/1.3 var(--font-ui);
+}
+
+.play-character-detail-table {
+  margin: 0;
+}
+
+.play-character-skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 6px 16px;
+}
+
+.play-character-skill {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 55%, transparent);
+}
+
+.play-character-skill span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.play-character-skill strong {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.play-character-equipment {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ink-dim);
+  line-height: 1.65;
+}
+
+.play-character-prose {
+  margin: 0;
+  color: var(--ink-dim);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
 .play-character-meters {
   display: flex;
   flex-direction: column;
@@ -2824,11 +3054,90 @@ body {
 
 .member-avatar {
   flex: none;
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   object-fit: cover;
   border-radius: 50%;
   border: 1px solid var(--border-soft);
+}
+
+.member-avatar-zoomable {
+  cursor: zoom-in;
+  transition:
+    border-color 120ms ease,
+    filter 120ms ease;
+}
+
+.member-avatar-zoomable:hover,
+.member-avatar-zoomable:focus-visible {
+  border-color: var(--accent);
+  filter: brightness(1.08);
+  outline: none;
+}
+
+.avatar-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(5 4 2 / 84%);
+  backdrop-filter: blur(4px);
+}
+
+.avatar-lightbox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: min(88vw, 920px);
+  padding: 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-top: 2px solid color-mix(in srgb, var(--accent) 75%, var(--border));
+  border-radius: 12px;
+  box-shadow: 0 24px 90px rgb(0 0 0 / 62%);
+}
+
+.avatar-lightbox-image {
+  display: block;
+  width: auto;
+  max-width: min(82vw, 860px);
+  height: auto;
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.avatar-lightbox-caption {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0 40px 2px;
+  color: var(--ink-dim);
+  font: 600 13px/1.3 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar-lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--ink);
+  background: rgb(8 6 3 / 72%);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 /* --- keeper variable writes ----------------------------------------------- */
@@ -3318,6 +3627,19 @@ code {
    INPUT dock (the thumb's home) — never the top header; the menu desk simply
    stacks under the menu list. */
 @media (max-width: 760px) {
+  .room-info-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .room-info-grid dd + dt {
+    margin-top: var(--space-2);
+  }
+
+  .room-info-links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .session {
     flex-direction: column;
   }
@@ -3377,8 +3699,8 @@ code {
     background: rgb(0 0 0 / 0.55);
   }
 
-  .desk-toggle,
-  .desk-close {
+  .ui-button.desk-toggle,
+  .ui-button.desk-close {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3794,6 +4116,8 @@ code {
 }
 
 .session .desk-pane .character-card .desk-title {
+  align-items: center;
+  justify-content: flex-start;
   font-size: 17px;
   letter-spacing: 0.01em;
   text-transform: none;
@@ -3802,9 +4126,13 @@ code {
   gap: 10px;
 }
 
+.session .desk-pane .character-card .desk-tag {
+  margin-left: auto;
+}
+
 .session .desk-pane .character-card .member-avatar {
-  width: 34px;
-  height: 34px;
+  width: 46px;
+  height: 46px;
   border-width: 2px;
 }
 
@@ -3873,6 +4201,248 @@ code {
 
 .session .desk-pane .party-stat {
   font-size: 12px;
+}
+
+.party-hint {
+  margin-left: auto;
+  font: 11px/1.3 var(--font-ui);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink-faint);
+}
+
+.party-row {
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 3px 4px;
+  margin: -3px -4px;
+}
+
+.party-row:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.party-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.character-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(7 5 2 / 78%);
+  backdrop-filter: blur(3px);
+}
+
+.character-modal {
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(82vh, 720px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  color: var(--ink);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 35%),
+    var(--bg-raised);
+  border: 1px solid var(--border);
+  border-top: 2px solid color-mix(in srgb, var(--accent) 75%, var(--border));
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 52%);
+}
+
+.character-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.character-modal-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.character-modal-identity h2 {
+  margin: 0 0 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 700 21px/1.15 var(--font-ui);
+  letter-spacing: 0.01em;
+}
+
+.character-modal-identity .member-avatar {
+  width: 62px;
+  height: 62px;
+  border-width: 2px;
+}
+
+.character-modal-close {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.character-modal-close:hover,
+.character-modal-close:focus-visible {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.character-modal-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.character-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.character-modal-section h3 {
+  margin: 0;
+  color: var(--ink);
+  font: 700 13px/1.3 var(--font-ui);
+  letter-spacing: 0.02em;
+}
+
+.character-modal-table {
+  display: block;
+  margin: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-size: 13px;
+}
+
+.character-modal-table tbody {
+  display: block;
+}
+
+.character-modal-table tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
+}
+
+.character-modal-table tr:last-child {
+  border-bottom: 0;
+}
+
+.character-modal-table td {
+  padding: 7px 0;
+  border: 0;
+}
+
+.character-modal-table td:last-child {
+  padding-left: 18px;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.character-modal-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.character-modal-detail-grid--attributes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.character-modal-detail-cell {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 9px;
+  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+}
+
+.character-modal-detail-cell span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.character-modal-detail-cell strong {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font: 600 13px/1.2 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.character-modal-detail-grid--skills .character-modal-detail-cell {
+  padding-block: 6px;
+}
+
+.character-modal .play-character-equipment {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.character-modal .play-character-equipment li {
+  padding: 7px 9px;
+  color: var(--ink-dim);
+  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+}
+
+@media (max-width: 520px) {
+  .character-modal-backdrop {
+    padding: 10px;
+  }
+
+  .character-modal {
+    max-height: 92vh;
+    padding: 16px;
+  }
+
+  .character-modal-detail-grid--attributes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 380px) {
+  .character-modal-detail-grid,
+  .character-modal-detail-grid--attributes,
+  .character-modal .play-character-equipment {
+    grid-template-columns: 1fr;
+  }
 }
 
 .session .desk-pane .panel-card .desk-title,

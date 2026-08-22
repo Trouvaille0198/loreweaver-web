@@ -22,18 +22,26 @@ export default function TurnStatus() {
 
   if (!turn.busy) return null
   // The activity/round hints are optional (protocol 2.3.1): without them the
-  // line is exactly what it always was.
+  // original one-line busy status remains intact.
   const activity = turn.activity ? t(`session.turnActivity.${turn.activity}`) : null
+  // This is a safe, user-facing phase summary derived from the closed activity
+  // bucket. It deliberately contains no model draft or hidden chain-of-thought.
+  const progress = turn.activity ? t(`session.turnProgress.${turn.activity}`) : null
   return (
     <div className="turn-status" role="status">
       <span className="spinner" aria-hidden="true" />
-      <span>{t("session.turnBusy", { actor: stripControlChars(turn.actor ?? "") })}</span>
-      {activity ? (
-        <span className="turn-activity">
-          {activity}
-          {turn.round !== null ? ` ${t("session.turnRound", { n: turn.round })}` : null}
-        </span>
-      ) : null}
+      <div className="turn-status-content">
+        <div className="turn-status-line">
+          <span>{t("session.turnBusy", { actor: stripControlChars(turn.actor ?? "") })}</span>
+          {activity ? (
+            <span className="turn-activity">
+              {activity}
+              {turn.round !== null ? ` ${t("session.turnRound", { n: turn.round })}` : null}
+            </span>
+          ) : null}
+        </div>
+        {progress ? <div className="turn-progress">{progress}</div> : null}
+      </div>
     </div>
   )
 }

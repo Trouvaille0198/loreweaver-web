@@ -67,9 +67,22 @@
       "cast": "voicing the cast",
       "bookkeeping": "bookkeeping"
     },
+    "turnProgress": {
+      "thinking": "Combining the current scene, character states, and module lore before the next response.",
+      "reading": "Searching the module knowledge base for relevant characters, clues, and timeline entries.",
+      "dice": "Checking the roll conditions and result to determine what follows.",
+      "cast": "Coordinating NPC and other character reactions so the scene can move forward.",
+      "bookkeeping": "Synchronizing the scene, clues, clock, and other world state."
+    },
     "turnRound": "· round {{n}}",
     "character": "Character",
     "party": "Party",
+    "partyHint": "Double-click a member for details",
+    "partyMemberHint": "Double-click for character details, or press Enter",
+    "partyClose": "Close character details",
+    "avatarOpen": "Enlarge {{name}}'s portrait",
+    "avatarPreview": "Portrait preview for {{name}}",
+    "avatarClose": "Close portrait preview",
     "scene": "Scene",
     "clock": "Clock",
     "round": "round {{n}}",
@@ -149,7 +162,10 @@
     }
   },
   "log": {
-    "system": "System"
+    "system": "System",
+    "player": "Player",
+    "media": "Image",
+    "mediaFailed": "Image could not be loaded."
   },
   "play": {
     "back": "← Back to the table",
@@ -168,6 +184,7 @@
       "demoAction": "Start the built-in sample adventure",
       "character": "My character",
       "settings": "Settings",
+      "roomInfo": "Room info",
       "keeperSettings": "Keeper settings",
       "keys": "Rooms & invites",
       "module": "Import module",
@@ -384,6 +401,21 @@
         "import.hint": "A SillyTavern character card on the server. World machinery is stripped on the way in."
       },
       "system": "Rule system",
+      "open": "Open character details",
+      "fields": "Character details",
+      "secondary": "Derived attributes",
+      "equipment": "Equipment",
+      "background": "Background & persona",
+      "notes": "Memory & notes",
+      "noDetails": "This character sheet has no extra character notes yet.",
+      "fieldLabels": {
+        "occupation": "Occupation",
+        "age": "Age",
+        "character_class": "Class",
+        "level": "Level",
+        "alignment": "Alignment",
+        "proficiency_bonus": "Proficiency bonus"
+      },
       "name": "Name",
       "namePlaceholder": "Leave empty to let the server name them",
       "description": "Who are they?",
@@ -472,6 +504,31 @@
       "updateRestarting": "The server is restarting into the updated code. The connection will drop and come back.",
       "updateFailed": "The update command failed: {{output}}"
     },
+    "roomInfo": {
+      "roomSection": "Room",
+      "roomId": "Room ID",
+      "locale": "Room language",
+      "seatSection": "Your seat",
+      "seatName": "Display name",
+      "seatRole": "Role",
+      "seatId": "Seat ID",
+      "serverSection": "Server & connection",
+      "server": "Server",
+      "serverVersion": "Server version",
+      "protocol": "Protocol",
+      "features": "Server features",
+      "connection": "Connection",
+      "membersSection": "Members",
+      "noParty": "No characters at the table yet.",
+      "activeNow": "acting now",
+      "sceneSection": "Scene & time",
+      "makeChar": "Character creation",
+      "usageSection": "Token usage",
+      "keeperSection": "Keeper tools",
+      "keeperSectionHint": "Jump to the management screens for this room.",
+      "noWelcome": "The room handshake has not arrived yet.",
+      "statePending": "Waiting for the room state…"
+    },
     "dice": {
       "versus": "vs",
       "tie": "tie",
@@ -548,6 +605,7 @@
       "game": "At the table",
       "character": "My character",
       "settings": "Settings",
+      "roomInfo": "Room info",
       "keeperSettings": "Keeper settings",
       "keys": "Rooms & invites",
       "module": "Import module",
@@ -555,6 +613,12 @@
       "skills": "KP skills",
       "model": "Model / config",
       "moduleDetail": "Module details"
+    },
+    "imageArgs": {
+      "scene": "Current scene",
+      "portrait": "Current character's portrait",
+      "item": "An item",
+      "combat": "Current combat scene"
     },
     "commands": {
       "amb": "Ambience (alias)",
@@ -582,6 +646,7 @@
       "help": "Command help",
       "hidden_roll": "Hidden roll (full name)",
       "hroll": "Hidden roll (alias)",
+      "image": "Generate an image to the room",
       "import": "Import a card",
       "init": "Initiative",
       "initiative": "Initiative (full name)",

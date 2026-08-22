@@ -469,31 +469,35 @@ select {
   position: relative;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
-  color: var(--lw-bg);
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--lw-accent) 72%, var(--lw-fg) 28%),
-    var(--lw-accent)
-  );
-  border-radius: 11px 11px 11px 4px;
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--lw-accent) 18%, transparent);
-  transform: rotate(-2deg);
+  color: var(--text-accent);
+  background: none;
 }
 
-.app-mark::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border: 1px solid color-mix(in srgb, var(--lw-bg) 28%, transparent);
-  border-radius: 8px 8px 8px 2px;
+.app-mark svg {
+  display: block;
+  width: 34px;
+  height: 34px;
+  overflow: visible;
+  filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--lw-accent) 18%, transparent));
 }
 
-.app-mark span {
-  font: 800 10px/1 var(--font-story);
-  letter-spacing: -0.03em;
+.app-mark-thread {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.7;
+}
+
+.app-mark-thread-alt {
+  opacity: 0.62;
+}
+
+.app-mark-spark {
+  fill: var(--text-primary);
+  opacity: 0.9;
 }
 
 .app-brand-copy {
@@ -505,8 +509,8 @@ select {
 .app-title {
   overflow: hidden;
   color: var(--text-primary);
-  font: 700 16px/1.25 var(--font-story);
-  letter-spacing: -0.015em;
+  font: 700 20px/1.2 var(--font-story);
+  letter-spacing: -0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -716,11 +720,15 @@ select {
     padding-inline: 12px;
   }
   .app-mark {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
+  }
+  .app-mark svg {
+    width: 32px;
+    height: 32px;
   }
   .app-title {
-    font-size: 15px;
+    font-size: 18px;
   }
   .lang-select {
     width: 76px;

@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Loreweaver 网页版"
+    "title": "Loreweaver"
   },
   "nav": {
     "label": "模式",
@@ -67,9 +67,22 @@
       "cast": "人物开口中",
       "bookkeeping": "落账中"
     },
+    "turnProgress": {
+      "thinking": "正在结合当前场景、角色状态和模组资料，整理下一步回应。",
+      "reading": "正在从模组知识库中检索相关人物、线索和时间线。",
+      "dice": "正在核对判定条件与骰子结果，确认行动后果。",
+      "cast": "正在组织 NPC 与其他角色的反应，让场景继续推进。",
+      "bookkeeping": "正在同步场景、线索、时钟和其他世界状态。"
+    },
     "turnRound": "·第 {{n}} 轮",
     "character": "角色",
     "party": "队伍",
+    "partyHint": "双击成员查看详情",
+    "partyMemberHint": "双击查看人物详情，按 Enter 打开",
+    "partyClose": "关闭人物详情",
+    "avatarOpen": "放大查看{{name}}的头像",
+    "avatarPreview": "{{name}}的头像预览",
+    "avatarClose": "关闭头像预览",
     "scene": "场景",
     "clock": "时钟",
     "round": "第 {{n}} 轮",
@@ -149,7 +162,10 @@
     }
   },
   "log": {
-    "system": "系统"
+    "system": "系统",
+    "player": "玩家",
+    "media": "图片",
+    "mediaFailed": "图片加载失败。"
   },
   "play": {
     "back": "← 返回牌桌",
@@ -168,6 +184,7 @@
       "demoAction": "开始内置示例冒险",
       "character": "我的角色",
       "settings": "设置",
+      "roomInfo": "房间信息",
       "keeperSettings": "守秘人设置",
       "keys": "房间与邀请",
       "module": "导入模组",
@@ -384,6 +401,21 @@
         "import.hint": "服务端上的酒馆角色卡。世界机器部件在导入时被剥掉。"
       },
       "system": "规则系统",
+      "open": "查看人物详情",
+      "fields": "角色信息",
+      "secondary": "派生属性",
+      "equipment": "装备",
+      "background": "背景与人设",
+      "notes": "记忆与备注",
+      "noDetails": "这张角色卡还没有填写额外的人物资料。",
+      "fieldLabels": {
+        "occupation": "职业",
+        "age": "年龄",
+        "character_class": "职业",
+        "level": "等级",
+        "alignment": "阵营",
+        "proficiency_bonus": "熟练加值"
+      },
       "name": "名字",
       "namePlaceholder": "留空则由服务端起名",
       "description": "他是谁？",
@@ -472,6 +504,31 @@
       "updateRestarting": "服务器正在重启进入更新后的代码。连接会断开并自动恢复。",
       "updateFailed": "更新命令失败：{{output}}"
     },
+    "roomInfo": {
+      "roomSection": "房间",
+      "roomId": "房间 ID",
+      "locale": "房间语言",
+      "seatSection": "我的席位",
+      "seatName": "显示名称",
+      "seatRole": "角色",
+      "seatId": "席位 ID",
+      "serverSection": "服务器与连接",
+      "server": "服务器",
+      "serverVersion": "服务器版本",
+      "protocol": "协议版本",
+      "features": "服务器特性",
+      "connection": "连接状态",
+      "membersSection": "成员与在线",
+      "noParty": "牌桌上还没有角色。",
+      "activeNow": "行动中",
+      "sceneSection": "场景与时间",
+      "makeChar": "建卡命令",
+      "usageSection": "模型用量",
+      "keeperSection": "守秘人工具",
+      "keeperSectionHint": "跳转到本房间的管理界面。",
+      "noWelcome": "尚未收到房间握手信息。",
+      "statePending": "等待房间状态…"
+    },
     "dice": {
       "versus": "对抗",
       "tie": "平手",
@@ -548,6 +605,7 @@
       "game": "牌桌",
       "character": "我的角色",
       "settings": "设置",
+      "roomInfo": "房间信息",
       "keeperSettings": "守秘人设置",
       "keys": "房间与邀请",
       "module": "导入模组",
@@ -555,6 +613,12 @@
       "skills": "KP 技能",
       "model": "模型 / 配置",
       "moduleDetail": "模组详情"
+    },
+    "imageArgs": {
+      "scene": "生成当前场景图",
+      "portrait": "生成当前角色肖像图",
+      "item": "生成物品图",
+      "combat": "生成当前战斗图"
     },
     "commands": {
       "amb": "环境音（别名）",
@@ -582,6 +646,11 @@
       "help": "命令帮助",
       "hidden_roll": "暗骰（全名）",
       "hroll": "暗骰（别名）",
+      "image": "生成图片发到房间",
+      "image.scene": "生成当前场景图",
+      "image.portrait": "生成当前角色肖像图",
+      "image.item": "生成物品图",
+      "image.combat": "生成当前战斗图",
       "import": "导入卡牌",
       "init": "先攻",
       "initiative": "先攻（全名）",

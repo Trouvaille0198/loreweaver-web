@@ -68,7 +68,7 @@ export default function InputBox() {
     return suggestArgs(word, token).map((arg: ArgSuggestion, index) => ({
       key: `a-${word}-${arg.text}-${index}`,
       display: arg.text,
-      hint: t(`play.commands.${word}`),
+      hint: arg.hintKey ? t(arg.hintKey) : t(`play.commands.${word}`),
       next: arg.mode === "append" ? before + token + arg.text : `${before}${arg.text} `,
     }))
   }, [text, t])

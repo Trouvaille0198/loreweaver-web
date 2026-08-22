@@ -80,7 +80,6 @@ describe("DeskColumn", () => {
       "character",
       "party",
       "scene",
-      "systems",
       "trackers",
       "initiative",
       "packImport",
@@ -98,9 +97,22 @@ describe("DeskColumn", () => {
 
     const grip = gripOf(usage!)
     fireEvent.pointerDown(grip, { pointerType: "mouse", button: 0, pointerId: 1, clientX: 10, clientY: 10 })
-    // Move >5px down to the party slot's band (index 1 → y 100..180).
-    fireEvent.pointerMove(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
-    fireEvent.pointerUp(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
+    // Move into the upper half of the party slot (index 1 → y 100..180).
+    fireEvent.pointerMove(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 110 })
+
+    // Dragging only moves the insertion marker. Cards remain fixed until drop.
+    expect(domOrder()).toEqual([
+      "character",
+      "party",
+      "scene",
+      "trackers",
+      "initiative",
+      "packImport",
+      "usage",
+    ])
+    expect(document.querySelector('[data-slot="party"]')).toHaveClass("drop-before")
+
+    fireEvent.pointerUp(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 110 })
 
     // Usage now sits right after the character card. The persisted layout is
     // the FULL slot list — hidden slots (sidebar/tray/uiPanels/pregens) keep
@@ -110,7 +122,6 @@ describe("DeskColumn", () => {
       "usage",
       "party",
       "scene",
-      "systems",
       "trackers",
       "initiative",
       "packImport",
@@ -123,7 +134,6 @@ describe("DeskColumn", () => {
         "sidebar",
         "tray",
         "scene",
-        "systems",
         "uiPanels",
         "trackers",
         "initiative",
@@ -140,8 +150,8 @@ describe("DeskColumn", () => {
     const usage = slots.find((el) => el.getAttribute("data-slot") === "usage")
     const grip = gripOf(usage!)
     fireEvent.pointerDown(grip, { pointerType: "mouse", button: 0, pointerId: 1, clientX: 10, clientY: 10 })
-    fireEvent.pointerMove(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
-    fireEvent.pointerUp(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 150 })
+    fireEvent.pointerMove(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 110 })
+    fireEvent.pointerUp(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 110 })
     expect(domOrder()[1]).toBe("usage")
 
     // A fresh mount reads the stored order.
@@ -156,7 +166,6 @@ describe("DeskColumn", () => {
       "character",
       "party",
       "scene",
-      "systems",
       "trackers",
       "initiative",
       "packImport",
@@ -169,7 +178,6 @@ describe("DeskColumn", () => {
         "sidebar",
         "tray",
         "scene",
-        "systems",
         "uiPanels",
         "trackers",
         "initiative",

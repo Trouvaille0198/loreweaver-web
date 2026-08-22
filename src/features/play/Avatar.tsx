@@ -7,11 +7,15 @@
 // hash verified.
 
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
+import { useTranslation } from "react-i18next"
 import type { MediaRef } from "@loreweaver/protocol"
 import { assetFetch, assetReadBase64 } from "./panels/assets"
 
 export default function Avatar({ ref: media, name }: { ref: MediaRef | undefined; name: string }) {
+  const { t } = useTranslation()
   const [src, setSrc] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const hash = media?.hash ?? ""
   const mime = media?.mime ?? ""
 
@@ -36,6 +40,67 @@ export default function Avatar({ ref: media, name }: { ref: MediaRef | undefined
     }
   }, [hash, mime])
 
+  useEffect(() => {
+    if (!previewOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [previewOpen])
+
   if (src === null) return null
-  return <img className="member-avatar" src={src} alt={name} />
+  return (
+    <>
+      <img
+        className="member-avatar member-avatar-zoomable"
+        src={src}
+        alt={name}
+        role="button"
+        tabIndex={0}
+        aria-label={t("session.avatarOpen", { name })}
+        title={t("session.avatarOpen", { name })}
+        onClick={(event) => {
+          event.stopPropagation()
+          setPreviewOpen(true)
+        }}
+        onDoubleClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return
+          event.preventDefault()
+          event.stopPropagation()
+          setPreviewOpen(true)
+        }}
+      />
+      {previewOpen
+        ? createPortal(
+            <div
+              className="avatar-lightbox-backdrop"
+              role="presentation"
+              onClick={() => setPreviewOpen(false)}
+            >
+              <section
+                className="avatar-lightbox"
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("session.avatarPreview", { name })}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="avatar-lightbox-close"
+                  aria-label={t("session.avatarClose")}
+                  onClick={() => setPreviewOpen(false)}
+                >
+                  ×
+                </button>
+                <img className="avatar-lightbox-image" src={src} alt={name} />
+                <div className="avatar-lightbox-caption">{name}</div>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  )
 }

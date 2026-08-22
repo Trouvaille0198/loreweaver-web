@@ -11,6 +11,23 @@ declare module "@loreweaver/protocol" {
   interface CharacterState {
     /** v2.4 wire: trained skills, name → current value. Absent pre-2.4. */
     skills?: Record<string, unknown>
+    secondary_attributes?: Record<string, unknown>
+    fields?: Record<string, unknown>
+    equipment?: unknown[]
+    background?: string
+    notes?: string
+  }
+
+  interface PartyMember {
+    /** v2.4 wire: public character-sheet details for the party popup. */
+    system?: string
+    attributes?: Record<string, unknown>
+    skills?: Record<string, unknown>
+    secondary_attributes?: Record<string, unknown>
+    fields?: Record<string, unknown>
+    equipment?: unknown[]
+    background?: string
+    status_effects?: string[]
   }
 
   interface WelcomeFrame {

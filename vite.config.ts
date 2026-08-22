@@ -10,6 +10,11 @@ export default defineConfig({
   // The web client is served by the loreweaver server's `--web` mode (and by
   // any static host); it must not assume a fixed port.
   clearScreen: false,
+  // Keep vite's transform/metadata cache out of `node_modules` (which a shared
+  // or root-owned install may make read-only): a project-local cache dir keeps
+  // build and `vitest run` reproducible for any user, not just the one who ran
+  // `bun install`.
+  cacheDir: ".vite-cache",
   server: {
     port: 1420,
   },

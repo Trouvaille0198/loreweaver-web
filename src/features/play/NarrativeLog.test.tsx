@@ -45,6 +45,20 @@ describe("NarrativeLog", () => {
     expect(screen.getByText("Ash")).toBeInTheDocument()
   })
 
+  it("labels unattributed stored player lines without showing a question mark", () => {
+    ingest({
+      type: "narrative",
+      id: "legacy-player",
+      speaker: "player",
+      text: "I open the door.",
+      format: "plain",
+    })
+    render(<NarrativeLog />)
+
+    expect(screen.getByText("Player")).toBeInTheDocument()
+    expect(screen.queryByText("?")).not.toBeInTheDocument()
+  })
+
   it("shows a blinking cursor only while the draft is open", () => {
     ingest({
       type: "narrative_delta",

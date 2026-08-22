@@ -19,6 +19,7 @@ import Meter, { type MeterTone } from "./Meter"
 import { PACK_CARDS_REPLY_TIMEOUT_MS } from "./timing"
 import { addVarCommand, isWritable, setVarCommand, stepFor } from "./varCommands"
 import UiBlocks from "./UiBlocks"
+import { asCharacterDetails } from "./characterDetails"
 
 /**
  * Color a vital resource by its pack-declared id (protocol 2.0 `resources`).
@@ -52,8 +53,9 @@ export function ResourceRow({ resource }: { resource: ResourceState }) {
 
 export function CharacterCard({ character }: { character: CharacterState }) {
   const { t } = useTranslation()
+  const details = asCharacterDetails(character)
   const attributeEntries = Object.entries(character.attributes ?? {})
-  const skillEntries = Object.entries(character.skills ?? {})
+  const skillEntries = Object.entries(details.skills ?? {})
   const [skillsOpen, setSkillsOpen] = useState(false)
   return (
     <section className="desk-card character-card">
@@ -126,7 +128,7 @@ function isHidden(variable: ModuleVariable): boolean {
  * bounded numbers become meters, unbounded numbers stat rows, bools badges,
  * text/enum values plain chips. Labels arrive pre-localized to the room locale.
  */
-function VariableRow({ variable }: { variable: ModuleVariable }) {
+export function VariableRow({ variable }: { variable: ModuleVariable }) {
   const label = stripControlChars(variable.label)
   if (variable.kind === "number") {
     const value = Number(variable.value)
@@ -306,32 +308,249 @@ export function UiPanelCards() {
   )
 }
 
-export function PartyCard({ game }: { game: StateFrame }) {
-  const { t } = useTranslation()
-  if (game.party.length === 0) return null
+type PartyCharacterInfo = StateFrame["party"][number] & {
+  system?: string
+  attributes?: Record<string, unknown>
+  skills?: Record<string, unknown>
+  secondary_attributes?: Record<string, unknown>
+  fields?: Record<string, unknown>
+  equipment?: unknown[]
+  background?: string
+  notes?: string
+  status_effects?: string[]
+}
+
+function detailText(value: unknown): string {
+  if (value === null || value === undefined) return ""
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return String(value)
+    }
+  }
+  return stripControlChars(String(value))
+}
+
+function detailLabel(key: string, t: ReturnType<typeof useTranslation>["t"]): string {
+  return t(`play.character.fieldLabels.${key}`, { defaultValue: stripControlChars(key) })
+}
+
+function PartyDetailTable({
+  entries,
+  t,
+}: {
+  entries: [string, unknown][]
+  t: ReturnType<typeof useTranslation>["t"]
+}) {
   return (
-    <section className="desk-card">
-      <header className="desk-title">{t("session.party")}</header>
-      <ul className="party-list">
-        {game.party.map((member) => (
-          <li
-            key={member.name}
-            className={`party-row${member.active ? " is-active" : ""}${member.online ? "" : " is-offline"}`}
+    <table className="play-table character-modal-table">
+      <tbody>
+        {entries.map(([key, value]) => (
+          <tr key={key}>
+            <td className="play-attr-name">{detailLabel(key, t)}</td>
+            <td>{detailText(value)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function PartyDetailGrid({
+  entries,
+  t,
+  className = "",
+}: {
+  entries: [string, unknown][]
+  t: ReturnType<typeof useTranslation>["t"]
+  className?: string
+}) {
+  return (
+    <div className={`character-modal-detail-grid${className ? ` ${className}` : ""}`}>
+      {entries.map(([key, value]) => (
+        <div key={key} className="character-modal-detail-cell">
+          <span>{detailLabel(key, t)}</span>
+          <strong>{detailText(value)}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function PartyCharacterModal({
+  member,
+  ownCharacter,
+  onClose,
+}: {
+  member: PartyCharacterInfo
+  ownCharacter: CharacterState | null
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const info: PartyCharacterInfo = ownCharacter ? { ...member, ...asCharacterDetails(ownCharacter) } : member
+  const attributes = Object.entries(info.attributes ?? {})
+  const secondary = Object.entries(info.secondary_attributes ?? {})
+  const fields = Object.entries(info.fields ?? {})
+  const skills = Object.entries(info.skills ?? {})
+  const equipment = info.equipment ?? []
+  const hasExtra = attributes.length + secondary.length + fields.length + skills.length + equipment.length > 0
+
+  return (
+    <div className="character-modal-backdrop" onClick={onClose}>
+      <section
+        className="character-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="character-modal-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="character-modal-head">
+          <div className="character-modal-identity">
+            <Avatar ref={info.avatar} name={info.name} />
+            <div>
+              <h2 id="character-modal-title">{stripControlChars(info.name)}</h2>
+              {info.system ? <span className="desk-tag">{stripControlChars(info.system)}</span> : null}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="character-modal-close"
+            aria-label={t("session.partyClose")}
+            onClick={onClose}
           >
-            <span className={`presence-dot ${member.online ? "online" : "offline"}`} aria-hidden="true" />
-            <Avatar ref={member.avatar} name={member.name} />
-            <span className="party-name">{stripControlChars(member.name)}</span>
-            {member.ai ? <span className="chip chip-ai">AI</span> : null}
-            {(member.resources ?? []).map((resource) => (
-              <span key={resource.id} className="party-stat">
-                {stripControlChars(resource.label)} {resource.value}
-                {typeof resource.max === "number" && resource.max > 0 ? `/${resource.max}` : ""}
+            ×
+          </button>
+        </header>
+        {(info.resources ?? []).length > 0 ? (
+          <div className="character-modal-resources">
+            {(info.resources ?? []).map((resource) => (
+              <ResourceRow key={resource.id} resource={resource} />
+            ))}
+          </div>
+        ) : null}
+        {info.status_effects && info.status_effects.length > 0 ? (
+          <div className="chip-row">
+            {info.status_effects.map((effect) => (
+              <span key={effect} className="chip chip-effect">
+                {stripControlChars(effect)}
               </span>
             ))}
-          </li>
-        ))}
-      </ul>
-    </section>
+          </div>
+        ) : null}
+        {fields.length > 0 ? (
+          <section className="character-modal-section">
+            <h3>{t("play.character.fields")}</h3>
+            <PartyDetailTable entries={fields} t={t} />
+          </section>
+        ) : null}
+        {attributes.length > 0 ? (
+          <section className="character-modal-section">
+            <h3>{t("session.attributes")}</h3>
+            <PartyDetailGrid entries={attributes} t={t} className="character-modal-detail-grid--attributes" />
+          </section>
+        ) : null}
+        {secondary.length > 0 ? (
+          <section className="character-modal-section">
+            <h3>{t("play.character.secondary")}</h3>
+            <PartyDetailGrid entries={secondary} t={t} />
+          </section>
+        ) : null}
+        {skills.length > 0 ? (
+          <section className="character-modal-section">
+            <h3>{t("session.skills", { n: skills.length })}</h3>
+            <PartyDetailGrid entries={skills} t={t} className="character-modal-detail-grid--skills" />
+          </section>
+        ) : null}
+        {equipment.length > 0 ? (
+          <section className="character-modal-section">
+            <h3>{t("play.character.equipment")}</h3>
+            <ul className="play-character-equipment">
+              {equipment.map((item, index) => (
+                <li key={`${index}-${detailText(item)}`}>{detailText(item)}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        {info.background ? (
+          <section className="character-modal-section">
+            <h3>{t("play.character.background")}</h3>
+            <p className="play-character-prose">{stripControlChars(info.background)}</p>
+          </section>
+        ) : null}
+        {ownCharacter && info.notes ? (
+          <section className="character-modal-section">
+            <h3>{t("play.character.notes")}</h3>
+            <p className="play-character-prose">{stripControlChars(info.notes)}</p>
+          </section>
+        ) : null}
+        {!hasExtra && !info.background && !(ownCharacter && info.notes) ? (
+          <p className="studio-hint">{t("play.character.noDetails")}</p>
+        ) : null}
+      </section>
+    </div>
+  )
+}
+
+export function PartyCard({ game }: { game: StateFrame }) {
+  const { t } = useTranslation()
+  const [selectedName, setSelectedName] = useState<string | null>(null)
+  useEffect(() => {
+    if (!selectedName) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedName(null)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [selectedName])
+  if (game.party.length === 0) return null
+  const selected = game.party.find((member) => member.name === selectedName) as PartyCharacterInfo | undefined
+  const ownCharacter = selected && game.character?.name === selected.name ? game.character : null
+  return (
+    <>
+      <section className="desk-card">
+        <header className="desk-title">
+          {t("session.party")}
+          <span className="party-hint">{t("session.partyHint")}</span>
+        </header>
+        <ul className="party-list">
+          {game.party.map((member) => (
+            <li
+              key={member.name}
+              className={`party-row${member.active ? " is-active" : ""}${member.online ? "" : " is-offline"}`}
+              role="button"
+              tabIndex={0}
+              title={t("session.partyMemberHint")}
+              onDoubleClick={() => setSelectedName(member.name)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault()
+                  setSelectedName(member.name)
+                }
+              }}
+            >
+              <span className={`presence-dot ${member.online ? "online" : "offline"}`} aria-hidden="true" />
+              <Avatar ref={member.avatar} name={member.name} />
+              <span className="party-name">{stripControlChars(member.name)}</span>
+              {member.ai ? <span className="chip chip-ai">AI</span> : null}
+              {(member.resources ?? []).map((resource) => (
+                <span key={resource.id} className="party-stat">
+                  {stripControlChars(resource.label)} {resource.value}
+                  {typeof resource.max === "number" && resource.max > 0 ? `/${resource.max}` : ""}
+                </span>
+              ))}
+            </li>
+          ))}
+        </ul>
+      </section>
+      {selected ? (
+        <PartyCharacterModal
+          member={selected}
+          ownCharacter={ownCharacter}
+          onClose={() => setSelectedName(null)}
+        />
+      ) : null}
+    </>
   )
 }
 
@@ -546,7 +765,9 @@ export function InitiativeCard({ game }: { game: StateFrame }) {
 }
 
 /** Compact token count: 12_400 → "12.4k", 1_200_000 → "1.2m". */
-function formatTokens(n: number): string {
+// Shared with the read-only room information screen.
+// eslint-disable-next-line react-refresh/only-export-components
+export function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
   return String(n)
@@ -583,31 +804,6 @@ export function UsageCard({ game }: { game: StateFrame }) {
   )
 }
 
-/** The rule systems this room plays by (protocol 2.3) — the same list the
- * character screen's creation picker uses, surfaced so players can see what
- * the table runs at a glance. */
-export function SystemsCard({ game }: { game: StateFrame }) {
-  const { t } = useTranslation()
-  const systems = game.systems ?? []
-  if (systems.length === 0) return null
-  return (
-    <section className="desk-card">
-      <header className="desk-title">{t("session.systems")}</header>
-      <div className="chip-row">
-        {systems.map((system) => (
-          <span
-            key={system.id}
-            className="chip"
-            title={system.make_char ? `.${system.make_char}` : undefined}
-          >
-            {stripControlChars(system.id)}
-          </span>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function PresenceCard() {
   const { t } = useTranslation()
   const presence = useSessionStore((s) => s.presence)
@@ -638,14 +834,13 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
     // them at the very top of the desk column — who is at the table belongs
     // next to who you are), then the module's own panels (SessionView's
     // PanelSidebar / PanelTray); this is the room around you: the scene, the
-    // rules, the trackers and the table. The context meter closes the column
+    // trackers and the table. The context meter closes the column
     // (it is public wire data and tells a metered table how much headroom the
     // keeper has); system furniture — audio, media, presence — is NOT state
     // and does not live here; the mobile "⋯" menu hosts it.
     return (
       <div className="desk-stack">
         {game ? <SceneCard game={game} /> : null}
-        {game ? <SystemsCard game={game} /> : null}
         <UiPanelCards />
         {game ? <VariablesCard game={game} /> : null}
         {game ? <InitiativeCard game={game} /> : null}
@@ -664,7 +859,6 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
       {game ? <PregenCard game={game} /> : null}
       <PackImportCard />
       {game ? <SceneCard game={game} /> : null}
-      {game ? <SystemsCard game={game} /> : null}
       {game ? <InitiativeCard game={game} /> : null}
       <PresenceCard />
       <MediaDeck />

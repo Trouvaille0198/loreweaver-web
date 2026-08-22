@@ -184,10 +184,15 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     }
     // Keeper-admin replies feed the admin store; they never reach the chronicle.
     if (useAdminStore.getState().ingest(frame)) return
-    // The media and audio families are room furniture, not chronicle lines:
-    // pictures and library entries land in their own index beside the log, and
-    // playback intent drives the mixer.
-    if (useMediaStore.getState().ingest(frame)) return
+    // The media family keeps its own index beside the log (the deck), and the
+    // frame also lands in the chronicle as an image line so a generated handout
+    // is visible in the message stream. Audio stays deck-only: playback intent
+    // drives the mixer, not the log.
+    if (frame.type === "media") {
+      useMediaStore.getState().ingest(frame)
+      useSessionStore.getState().ingest(frame)
+      return
+    }
     if (useAudioStore.getState().ingest(frame)) return
     useSessionStore.getState().ingest(frame)
   },

@@ -77,6 +77,37 @@ describe("PlayView", () => {
     expect(screen.getByRole("menuitem", { name: "Disconnect" })).toBeInTheDocument()
   })
 
+  it("lets a player open room info from the app menu and return to the table", async () => {
+    const user = userEvent.setup()
+    useConnectionStore.setState({
+      status: "online",
+      welcome: { ...WELCOME, you: { ...WELCOME.you, role: "player" } },
+    })
+    render(<PlayView />)
+
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
+    await user.click(screen.getByRole("menuitem", { name: "Room info" }))
+    expect(window.location.hash).toBe("#/room-info")
+    expect(screen.getByRole("heading", { name: "Room info", level: 2 })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Keeper tools" })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /Back to the table/ }))
+    expect(window.location.hash).toBe("#/game")
+    expect(screen.getByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
+  })
+
+  it("opens a shared room-info URL directly for a player", () => {
+    useConnectionStore.setState({
+      status: "online",
+      welcome: { ...WELCOME, you: { ...WELCOME.you, role: "player" } },
+    })
+    window.history.replaceState(null, "", "#/room-info")
+    render(<PlayView />)
+
+    expect(screen.getByRole("heading", { name: "Room info", level: 2 })).toBeInTheDocument()
+    expect(screen.getByText("r1")).toBeInTheDocument()
+  })
+
   it("Escape does not eject from the game", async () => {
     const user = userEvent.setup()
     useConnectionStore.setState({ status: "online", welcome: WELCOME })

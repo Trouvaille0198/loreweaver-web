@@ -4,6 +4,7 @@ dist/
 dist-new/
 target/
 __pycache__/
+.vite-cache/
 
 # Tauri generated schemas (regenerated on every build)
 src-tauri/gen/schemas/

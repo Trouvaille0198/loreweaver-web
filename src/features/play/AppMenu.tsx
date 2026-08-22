@@ -59,7 +59,11 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
 
   const rows: MenuRow[] = []
   if (hasDemo) rows.push({ key: "demo", action: startDemo })
-  rows.push({ key: "character", screen: "character" }, { key: "settings", screen: "settings" })
+  rows.push(
+    { key: "character", screen: "character" },
+    { key: "roomInfo", screen: "roomInfo" },
+    { key: "settings", screen: "settings" },
+  )
   if (isKeeper) {
     rows.push({ key: "keeperSettings", screen: "keeperSettings" })
   }

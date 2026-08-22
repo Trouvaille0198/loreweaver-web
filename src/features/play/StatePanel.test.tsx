@@ -73,6 +73,44 @@ describe("StatePanel", () => {
     expect(bo).toHaveClass("is-offline")
   })
 
+  it("opens a character sheet popup from a party member double-click", () => {
+    useSessionStore.getState().ingest({
+      type: "state",
+      character: {
+        name: "Ash",
+        system: "coc7",
+        resources: [],
+        attributes: {},
+        status_effects: [],
+        notes: "Private clue",
+      },
+      party: [
+        {
+          name: "Bo",
+          online: true,
+          active: false,
+          system: "dnd5e",
+          attributes: { STR: 14 },
+          skills: { Stealth: 7 },
+          background: "A quiet scout.",
+        },
+      ],
+      initiative: [],
+      online: 1,
+    })
+
+    render(<StatePanel />)
+    fireEvent.doubleClick(screen.getByText("Bo", { selector: ".party-name" }))
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Bo" })).toBeInTheDocument()
+    expect(screen.getByText("A quiet scout.")).toBeInTheDocument()
+    expect(screen.getByText("Stealth")).toBeInTheDocument()
+    expect(screen.queryByText("Private clue")).not.toBeInTheDocument()
+    fireEvent.keyDown(window, { key: "Escape" })
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
   it("renders nothing without state or presence", () => {
     const { container } = render(<StatePanel />)
     expect(container.querySelectorAll(".desk-card")).toHaveLength(0)

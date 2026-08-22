@@ -16,14 +16,16 @@
 // its budgets and ranges live in a pack's `creation_constraints` and no frame
 // carries them. Rolling, describing and importing all resolve server-side.
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import { stripControlChars, type RuleSystemEntry } from "@loreweaver/protocol"
+import { stripControlChars, type CharacterState, type RuleSystemEntry } from "@loreweaver/protocol"
 import { Button } from "../../../components/ui"
 import { transportSend } from "../../../lib/transport"
 import { useConnectionStore } from "../../../store/connection"
 import { useSessionStore } from "../../../store/session"
+import Avatar from "../Avatar"
 import { ResourceRow } from "../StatePanel"
+import { asCharacterDetails } from "../characterDetails"
 import ScreenShell from "./ScreenShell"
 import { sheetWrite } from "./sheetWrite"
 
@@ -261,73 +263,176 @@ export default function CharacterScreen({ onBack }: { onBack: () => void }) {
           <CreateCharacter />
         </>
       ) : (
-        <div className="play-character">
-          <h3>
-            {stripControlChars(character.name)}
-            <span className="desk-tag">{stripControlChars(character.system)}</span>
-          </h3>
-          <div className="play-character-meters">
-            {character.resources.map((resource) => (
-              <ResourceRow key={resource.id} resource={resource} />
-            ))}
-          </div>
-          {character.status_effects.length > 0 ? (
-            <div className="chip-row">
-              {character.status_effects.map((effect) => (
-                <span key={effect} className="chip">
-                  {stripControlChars(effect)}
-                </span>
-              ))}
-            </div>
-          ) : null}
-          <table className="play-table">
-            <tbody>
-              {Object.entries(character.attributes).map(([key, value]) => (
-                <AttributeRow key={key} name={key} value={value} />
-              ))}
-            </tbody>
-          </table>
-          <p className="studio-hint">{t("play.character.editHint")}</p>
-          <div className="chip-row">
-            <Button
-              type="button"
-              variant="quiet"
-              disabled={!online}
-              title={t("play.character.finalizeHint")}
-              onClick={() => send(".st finalize")}
-            >
-              {t("play.character.finalize")}
-            </Button>
-            {confirmDelete ? (
-              <>
-                <Button
-                  type="button"
-                  variant="danger"
-                  disabled={!online}
-                  onClick={() => {
-                    send(".st delete")
-                    setConfirmDelete(false)
-                  }}
-                >
-                  {t("play.character.deleteConfirm")}
-                </Button>
-                <Button type="button" variant="quiet" onClick={() => setConfirmDelete(false)}>
-                  {t("play.character.deleteCancel")}
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="button"
-                variant="danger"
-                disabled={!online}
-                onClick={() => setConfirmDelete(true)}
-              >
-                {t("play.character.delete")}
-              </Button>
-            )}
-          </div>
-        </div>
+        <CharacterDetailsView
+          character={character}
+          online={online}
+          confirmDelete={confirmDelete}
+          setConfirmDelete={setConfirmDelete}
+          t={t}
+        />
       )}
     </ScreenShell>
+  )
+}
+
+function CharacterDetailsView({
+  character,
+  online,
+  confirmDelete,
+  setConfirmDelete,
+  t,
+}: {
+  character: CharacterState
+  online: boolean
+  confirmDelete: boolean
+  setConfirmDelete: (value: boolean) => void
+  t: ReturnType<typeof useTranslation>["t"]
+}) {
+  if (!character) return null
+  const details = asCharacterDetails(character)
+  const fieldEntries = Object.entries(details.fields ?? {})
+  const secondaryEntries = Object.entries(details.secondary_attributes ?? {})
+  const skillEntries = Object.entries(details.skills ?? {})
+  const equipment = details.equipment ?? []
+  const background = details.background?.trim() ?? ""
+  const notes = details.notes?.trim() ?? ""
+  const hasExtra =
+    fieldEntries.length > 0 ||
+    secondaryEntries.length > 0 ||
+    skillEntries.length > 0 ||
+    equipment.length > 0 ||
+    Boolean(background || notes)
+
+  return (
+    <div className="play-character">
+      <h3 className="play-character-heading">
+        <Avatar ref={character.avatar} name={character.name} />
+        <span>{stripControlChars(character.name)}</span>
+        <span className="desk-tag">{stripControlChars(character.system)}</span>
+      </h3>
+      <div className="play-character-meters">
+        {character.resources.map((resource) => (
+          <ResourceRow key={resource.id} resource={resource} />
+        ))}
+      </div>
+      {character.status_effects.length > 0 ? (
+        <div className="chip-row">
+          {character.status_effects.map((effect) => (
+            <span key={effect} className="chip">
+              {stripControlChars(effect)}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {fieldEntries.length > 0 ? (
+        <CharacterDetailSection title={t("play.character.fields")}>
+          <DetailTable entries={fieldEntries} />
+        </CharacterDetailSection>
+      ) : null}
+      <CharacterDetailSection title={t("session.attributes")}>
+        <table className="play-table">
+          <tbody>
+            {Object.entries(character.attributes).map(([key, value]) => (
+              <AttributeRow key={key} name={key} value={value} />
+            ))}
+          </tbody>
+        </table>
+      </CharacterDetailSection>
+      {secondaryEntries.length > 0 ? (
+        <CharacterDetailSection title={t("play.character.secondary")}>
+          <DetailTable entries={secondaryEntries} />
+        </CharacterDetailSection>
+      ) : null}
+      {skillEntries.length > 0 ? (
+        <CharacterDetailSection title={t("session.skills", { n: skillEntries.length })}>
+          <div className="play-character-skill-grid" role="list">
+            {skillEntries.map(([name, value]) => (
+              <div key={name} className="play-character-skill" role="listitem">
+                <span>{stripControlChars(name)}</span>
+                <strong>{attrText(value)}</strong>
+              </div>
+            ))}
+          </div>
+        </CharacterDetailSection>
+      ) : null}
+      {equipment.length > 0 ? (
+        <CharacterDetailSection title={t("play.character.equipment")}>
+          <ul className="play-character-equipment">
+            {equipment.map((item, index) => (
+              <li key={`${index}-${attrText(item)}`}>{attrText(item)}</li>
+            ))}
+          </ul>
+        </CharacterDetailSection>
+      ) : null}
+      {background ? (
+        <CharacterDetailSection title={t("play.character.background")}>
+          <p className="play-character-prose">{stripControlChars(background)}</p>
+        </CharacterDetailSection>
+      ) : null}
+      {notes ? (
+        <CharacterDetailSection title={t("play.character.notes")}>
+          <p className="play-character-prose">{stripControlChars(notes)}</p>
+        </CharacterDetailSection>
+      ) : null}
+      {!hasExtra ? <p className="studio-hint">{t("play.character.noDetails")}</p> : null}
+      <p className="studio-hint">{t("play.character.editHint")}</p>
+      <div className="chip-row">
+        <Button
+          type="button"
+          variant="quiet"
+          disabled={!online}
+          title={t("play.character.finalizeHint")}
+          onClick={() => send(".st finalize")}
+        >
+          {t("play.character.finalize")}
+        </Button>
+        {confirmDelete ? (
+          <>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={!online}
+              onClick={() => {
+                send(".st delete")
+                setConfirmDelete(false)
+              }}
+            >
+              {t("play.character.deleteConfirm")}
+            </Button>
+            <Button type="button" variant="quiet" onClick={() => setConfirmDelete(false)}>
+              {t("play.character.deleteCancel")}
+            </Button>
+          </>
+        ) : (
+          <Button type="button" variant="danger" disabled={!online} onClick={() => setConfirmDelete(true)}>
+            {t("play.character.delete")}
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CharacterDetailSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="play-character-section">
+      <h4>{title}</h4>
+      {children}
+    </section>
+  )
+}
+
+function DetailTable({ entries }: { entries: [string, unknown][] }) {
+  return (
+    <table className="play-table play-character-detail-table">
+      <tbody>
+        {entries.map(([key, value]) => (
+          <tr key={key}>
+            <td className="play-attr-name">{stripControlChars(key)}</td>
+            <td>{attrText(value)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }

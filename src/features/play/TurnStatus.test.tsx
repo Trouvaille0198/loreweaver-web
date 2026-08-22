@@ -27,6 +27,9 @@ describe("TurnStatus", () => {
       .ingest({ type: "turn_status", status: "busy", actor: "Nyx", activity: "dice", round: 3 }, 1_000)
     render(<TurnStatus />)
     expect(screen.getByRole("status")).toHaveTextContent("rolling dice · round 3")
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Checking the roll conditions and result to determine what follows.",
+    )
   })
 
   it("says only what it was told: no round without one, nothing without an activity", () => {

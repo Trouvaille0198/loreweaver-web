@@ -3,6 +3,7 @@ import { FrameType } from "@loreweaver/protocol"
 import type {
   DiceFrame,
   ErrorFrame,
+  MediaFrame,
   NarrativeDeltaFrame,
   NarrativeFrame,
   PackCardEntry,
@@ -55,6 +56,7 @@ export type LogEntry =
   | { seq: number; kind: "dice"; frame: DiceFrame }
   | { seq: number; kind: "system"; frame: SystemFrame }
   | { seq: number; kind: "ui"; frame: UiFrame }
+  | { seq: number; kind: "media"; frame: MediaFrame }
   | { seq: number; kind: "error"; frame: ErrorFrame }
   | { seq: number; kind: "pending"; pending: PendingEcho }
 
@@ -187,8 +189,13 @@ function ingestDelta(entries: LogEntry[], frame: NarrativeDeltaFrame): LogEntry[
  * `id`, the latest frame updates the prior inline entry in place (the protocol
  * lets clients without in-place updates simply append).
  */
-function ingestInlineUi(entries: LogEntry[], frame: UiFrame): LogEntry[] {
-  if (frame.replace && frame.id) {
+/** A media frame lands in the chronicle as its own image line — the generated
+ * handout (`.image …`) shows up in the message stream, not only the deck. */
+function ingestMedia(entries: LogEntry[], frame: MediaFrame): LogEntry[] {
+  return pushEntry(entries, { kind: "media", frame })
+}
+
+function ingestInlineUi(entries: LogEntry[], frame: UiFrame): LogEntry[] {  if (frame.replace && frame.id) {
     const index = entries.findIndex((e) => e.kind === "ui" && e.frame.id === frame.id)
     if (index !== -1) {
       const next = [...entries]
@@ -289,6 +296,9 @@ export const useSessionStore = create<SessionState>((set) => ({
         return
       case "dice":
         set((s) => ({ entries: pushEntry(s.entries, { kind: "dice", frame }) }))
+        return
+      case "media":
+        set((s) => ({ entries: ingestMedia(s.entries, frame) }))
         return
       case "system":
         set((s) => ({ entries: pushEntry(s.entries, { kind: "system", frame }) }))

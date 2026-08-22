@@ -14,11 +14,12 @@ import { useHostLocalStore } from "../../store/hostLocal"
 import CharacterScreen from "./screens/CharacterScreen"
 import KeeperSettingsScreen from "./screens/KeeperSettingsScreen"
 import ModuleDetailScreen from "./screens/ModuleDetailScreen"
+import RoomInfoScreen from "./screens/RoomInfoScreen"
 import SettingsScreen from "./screens/SettingsScreen"
 import SessionView from "./SessionView"
 import StatusPill from "./StatusPill"
 
-export type PlayScreen = "game" | "character" | "settings" | "keeperSettings" | "moduleDetail"
+export type PlayScreen = "game" | "character" | "roomInfo" | "settings" | "keeperSettings" | "moduleDetail"
 
 /** Every play screen, keyed by the URL hash that selects it. The hash is the
  * primary source of truth for bookmarks and browser history; the tab-local
@@ -26,6 +27,7 @@ export type PlayScreen = "game" | "character" | "settings" | "keeperSettings" | 
 const SCREEN_HASHES: Record<PlayScreen, string> = {
   game: "#/game",
   character: "#/character",
+  roomInfo: "#/room-info",
   settings: "#/settings",
   keeperSettings: "#/keeper-settings",
   moduleDetail: "#/module-detail",
@@ -204,7 +206,7 @@ function OnlineView() {
     const title = `${t(`play.title.${screen}`)} · ${room}`
     if (document.title !== title) document.title = title
     return () => {
-      if (document.title === title) document.title = "Loreweaver Web"
+      if (document.title === title) document.title = "Loreweaver"
     }
   }, [screen, room, t])
 
@@ -249,6 +251,8 @@ function OnlineView() {
       return <SessionView onNavigate={navigate} />
     case "character":
       return <CharacterScreen onBack={back} />
+    case "roomInfo":
+      return <RoomInfoScreen onBack={back} />
     case "settings":
       return <SettingsScreen onBack={back} />
     case "keeperSettings":

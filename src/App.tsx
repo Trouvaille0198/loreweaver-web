@@ -25,7 +25,20 @@ export default function App() {
       <header className="app-header">
         <div className="app-brand">
           <span className="app-mark" aria-hidden="true">
-            <span>LW</span>
+            <svg viewBox="0 0 36 36" role="presentation">
+              <path
+                className="app-mark-thread"
+                d="M8 11.5c4.2-4.1 9.6-3.8 13.3.2 3.5 3.8 3.3 9.1-.1 12.8-3.8 4.1-9.3 4.1-13.2.1"
+              />
+              <path
+                className="app-mark-thread app-mark-thread-alt"
+                d="M28 11.5c-4.2-4.1-9.6-3.8-13.3.2-3.5 3.8-3.3 9.1.1 12.8 3.8 4.1 9.3 4.1 13.2.1"
+              />
+              <path
+                className="app-mark-spark"
+                d="m18 6.2 1.1 3.1 3.1 1.1-3.1 1.1-1.1 3.1-1.1-3.1-3.1-1.1 3.1-1.1L18 6.2Z"
+              />
+            </svg>
           </span>
           <div className="app-brand-copy">
             <h1 className="app-title">{t("app.title")}</h1>

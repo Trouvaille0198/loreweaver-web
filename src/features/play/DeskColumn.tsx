@@ -22,7 +22,6 @@ import {
   PartyCard,
   PregenCard,
   SceneCard,
-  SystemsCard,
   UiPanelCards,
   UsageCard,
   VariablesCard,
@@ -35,7 +34,6 @@ export type DeskSlotId =
   | "sidebar"
   | "tray"
   | "scene"
-  | "systems"
   | "uiPanels"
   | "trackers"
   | "initiative"
@@ -49,7 +47,6 @@ const DEFAULT_ORDER: readonly DeskSlotId[] = [
   "sidebar",
   "tray",
   "scene",
-  "systems",
   "uiPanels",
   "trackers",
   "initiative",
@@ -93,6 +90,19 @@ interface DragState {
   moved: boolean
 }
 
+interface DropTarget {
+  id: DeskSlotId
+  edge: "before" | "after"
+}
+
+function moveSlot(order: DeskSlotId[], source: DeskSlotId, target: DropTarget): DeskSlotId[] {
+  if (source === target.id || !order.includes(source) || !order.includes(target.id)) return order
+  const next = order.filter((id) => id !== source)
+  const targetIndex = next.indexOf(target.id)
+  next.splice(targetIndex + (target.edge === "after" ? 1 : 0), 0, source)
+  return next
+}
+
 export default function DeskColumn() {
   const { t } = useTranslation()
   const room = useConnectionStore((s) => s.welcome?.room ?? "")
@@ -117,7 +127,6 @@ export default function DeskColumn() {
       sidebar: manifest.some((panel) => panel.slot === "sidebar" && !closed[panel.id]),
       tray: manifest.some((panel) => panel.slot === "tray" && !closed[panel.id]),
       scene: Boolean(game && (game.scene || game.clock)),
-      systems: Boolean(game && (game.systems ?? []).length > 0),
       uiPanels: uiPanels.length > 0,
       trackers: Boolean(game && (game.variables ?? []).length > 0),
       initiative: Boolean(game && game.initiative.length > 0),
@@ -132,8 +141,9 @@ export default function DeskColumn() {
 
   // --- drag reorder (fine pointers only) ---
   const [dragId, setDragId] = useState<DeskSlotId | null>(null)
-  const [overId, setOverId] = useState<DeskSlotId | null>(null)
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
   const dragRef = useRef<DragState | null>(null)
+  const dropTargetRef = useRef<DropTarget | null>(null)
   const slotRefs = useRef(new Map<DeskSlotId, HTMLElement>())
   // Mirror of `order` kept in sync inside the updater, so the drop handler
   // can persist the final layout without waiting for a render.
@@ -174,34 +184,40 @@ export default function DeskColumn() {
       setDragId(drag.id)
     }
     event.preventDefault()
-    // The slot under the pointer (its own rect excluded) becomes the target.
+    // Cards remain fixed while dragging. Only an insertion edge moves, and
+    // the order changes once on release. This avoids the stack repeatedly
+    // jumping under the pointer as the old live-reorder implementation did.
     const y = event.clientY
-    let over: DeskSlotId | null = null
-    for (const [id, el] of slotRefs.current) {
-      if (id === drag.id) continue
-      const rect = el.getBoundingClientRect()
-      if (y >= rect.top - 6 && y <= rect.bottom + 6) {
-        over = id
+    const candidates = Array.from(slotRefs.current)
+      .filter(([id]) => id !== drag.id)
+      .map(([id, el]) => ({ id, rect: el.getBoundingClientRect() }))
+      .sort((a, b) => a.rect.top - b.rect.top)
+    let nextTarget: DropTarget | null = null
+    for (const candidate of candidates) {
+      if (y < candidate.rect.top + candidate.rect.height / 2) {
+        nextTarget = { id: candidate.id, edge: "before" }
         break
       }
     }
-    setOverId(over)
-    if (over === null) return
-    applyOrder((prev) => {
-      if (!prev.includes(drag.id) || !prev.includes(over)) return prev
-      const next = prev.filter((id) => id !== drag.id)
-      const at = next.indexOf(over)
-      next.splice(at, 0, drag.id)
-      return next
-    })
+    if (!nextTarget && candidates.length > 0) {
+      nextTarget = { id: candidates[candidates.length - 1].id, edge: "after" }
+    }
+    dropTargetRef.current = nextTarget
+    setDropTarget(nextTarget)
   }
 
   const onPointerEnd = () => {
     const drag = dragRef.current
+    const target = dropTargetRef.current
     dragRef.current = null
+    dropTargetRef.current = null
     setDragId(null)
-    setOverId(null)
-    if (drag?.moved && room) writeOrder(room, orderRef.current)
+    setDropTarget(null)
+    if (!drag?.moved || !target) return
+    const next = moveSlot(orderRef.current, drag.id, target)
+    orderRef.current = next
+    setOrder(next)
+    if (room) writeOrder(room, next)
   }
 
   const customized = order.some((id, index) => DEFAULT_ORDER[index] !== id)
@@ -223,8 +239,6 @@ export default function DeskColumn() {
         return <PanelTray />
       case "scene":
         return game ? <SceneCard game={game} /> : null
-      case "systems":
-        return game ? <SystemsCard game={game} /> : null
       case "uiPanels":
         return <UiPanelCards />
       case "trackers":
@@ -249,7 +263,7 @@ export default function DeskColumn() {
             if (el) slotRefs.current.set(id, el)
             else slotRefs.current.delete(id)
           }}
-          className={`desk-slot${id === dragId ? " is-dragging" : ""}${id === overId ? " drop-target" : ""}`}
+          className={`desk-slot${id === dragId ? " is-dragging" : ""}${id === dropTarget?.id ? ` drop-${dropTarget.edge}` : ""}`}
           data-slot={id}
         >
           <Button
@@ -264,7 +278,7 @@ export default function DeskColumn() {
             onPointerUp={onPointerEnd}
             onPointerCancel={onPointerEnd}
           >
-            ⠿
+            <span className="desk-slot-grip-icon" aria-hidden="true" />
           </Button>
           {renderSlot(id)}
         </div>
