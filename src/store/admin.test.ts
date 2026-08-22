@@ -37,21 +37,69 @@ describe("admin model requests", () => {
     expect(sent[0]).toMatchObject({ api_key: "", base_url: "" })
   })
 
-  it("saves and deletes named LLM profiles through their dedicated frames", () => {
+  it("saves typed model profiles and selects an Embedding profile by ID", () => {
     const admin = useAdminStore.getState()
-    admin.saveLlm("deepseek", "deepseek-chat", "sk-profile-test", "https://api.example.test")
-    admin.deleteLlm("deepseek::deepseek-chat")
+    admin.saveLlm("deepseek", "deepseek-chat", "chat", "sk-profile-test", "https://api.example.test")
+    admin.saveLlm("openai", "text-embedding-3-small", "embedding", undefined, "", 1536)
+    admin.setEmbedding("openai::embedding::text-embedding-3-small", 1536)
+    admin.deleteLlm("deepseek::chat::deepseek-chat")
 
     expect(sent).toEqual([
       {
         type: "admin_set_llm",
         provider: "deepseek",
         chat_model: "deepseek-chat",
+        kind: "chat",
         api_key: "sk-profile-test",
         base_url: "https://api.example.test",
       },
-      { type: "admin_delete_llm", id: "deepseek::deepseek-chat" },
+      {
+        type: "admin_set_llm",
+        provider: "openai",
+        chat_model: "text-embedding-3-small",
+        kind: "embedding",
+        embedding_dim: 1536,
+        base_url: "",
+      },
+      {
+        type: "admin_set_embedding",
+        profile_id: "openai::embedding::text-embedding-3-small",
+        embedding_dim: 1536,
+      },
+      { type: "admin_delete_llm", id: "deepseek::chat::deepseek-chat" },
     ])
+  })
+
+  it("requests and stores a capability-filtered SiliconFlow model catalog", () => {
+    const admin = useAdminStore.getState()
+    admin.listModels(
+      "siliconflow",
+      "sk-siliconflow-test",
+      "https://api.siliconflow.cn/v1",
+      "image",
+    )
+
+    expect(sent).toEqual([
+      {
+        type: "admin_list_models",
+        provider: "siliconflow",
+        kind: "image",
+        api_key: "sk-siliconflow-test",
+        base_url: "https://api.siliconflow.cn/v1",
+      },
+    ])
+
+    admin.ingest({
+      type: "admin_models",
+      provider: "siliconflow",
+      kind: "image",
+      models: ["Kwai-Kolors/Kolors"],
+    } as never)
+    expect(useAdminStore.getState()).toMatchObject({
+      modelsProvider: "siliconflow",
+      modelsKind: "image",
+      models: ["Kwai-Kolors/Kolors"],
+    })
   })
 
   it("sends and ingests room model assignments as one confirmed operation", () => {

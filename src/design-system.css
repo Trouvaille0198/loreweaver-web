@@ -1260,8 +1260,7 @@ select {
 }
 
 .play-llm-profile-copy span,
-.play-llm-profile-key,
-.play-embedding-summary span {
+.play-llm-profile-key {
   color: var(--text-secondary);
 }
 
@@ -1401,33 +1400,45 @@ select {
 }
 
 .play-model-embedding {
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
-.play-embedding-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.play-embedding-editor {
+  display: grid;
   gap: var(--space-4);
   padding: var(--space-4);
-  background: color-mix(in srgb, var(--surface-inset) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-inset) 82%, transparent);
   border: 1px solid var(--line-subtle);
   border-radius: var(--radius-md);
 }
 
-.play-embedding-summary strong {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.play-embedding-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(136px, 184px);
+  align-items: start;
+  gap: var(--space-3);
 }
 
-.play-embedding-summary span {
+.play-embedding-fields .field {
+  min-width: 0;
+}
+
+.play-embedding-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line-subtle);
+}
+
+.play-embedding-actions .studio-hint {
+  max-width: 660px;
+  margin: 0;
+}
+
+.play-embedding-actions .ui-button {
   flex: 0 0 auto;
-  font-size: 12px;
 }
 
 .play-model-usage {
@@ -2151,10 +2162,18 @@ select {
     width: 100%;
   }
 
-  .play-embedding-summary {
-    align-items: flex-start;
+  .play-embedding-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .play-embedding-actions {
     flex-direction: column;
-    gap: var(--space-2);
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .play-embedding-actions > .ui-button {
+    width: 100%;
   }
 
   .play-model-usage-actions {

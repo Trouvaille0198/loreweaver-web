@@ -37,10 +37,23 @@ declare module "@loreweaver/protocol" {
   // JSON already carries them. The ClientFrame/ServerFrame unions are type
   // aliases and cannot be augmented — callers cast at the transport boundary.
 
+  type ModelKind = "chat" | "embedding" | "image"
+
+  type ProviderAuthType = "api_key" | "oauth" | "api_key_or_oauth" | "none"
+
+  interface ProviderMetadata {
+    id: string
+    default_base_url: string
+    auth_type: ProviderAuthType
+    model_kinds?: ModelKind[]
+  }
+
   interface LLMProfile {
     id: string
     provider: string
     chat_model: string
+    kind: ModelKind
+    embedding_dim: number
     base_url: string
     api_key_masked: string
     has_key: boolean
@@ -50,8 +63,19 @@ declare module "@loreweaver/protocol" {
     type: "admin_set_llm"
     provider: string
     chat_model?: string
+    kind: ModelKind
+    embedding_dim?: number
     base_url?: string
     api_key?: string
+    clear_api_key?: boolean
+  }
+
+  interface AdminListModelsFrame {
+    kind?: ModelKind
+  }
+
+  interface AdminModelsFrame {
+    kind?: ModelKind
   }
 
   interface AdminDeleteLLMFrame {
@@ -121,11 +145,18 @@ declare module "@loreweaver/protocol" {
   interface AdminConfigFrame {
     provider?: string
     chat_model?: string
+    embedding_profile?: string
     embedding_model?: string
     embedding_dim?: number
+    embedding_rebuilt?: number
+    provider_catalog?: ProviderMetadata[]
     llms?: LLMProfile[]
     scribe?: LLMLaneStatus
     director?: LLMLaneStatus
   }
-
+  interface AdminSetEmbeddingFrame {
+    type: "admin_set_embedding"
+    profile_id: string
+    embedding_dim?: number
+  }
 }

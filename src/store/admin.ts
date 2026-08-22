@@ -18,6 +18,7 @@ import type {
   AdminUpdateFrame,
   MintedKey,
   PlayerRole,
+  ModelKind,
   ServerFrame,
 } from "@loreweaver/protocol"
 import { transportSend } from "../lib/transport"
@@ -237,6 +238,7 @@ interface AdminState {
   config: AdminConfigFrame | null
   /** Model catalog for the provider last asked about ("" until one arrives). */
   modelsProvider: string
+  modelsKind: ModelKind | ""
   models: string[]
   /** THIS room's LLM override state (null until the first admin_room_config). */
   roomConfig: AdminRoomConfigFrame | null
@@ -262,11 +264,19 @@ interface AdminState {
   /** Last admin_error, cleared by the next successful reply or request. */
   lastError: string | null
   busy: boolean
-  ingest: (frame: ServerFrame) => boolean
+  ingest: (frame: ServerFrame | AdminRoomConfigFrame) => boolean
   refreshConfig: () => void
+  setEmbedding: (profileId: string, dimension?: number) => void
   setModel: (provider: string, chatModel?: string, apiKey?: string, baseUrl?: string) => void
-  listModels: (provider?: string, apiKey?: string, baseUrl?: string) => void
-  saveLlm: (provider: string, chatModel: string, apiKey?: string, baseUrl?: string) => void
+  listModels: (provider?: string, apiKey?: string, baseUrl?: string, kind?: ModelKind) => void
+  saveLlm: (
+    provider: string,
+    model: string,
+    kind: ModelKind,
+    apiKey?: string,
+    baseUrl?: string,
+    embeddingDim?: number,
+  ) => void
   deleteLlm: (profileId: string) => void
   setLlmLane: (
     lane: "scribe" | "director",
@@ -368,6 +378,7 @@ function moduleAction(
 const EMPTY = {
   config: null,
   modelsProvider: "",
+  modelsKind: "",
   models: [],
   roomConfig: null,
   keys: [],
@@ -396,10 +407,15 @@ export const useAdminStore = create<AdminState>((set) => ({
         set({ config: frame, busy: false, lastError: null })
         return true
       case "admin_models":
-        set({ modelsProvider: frame.provider, models: frame.models, busy: false })
+        set({
+          modelsProvider: frame.provider,
+          modelsKind: frame.kind ?? "",
+          models: frame.models,
+          busy: false,
+        })
         return true
-      case "admin_room_config" as ServerFrame["type"]:
-        set({ roomConfig: frame as unknown as AdminRoomConfigFrame, busy: false, lastError: null })
+      case "admin_room_config":
+        set({ roomConfig: frame as AdminRoomConfigFrame, busy: false, lastError: null })
         return true
       case "admin_keys":
         set({ keys: frame.keys, minted: frame.minted ?? null, busy: false, lastError: null })
@@ -491,6 +507,15 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   refreshConfig: () => send({ type: "admin_get_config" }, set),
+  setEmbedding: (profileId, dimension) =>
+    send(
+      {
+        type: "admin_set_embedding",
+        profile_id: profileId,
+        ...(dimension !== undefined ? { embedding_dim: dimension } : {}),
+      } as unknown as ClientFrame,
+      set,
+    ),
   setModel: (provider, chatModel, apiKey, baseUrl) =>
     send(
       {
@@ -502,12 +527,14 @@ export const useAdminStore = create<AdminState>((set) => ({
       },
       set,
     ),
-  saveLlm: (provider, chatModel, apiKey, baseUrl) =>
+  saveLlm: (provider, model, kind, apiKey, baseUrl, embeddingDim) =>
     send(
       {
         type: "admin_set_llm",
         provider,
-        chat_model: chatModel,
+        chat_model: model,
+        kind,
+        ...(kind === "embedding" && embeddingDim !== undefined ? { embedding_dim: embeddingDim } : {}),
         ...(apiKey !== undefined ? { api_key: apiKey } : {}),
         ...(baseUrl !== undefined ? { base_url: baseUrl } : {}),
       } as unknown as ClientFrame,
@@ -542,11 +569,12 @@ export const useAdminStore = create<AdminState>((set) => ({
       } as unknown as ClientFrame,
       set,
     ),
-  listModels: (provider, apiKey, baseUrl) =>
+  listModels: (provider, apiKey, baseUrl, kind) =>
     send(
       {
         type: "admin_list_models",
         ...(provider ? { provider } : {}),
+        ...(kind ? { kind } : {}),
         ...(apiKey ? { api_key: apiKey } : {}),
         ...(baseUrl ? { base_url: baseUrl } : {}),
       },
