@@ -5,6 +5,7 @@
 
 import { useTranslation } from "react-i18next"
 import type { UiManifestPanel } from "@loreweaver/protocol"
+import { Button } from "../../../components/ui"
 import { usePanelsStore } from "../../../store/panels"
 import { pickText } from "./templates"
 import PanelFallback from "./PanelFallback"
@@ -33,25 +34,27 @@ export default function PanelCard({ panel }: { panel: UiManifestPanel }) {
       <header className="desk-title panel-card-head">
         <span className="panel-card-title">{title}</span>
         <span className="panel-card-actions">
-          <button
+          <Button
             type="button"
-            className="icon-button"
+            variant="quiet"
+            size="icon"
             aria-expanded={!collapsed}
             aria-label={collapsed ? t("panels.expand") : t("panels.collapse")}
             title={collapsed ? t("panels.expand") : t("panels.collapse")}
             onClick={() => toggleCollapsed(panel.id)}
           >
             {collapsed ? "▸" : "▾"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="icon-button"
+            variant="quiet"
+            size="icon"
             aria-label={t("panels.close")}
             title={t("panels.close")}
             onClick={() => setClosed(panel.id, true)}
           >
             ×
-          </button>
+          </Button>
         </span>
       </header>
       {collapsed ? null : <PanelBody panel={panel} />}

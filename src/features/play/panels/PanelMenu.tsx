@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { UiManifestPanel } from "@loreweaver/protocol"
+import { Button } from "../../../components/ui"
 import { usePanelsStore } from "../../../store/panels"
 import { pickText } from "./templates"
 
@@ -20,9 +21,10 @@ function MenuRow({ panel, onDone }: { panel: UiManifestPanel; onDone: () => void
     <li className="panel-menu-row">
       <span className="panel-menu-slot">{t(`panels.slot.${panel.slot}`)}</span>
       <span className="panel-menu-title">{title}</span>
-      <button
+      <Button
         type="button"
-        className="ghost-button"
+        size="sm"
+        variant="quiet"
         onClick={() => {
           if (panel.slot === "modal") {
             openModal(panel.id)
@@ -33,7 +35,7 @@ function MenuRow({ panel, onDone }: { panel: UiManifestPanel; onDone: () => void
         }}
       >
         {action}
-      </button>
+      </Button>
     </li>
   )
 }
@@ -58,15 +60,16 @@ export default function PanelMenu() {
   if (manifest.length === 0) return null
   return (
     <div className="panel-menu" ref={rootRef}>
-      <button
+      <Button
         type="button"
-        className="ghost-button"
+        size="sm"
+        variant="quiet"
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
         {t("panels.menu", { n: manifest.length })}
-      </button>
+      </Button>
       {open ? (
         <div className="panel-menu-pop" role="menu" aria-label={t("panels.menuAria")}>
           <ul className="panel-menu-list">

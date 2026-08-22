@@ -11,6 +11,7 @@
 
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "../../components/ui"
 import { useConnectionStore } from "../../store/connection"
 import { usePanelsStore } from "../../store/panels"
 import { useSessionStore } from "../../store/session"
@@ -251,8 +252,10 @@ export default function DeskColumn() {
           className={`desk-slot${id === dragId ? " is-dragging" : ""}${id === overId ? " drop-target" : ""}`}
           data-slot={id}
         >
-          <button
+          <Button
             type="button"
+            variant="quiet"
+            size="icon"
             className="desk-slot-grip"
             aria-label={t("session.deskGrip")}
             title={t("session.deskGrip")}
@@ -262,14 +265,14 @@ export default function DeskColumn() {
             onPointerCancel={onPointerEnd}
           >
             ⠿
-          </button>
+          </Button>
           {renderSlot(id)}
         </div>
       ))}
       {customized ? (
-        <button type="button" className="ghost-button desk-order-reset" onClick={resetOrder}>
+        <Button type="button" size="sm" variant="quiet" className="desk-order-reset" onClick={resetOrder}>
           {t("session.deskReset")}
-        </button>
+        </Button>
       ) : null}
     </div>
   )

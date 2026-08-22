@@ -282,6 +282,26 @@ describe("PlayView", () => {
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument()
   })
 
+  it("navigates the settings workspace with the keyboard and preserves its nested URL", async () => {
+    const user = userEvent.setup()
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    render(<PlayView />)
+
+    await user.click(screen.getByRole("button", { name: "Main menu" }))
+    await user.click(screen.getByRole("menuitem", { name: "Settings" }))
+    const appearance = screen.getByRole("tab", { name: "Appearance & reading" })
+    appearance.focus()
+    await user.keyboard("{ArrowRight}")
+
+    expect(screen.getByRole("tab", { name: "Language" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByRole("heading", { name: "Language", level: 3 })).toBeInTheDocument()
+    expect(window.location.hash).toBe("#/settings/language")
+
+    await user.keyboard("{End}")
+    expect(screen.getByRole("tab", { name: "Server & invites" })).toHaveAttribute("aria-selected", "true")
+    expect(window.location.hash).toBe("#/settings/connection")
+  })
+
   it("restores a keeper management subpage after a fragment-less reload", async () => {
     const user = userEvent.setup()
     useConnectionStore.setState({ status: "online", welcome: WELCOME })

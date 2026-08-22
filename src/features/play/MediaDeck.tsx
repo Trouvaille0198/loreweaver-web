@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { MediaFrame } from "@loreweaver/protocol"
+import { Button } from "../../components/ui"
 import { pickAnyFiles } from "../../lib/native"
 import { useConnectionStore } from "../../store/connection"
 import { useMediaStore } from "../../store/media"
@@ -58,9 +59,9 @@ function Thumb({ item }: { item: MediaFrame }) {
         {item.name || item.hash.slice(0, 8)}
       </span>
       <span className="media-from">{item.from}</span>
-      <button type="button" className="ghost-button" onClick={() => setAvatar(item.hash)}>
+      <Button type="button" size="sm" variant="quiet" onClick={() => setAvatar(item.hash)}>
         {t("play.media.useAsAvatar")}
-      </button>
+      </Button>
     </li>
   )
 }
@@ -119,9 +120,9 @@ export default function MediaDeck() {
             off can turn them back on, so the button stays live for them. For a
             player it disables only once the SERVER has said so: `uploadsEnabled`
             is null until then, and guessing would hide a control that works. */}
-        <button type="button" className="ghost-button" disabled={blocked} onClick={() => void share()}>
+        <Button type="button" size="sm" variant="quiet" disabled={blocked} onClick={() => void share()}>
           {t("play.media.share")}
-        </button>
+        </Button>
         {blocked ? <span className="studio-hint">{t("play.media.uploadsOff")}</span> : null}
       </div>
       {error !== null ? (
@@ -135,9 +136,9 @@ export default function MediaDeck() {
             ? t("play.media.uploadFailed", { name: item.name, detail: uploadDetail(t, item.error) })
             : t(`play.media.phase.${item.phase}`, { name: item.name })}{" "}
           {item.phase === "done" || item.phase === "error" ? (
-            <button type="button" className="ghost-button" onClick={() => clearUpload(sha256)}>
+            <Button type="button" size="sm" variant="quiet" onClick={() => clearUpload(sha256)}>
               {t("play.media.dismiss")}
-            </button>
+            </Button>
           ) : null}
         </p>
       ))}

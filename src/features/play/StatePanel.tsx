@@ -8,6 +8,7 @@ import {
   type ResourceState,
   type StateFrame,
 } from "@loreweaver/protocol"
+import { Button } from "../../components/ui"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
@@ -76,8 +77,9 @@ export function CharacterCard({ character }: { character: CharacterState }) {
       ))}
       {skillEntries.length > 0 ? (
         <div className="skills-fold">
-          <button
+          <Button
             type="button"
+            variant="quiet"
             className="skills-fold-toggle"
             aria-expanded={skillsOpen}
             onClick={() => setSkillsOpen((open) => !open)}
@@ -86,7 +88,7 @@ export function CharacterCard({ character }: { character: CharacterState }) {
             <span className="skills-fold-caret" aria-hidden="true">
               {skillsOpen ? "▾" : "▸"}
             </span>
-          </button>
+          </Button>
           {skillsOpen ? (
             <div className="skills-grid" role="list">
               {skillEntries.map(([name, value]) => (
@@ -184,34 +186,37 @@ function VariableWrite({ variable }: { variable: ModuleVariable }) {
     <div className="var-write">
       {variable.kind === "number" ? (
         <>
-          <button
+          <Button
             type="button"
-            className="ghost-button"
+            variant="quiet"
+            size="icon"
             disabled={down === null}
             aria-label={t("session.varDecrement", { label: variable.label })}
             onClick={() => run(addVarCommand(variable.id, down ?? -1))}
           >
             −
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="ghost-button"
+            variant="quiet"
+            size="icon"
             disabled={up === null}
             aria-label={t("session.varIncrement", { label: variable.label })}
             onClick={() => run(addVarCommand(variable.id, up ?? 1))}
           >
             +
-          </button>
+          </Button>
         </>
       ) : null}
       {variable.kind === "bool" ? (
-        <button
+        <Button
           type="button"
-          className="ghost-button"
+          size="sm"
+          variant="quiet"
           onClick={() => run(setVarCommand(variable.id, variable.value !== true))}
         >
           {t("session.varToggle")}
-        </button>
+        </Button>
       ) : (
         <>
           <input
@@ -227,9 +232,10 @@ function VariableWrite({ variable }: { variable: ModuleVariable }) {
               setDraft("")
             }}
           />
-          <button
+          <Button
             type="button"
-            className="ghost-button"
+            size="sm"
+            variant="quiet"
             disabled={draft.trim() === ""}
             onClick={() => {
               run(setVarCommand(variable.id, draft))
@@ -237,7 +243,7 @@ function VariableWrite({ variable }: { variable: ModuleVariable }) {
             }}
           >
             {t("session.varSetAction")}
-          </button>
+          </Button>
         </>
       )}
     </div>
@@ -256,9 +262,9 @@ export function VariablesCard({ game }: { game: StateFrame }) {
       <header className="desk-title">
         {t("session.trackers")}
         {isKeeper ? (
-          <button type="button" className="ghost-button" onClick={() => setEditing(!editing)}>
+          <Button type="button" size="sm" variant="quiet" onClick={() => setEditing(!editing)}>
             {t(editing ? "session.varEditDone" : "session.varEdit")}
-          </button>
+          </Button>
         ) : null}
       </header>
       {isKeeper && editing ? <p className="studio-hint">{t("session.varEditHint")}</p> : null}
@@ -359,9 +365,10 @@ export function PregenCard({ game }: { game: StateFrame }) {
                     : t("session.pregenClaimed", { name: stripControlChars(claimedBy) })}
                 </span>
               ) : (
-                <button
+                <Button
                   type="button"
-                  className="ghost-button"
+                  size="sm"
+                  variant="quiet"
                   disabled={!online}
                   onClick={() => {
                     void transportSend({ type: "input", text: `.pc claim ${pregen.name}` }).catch(() => {
@@ -370,7 +377,7 @@ export function PregenCard({ game }: { game: StateFrame }) {
                   }}
                 >
                   {t("session.pregenClaim")}
-                </button>
+                </Button>
               )}
             </li>
           )
@@ -406,9 +413,10 @@ function PackCardRow({
       <span className="party-name">{stripControlChars(card.name)}</span>
       <span className="desk-tag">{stripControlChars(card.pack)}</span>
       {world ? <span className="desk-tag">{t("session.packImportWorld")}</span> : null}
-      <button
+      <Button
         type="button"
-        className="ghost-button"
+        size="sm"
+        variant="quiet"
         disabled={!online || locked}
         title={locked ? t("session.packImportKeeperOnly") : undefined}
         onClick={() => {
@@ -419,7 +427,7 @@ function PackCardRow({
         }}
       >
         {t("session.packImportAction")}
-      </button>
+      </Button>
     </li>
   )
 }
@@ -446,9 +454,10 @@ export function PackImportCard() {
     <section className="desk-card">
       <header className="desk-title">
         {t("session.packImport")}
-        <button
+        <Button
           type="button"
-          className="ghost-button"
+          size="sm"
+          variant="quiet"
           onClick={() => {
             if (!open) {
               setTimedOut(false)
@@ -458,23 +467,24 @@ export function PackImportCard() {
           }}
         >
           {t(open ? "session.packImportClose" : "session.packImportBrowse")}
-        </button>
+        </Button>
       </header>
       {open ? (
         packCards === null ? (
           timedOut ? (
             <p className="studio-hint">
               {t("session.packImportTimeout")}{" "}
-              <button
+              <Button
                 type="button"
-                className="ghost-button"
+                size="sm"
+                variant="quiet"
                 onClick={() => {
                   setTimedOut(false)
                   requestPackCards()
                 }}
               >
                 {t("session.packImportRetry")}
-              </button>
+              </Button>
             </p>
           ) : (
             <p className="studio-hint">{t("session.packImportLoading")}</p>

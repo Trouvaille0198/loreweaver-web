@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "../../../components/ui"
 import { transportSend } from "../../../lib/transport"
 import {
   useAdminStore,
@@ -25,7 +26,6 @@ function displayValue(value: unknown): string {
   return JSON.stringify(value, null, 2)
 }
 type SendStatus = "idle" | "sent" | "failed"
-
 
 export function KnowledgePool({ detail, label }: { detail: ModuleDetail; label: string }) {
   const pool = detail.pool?.keeper
@@ -86,18 +86,20 @@ function ModuleDetailPanel({
         <div>
           <h3 className="play-form-title">{detail.name}</h3>
           <p className="studio-hint">
-            {detail.current ? `${detail.status || readyLabel} · ${detail.size} ${bytesLabel}` : `${detail.size} ${bytesLabel}`}
+            {detail.current
+              ? `${detail.status || readyLabel} · ${detail.size} ${bytesLabel}`
+              : `${detail.size} ${bytesLabel}`}
           </p>
         </div>
         <div className="module-detail-actions">
           {detail.current ? <span className="chip chip-on">{currentLabel}</span> : null}
-          <button type="button" className="ghost-button" onClick={onImport}>
+          <Button type="button" size="sm" variant="quiet" onClick={onImport}>
             {importLabel}
-          </button>
+          </Button>
           {!detail.current ? (
-            <button type="button" className="ghost-button" onClick={onDelete}>
+            <Button type="button" size="sm" variant="danger" onClick={onDelete}>
               {deleteLabel}
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
@@ -110,11 +112,26 @@ function ModuleDetailPanel({
   )
 }
 
-function OperationNotice({ operation, t }: { operation: ModuleOperation | null; t: (key: string) => string }) {
+function OperationNotice({
+  operation,
+  t,
+}: {
+  operation: ModuleOperation | null
+  t: (key: string) => string
+}) {
   if (!operation) return null
-  if (!operation.ok) return <p className="connect-error" role="status">{operation.error || t("play.module.operationFailed")}</p>
+  if (!operation.ok)
+    return (
+      <p className="connect-error" role="status">
+        {operation.error || t("play.module.operationFailed")}
+      </p>
+    )
   if (operation.kind === "module_import") {
-    return <p className="studio-hint" role="status">{operation.receipt || t("play.module.imported")}</p>
+    return (
+      <p className="studio-hint" role="status">
+        {operation.receipt || t("play.module.imported")}
+      </p>
+    )
   }
   return <p className="studio-hint" role="status">{`${t("play.module.saved")} ${operation.name}`}</p>
 }
@@ -227,16 +244,20 @@ export default function ModuleScreen({
             if (file) void chooseFile(file)
           }}
         />
-        <button type="button" className="primary-button" onClick={() => fileInputRef.current?.click()}>
+        <Button type="button" variant="primary" onClick={() => fileInputRef.current?.click()}>
           {t("play.module.addSource")}
-        </button>
+        </Button>
         {sources.length === 0 ? <p className="studio-hint">{t("play.module.noSources")}</p> : null}
         <ul className="play-list module-source-list">
           {sources.map((source: ModuleSource) => (
-            <li className={`module-source-row${source.name === selectedName ? " is-selected" : ""}`} key={source.name}>
-              <button
+            <li
+              className={`module-source-row${source.name === selectedName ? " is-selected" : ""}`}
+              key={source.name}
+            >
+              <Button
                 type="button"
-                className="ghost-button module-source-select"
+                variant="quiet"
+                className="module-source-select"
                 aria-pressed={source.name === selectedName}
                 onClick={() => {
                   if (onOpenDetail) {
@@ -247,13 +268,15 @@ export default function ModuleScreen({
                 }}
               >
                 <strong>{source.name}</strong>
-                <span className="studio-hint">{source.size} {t("play.module.bytes")}</span>
+                <span className="studio-hint">
+                  {source.size} {t("play.module.bytes")}
+                </span>
                 {source.current ? <span className="chip chip-on">{t("play.module.current")}</span> : null}
-              </button>
+              </Button>
               <div className="module-source-actions">
-                <button type="button" className="ghost-button" onClick={() => importModule(source.name)}>
+                <Button type="button" size="sm" variant="quiet" onClick={() => importModule(source.name)}>
                   {t("play.module.importRoom")}
-                </button>
+                </Button>
               </div>
             </li>
           ))}
@@ -286,11 +309,15 @@ export default function ModuleScreen({
             spellCheck={false}
           />
         </label>
-        <button type="button" className="primary-button" disabled={!path.trim()} onClick={install}>
+        <Button type="button" variant="primary" disabled={!path.trim()} onClick={install}>
           {t("play.module.install")}
-        </button>
+        </Button>
         {pathStatus === "sent" ? <p className="studio-hint">{t("play.module.sent")}</p> : null}
-        {pathStatus === "failed" ? <p className="connect-error" role="status">{t("play.sendFailed")}</p> : null}
+        {pathStatus === "failed" ? (
+          <p className="connect-error" role="status">
+            {t("play.sendFailed")}
+          </p>
+        ) : null}
       </div>
 
       {isKeeper ? (
@@ -306,11 +333,15 @@ export default function ModuleScreen({
             />
           </label>
           <p className="studio-hint">{t("play.pack.hint")}</p>
-          <button type="button" className="primary-button" disabled={!packRef.trim()} onClick={installPack}>
+          <Button type="button" variant="primary" disabled={!packRef.trim()} onClick={installPack}>
             {t("play.pack.install")}
-          </button>
+          </Button>
           {packStatus === "sent" ? <p className="studio-hint">{t("play.pack.sent")}</p> : null}
-          {packStatus === "failed" ? <p className="connect-error" role="status">{t("play.sendFailed")}</p> : null}
+          {packStatus === "failed" ? (
+            <p className="connect-error" role="status">
+              {t("play.sendFailed")}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -324,14 +355,14 @@ export default function ModuleScreen({
             placeholder={t("play.module.describePlaceholder")}
           />
         </label>
-        <button
+        <Button
           type="button"
-          className="ghost-button"
+          variant="quiet"
           disabled={!description.trim() || busy}
           onClick={() => generateModule(description.trim())}
         >
           {busy ? t("play.busy") : t("play.module.generate")}
-        </button>
+        </Button>
         {generated !== null && generated.kind === "module" ? (
           <p className={generated.ok ? "studio-hint" : "connect-error"} role="status">
             {generated.ok

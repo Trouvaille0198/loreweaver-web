@@ -21,6 +21,30 @@ export default defineConfig({
   build: {
     target: "es2020",
     sourcemap: false,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "react-core",
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              priority: 30,
+            },
+            {
+              name: "markdown",
+              test: /node_modules[\\/](react-markdown|remark-|rehype-|unified|micromark|mdast-|hast-|unist-)/,
+              priority: 20,
+            },
+            {
+              name: "vendor",
+              test: /node_modules/,
+              maxSize: 300_000,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
   },
 
   test: {

@@ -166,9 +166,10 @@ export default function WorldbookScreen({
               className={`module-source-row${source.name === selectedName ? " is-selected" : ""}`}
               key={source.name}
             >
-              <button
+              <Button
                 type="button"
-                className="ghost-button module-source-select"
+                variant="quiet"
+                className="module-source-select"
                 aria-pressed={source.name === selectedName}
                 onClick={() => setSelectedName(source.name)}
               >
@@ -178,7 +179,7 @@ export default function WorldbookScreen({
                   {source.attached ? t("play.worldbook.attached") : t("play.worldbook.librarySource")}
                 </span>
                 {source.current ? <span className="chip chip-on">{t("play.worldbook.current")}</span> : null}
-              </button>
+              </Button>
               <div className="module-source-actions">
                 <Button
                   type="button"

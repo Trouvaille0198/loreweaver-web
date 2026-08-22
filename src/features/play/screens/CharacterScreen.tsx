@@ -19,6 +19,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { stripControlChars, type RuleSystemEntry } from "@loreweaver/protocol"
+import { Button } from "../../../components/ui"
 import { transportSend } from "../../../lib/transport"
 import { useConnectionStore } from "../../../store/connection"
 import { useSessionStore } from "../../../store/session"
@@ -113,14 +114,16 @@ function CreateCharacter() {
     <div className="play-form">
       <div className="chip-row" role="group" aria-label={t("play.character.createMode")}>
         {(["roll", "describe", "import"] as CreateMode[]).map((value) => (
-          <button
+          <Button
             key={value}
             type="button"
-            className={value === mode ? "primary-button" : "ghost-button"}
+            size="sm"
+            variant={value === mode ? "primary" : "quiet"}
+            aria-pressed={value === mode}
             onClick={() => setMode(value)}
           >
             {t(`play.character.mode.${value}`)}
-          </button>
+          </Button>
         ))}
       </div>
       <p className="studio-hint">{t(`play.character.mode.${mode}.hint`)}</p>
@@ -169,9 +172,9 @@ function CreateCharacter() {
         </label>
       ) : null}
 
-      <button type="button" className="primary-button" disabled={!online || !ready} onClick={submit}>
+      <Button type="button" variant="primary" disabled={!online || !ready} onClick={submit}>
         {t("play.character.create")}
-      </button>
+      </Button>
       {sent ? <p className="studio-hint">{t("play.character.sent", { command: sent })}</p> : null}
     </div>
   )
@@ -206,15 +209,16 @@ function AttributeRow({ name, value }: { name: string; value: unknown }) {
       <td className="play-attr-name">{stripControlChars(name)}</td>
       <td>
         {draft === null ? (
-          <button
+          <Button
             type="button"
-            className="ghost-button"
+            size="sm"
+            variant="quiet"
             disabled={!online}
             title={t("play.character.editHint")}
             onClick={() => setDraft(String(value))}
           >
             {value}
-          </button>
+          </Button>
         ) : (
           <input
             autoFocus
@@ -285,20 +289,20 @@ export default function CharacterScreen({ onBack }: { onBack: () => void }) {
           </table>
           <p className="studio-hint">{t("play.character.editHint")}</p>
           <div className="chip-row">
-            <button
+            <Button
               type="button"
-              className="ghost-button"
+              variant="quiet"
               disabled={!online}
               title={t("play.character.finalizeHint")}
               onClick={() => send(".st finalize")}
             >
               {t("play.character.finalize")}
-            </button>
+            </Button>
             {confirmDelete ? (
               <>
-                <button
+                <Button
                   type="button"
-                  className="primary-button"
+                  variant="danger"
                   disabled={!online}
                   onClick={() => {
                     send(".st delete")
@@ -306,20 +310,20 @@ export default function CharacterScreen({ onBack }: { onBack: () => void }) {
                   }}
                 >
                   {t("play.character.deleteConfirm")}
-                </button>
-                <button type="button" className="ghost-button" onClick={() => setConfirmDelete(false)}>
+                </Button>
+                <Button type="button" variant="quiet" onClick={() => setConfirmDelete(false)}>
                   {t("play.character.deleteCancel")}
-                </button>
+                </Button>
               </>
             ) : (
-              <button
+              <Button
                 type="button"
-                className="ghost-button"
+                variant="danger"
                 disabled={!online}
                 onClick={() => setConfirmDelete(true)}
               >
                 {t("play.character.delete")}
-              </button>
+              </Button>
             )}
           </div>
         </div>

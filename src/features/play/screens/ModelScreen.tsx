@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
@@ -44,16 +45,16 @@ function ProfileCard({
   const { t } = useTranslation()
   return (
     <article className={`play-llm-profile ${selected ? "is-selected" : ""}`}>
-      <button type="button" className="play-llm-profile-main" onClick={onSelect}>
+      <Button type="button" variant="quiet" className="play-llm-profile-main" onClick={onSelect}>
         <span className="play-llm-profile-dot" aria-hidden="true" />
         <span className="play-llm-profile-copy">
           <strong>{profile.chat_model || t("play.model.noModel")}</strong>
           <span>{profile.api_key_masked || t("play.model.noKey")}</span>
         </span>
-      </button>
-      <button type="button" className="ghost-button play-llm-delete" onClick={onDelete}>
+      </Button>
+      <Button type="button" size="sm" variant="quiet" className="play-llm-delete" onClick={onDelete}>
         {t("play.model.deleteLlm")}
-      </button>
+      </Button>
     </article>
   )
 }
@@ -62,11 +63,13 @@ function UsageSelect({
   label,
   value,
   profiles,
+  defaultLabel,
   onChange,
 }: {
   label: string
   value: string
   profiles: LLMProfile[]
+  defaultLabel: string
   onChange: (value: string) => void
 }) {
   const { t } = useTranslation()
@@ -74,7 +77,7 @@ function UsageSelect({
     <label className="field play-usage-field">
       {label}
       <select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">{t("play.model.followNone")}</option>
+        <option value="">{t("play.model.followDefault", { model: defaultLabel })}</option>
         {profiles.map((profile) => (
           <option key={profile.id} value={profile.id}>
             {profile.provider} · {profile.chat_model || t("play.model.noModel")}
@@ -84,8 +87,13 @@ function UsageSelect({
     </label>
   )
 }
-
-export default function ModelScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
+export default function ModelScreen({
+  onBack,
+  embedded = false,
+}: {
+  onBack: () => void
+  embedded?: boolean
+}) {
   const { t } = useTranslation()
   const config = useAdminStore((state) => state.config)
   const roomConfig = useAdminStore((state) => state.roomConfig)
@@ -107,6 +115,10 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
     }
     return Array.from(grouped, ([provider, groupProfiles]) => ({ provider, profiles: groupProfiles }))
   }, [profiles])
+  const defaultModel =
+    config?.provider && config.chat_model
+      ? `${config.provider} · ${config.chat_model}`
+      : t("play.model.defaultUnknown")
   const [selectedProvider, setSelectedProvider] = useState("")
   const [selectedProfileId, setSelectedProfileId] = useState("")
   const [chatModel, setChatModel] = useState("")
@@ -216,13 +228,14 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
               <section className="play-llm-provider" key={group.provider} aria-label={group.provider}>
                 <div className="play-llm-provider-head">
                   <strong>{group.provider}</strong>
-                  <button
+                  <Button
                     type="button"
-                    className="ghost-button"
+                    size="sm"
+                    variant="quiet"
                     onClick={() => selectProvider(group.provider)}
                   >
                     {t("play.model.addModel")}
-                  </button>
+                  </Button>
                 </div>
                 <div className="play-llm-profile-list">
                   {group.profiles.map((profile) => (
@@ -243,63 +256,63 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
         </div>
         <div className="play-model-editor">
           <div className="play-form play-model-fields">
-          <label className="field">
-            {t("play.model.provider")}
-            <select
-              value={selectedProvider}
-              onChange={(event) => selectProvider(event.target.value)}
+            <label className="field">
+              {t("play.model.provider")}
+              <select value={selectedProvider} onChange={(event) => selectProvider(event.target.value)}>
+                <option value="">{t("play.model.newLlm")}</option>
+                {providers.map((provider) => (
+                  <option key={provider} value={provider}>
+                    {provider}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              {t("play.model.chatModel")}
+              <input
+                value={chatModel}
+                onChange={(event) => {
+                  setChatModel(event.target.value)
+                  profileDirty.current = true
+                }}
+                spellCheck={false}
+              />
+            </label>
+            <label className="field">
+              {t("play.model.baseUrl")}
+              <input
+                value={baseUrl}
+                onChange={(event) => {
+                  setBaseUrl(event.target.value)
+                  profileDirty.current = true
+                }}
+                spellCheck={false}
+              />
+            </label>
+            <label className="field">
+              {t("play.model.apiKey")}
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(event) => {
+                  setApiKey(event.target.value)
+                  profileDirty.current = true
+                }}
+                placeholder={
+                  profiles.find((profile) => profile.id === selectedProfileId)?.api_key_masked ?? ""
+                }
+              />
+            </label>
+            <Button
+              type="button"
+              variant="primary"
+              className="play-model-apply"
+              onClick={applyProfile}
+              disabled={!selectedProvider.trim() || !chatModel.trim()}
             >
-              <option value="">{t("play.model.newLlm")}</option>
-              {providers.map((provider) => (
-                <option key={provider} value={provider}>
-                  {provider}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            {t("play.model.chatModel")}
-            <input
-              value={chatModel}
-              onChange={(event) => {
-                setChatModel(event.target.value)
-                profileDirty.current = true
-              }}
-              spellCheck={false}
-            />
-          </label>
-          <label className="field">
-            {t("play.model.baseUrl")}
-            <input
-              value={baseUrl}
-              onChange={(event) => {
-                setBaseUrl(event.target.value)
-                profileDirty.current = true
-              }}
-              spellCheck={false}
-            />
-          </label>
-          <label className="field">
-            {t("play.model.apiKey")}
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(event) => {
-                setApiKey(event.target.value)
-                profileDirty.current = true
-              }}
-              placeholder={profiles.find((profile) => profile.id === selectedProfileId)?.api_key_masked ?? ""}
-            />
-          </label>
-          <button
-            type="button"
-            className="primary-button play-model-apply"
-            onClick={applyProfile}
-            disabled={!selectedProvider.trim() || !chatModel.trim()}
-          >
-            {t("play.model.saveLlm")}
-          </button>
-        </div>
+              {t("play.model.saveLlm")}
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -316,11 +329,13 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
             label={t("play.model.mainUsage")}
             value={roomSelection.main}
             profiles={profiles}
+            defaultLabel={defaultModel}
             onChange={(value) => updateRoom("main", value)}
           />
           <UsageSelect
             label={t("play.model.scribeUsage")}
             value={roomSelection.scribe}
+            defaultLabel={defaultModel}
             profiles={profiles}
             onChange={(value) => updateRoom("scribe", value)}
           />
@@ -336,6 +351,7 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
             label={t("play.model.directorUsage")}
             value={roomSelection.director}
             profiles={profiles}
+            defaultLabel={defaultModel}
             onChange={(value) => updateRoom("director", value)}
           />
           <label className="field play-usage-toggle">
@@ -349,17 +365,23 @@ export default function ModelScreen({ onBack, embedded = false }: { onBack: () =
           <UsageSelect
             label={t("play.model.imagegenUsage")}
             value={roomSelection.imagegen}
+            defaultLabel={defaultModel}
             profiles={profiles}
             onChange={(value) => updateRoom("imagegen", value)}
           />
         </div>
         <div className="play-mint-row">
-          <button type="button" className="primary-button" onClick={applyRoom}>
+          <Button type="button" variant="primary" onClick={applyRoom}>
             {t("play.model.saveRoomUsage")}
-          </button>
-          <button type="button" className="ghost-button" onClick={() => clearRoomModel()} disabled={!roomConfig?.active}>
+          </Button>
+          <Button
+            type="button"
+            variant="quiet"
+            onClick={() => clearRoomModel()}
+            disabled={!roomConfig?.active}
+          >
             {t("play.model.clearRoomUsage")}
-          </button>
+          </Button>
         </div>
       </section>
     </ScreenShell>

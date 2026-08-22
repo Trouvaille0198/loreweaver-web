@@ -218,6 +218,8 @@
       "scribeEnabled": "启用书记官",
       "directorEnabled": "启用演出导演",
       "followNone": "不选择（跟随默认）",
+      "followDefault": "跟随默认（{{model}}）",
+      "defaultUnknown": "默认模型未配置",
       "saveRoomUsage": "保存本房间用途",
       "clearRoomUsage": "清除本房间选择",
       "inheritsMain": "跟随主模型",
@@ -337,6 +339,8 @@
       "deleteCancel": "算了"
     },
     "settings": {
+      "appearanceSection": "外观与阅读",
+      "theme": "界面主题",
       "themeHint": "与终端客户端 F1–F5 同一套、同一顺序的桌面配色。Lamplight 是 Loreweaver 的识别色。",
       "themes": {
         "lamplight": "灯下牌桌",
@@ -348,8 +352,14 @@
       "narrativeWidth": "叙事宽度",
       "narrativeWidthHint": "桌面端叙事栏的宽度。手机端始终全宽显示。",
       "serverSection": "服务器与邀请",
+      "connectionTicket": "P2P 连接票据",
       "ticketHint": "桌面端玩家（TUI / Studio）用这个 p2p ticket 加一把邀请 key 就能直连本房间——不需要域名、TLS 或端口转发。",
       "invitesSection": "邀请 key"
+    },
+    "keeperSettings": {
+      "roomGroup": "房间",
+      "contentGroup": "内容",
+      "systemGroup": "规则与模型"
     },
     "rooms": {
       "title": "房间生命周期",
@@ -477,6 +487,7 @@
       "game": "牌桌",
       "character": "我的角色",
       "settings": "设置",
+      "keeperSettings": "守秘人设置",
       "keys": "房间与邀请",
       "module": "导入模组",
       "rules": "规则体系",

@@ -55,6 +55,7 @@ function screenFromHash(): PlayScreen {
   if (typeof window === "undefined") return "game"
   const hash = window.location.hash
   if (hash.startsWith("#/module-detail/")) return "moduleDetail"
+  if (hash.startsWith("#/settings/")) return "settings"
   if (
     hash.startsWith("#/keeper-settings/") ||
     hash === "#/keeper-settings" ||

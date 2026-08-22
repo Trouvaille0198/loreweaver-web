@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { stripControlChars } from "@loreweaver/protocol"
+import { Button } from "../../components/ui"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 
@@ -59,8 +60,10 @@ export default function StatusPill() {
 
   return (
     <span className="status-pill-wrap" ref={rootRef}>
-      <button
+      <Button
         type="button"
+        variant="quiet"
+        size="sm"
         className={`status-pill status-pill-btn status-${status}`}
         data-status={status}
         aria-expanded={open}
@@ -69,14 +72,12 @@ export default function StatusPill() {
         onClick={() => setOpen((value) => !value)}
       >
         {label}
-      </button>
+      </Button>
       {open ? (
         <div className="presence-pop" role="menu" aria-label={t("session.presence")}>
           <header className="presence-pop-head">
             <span>{t("session.presence")}</span>
-            <span className="presence-pop-count">
-              {t("session.online", { n: presence?.online ?? 0 })}
-            </span>
+            <span className="presence-pop-count">{t("session.online", { n: presence?.online ?? 0 })}</span>
           </header>
           <ul className="presence-pop-list">
             {members.map((player) => (

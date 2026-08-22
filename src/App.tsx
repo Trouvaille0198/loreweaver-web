@@ -6,6 +6,7 @@ import { useConnectionStore } from "./store/connection"
 
 export default function App() {
   const { t, i18n } = useTranslation()
+  const online = useConnectionStore((state) => state.status === "online")
 
   // Both transports — the Tauri bridge (native app) and the browser WebSocket
   // transport — funnel into the same connection store via the same event
@@ -31,19 +32,21 @@ export default function App() {
           </div>
         </div>
         <div className="header-spacer" />
-        <label className="app-language">
-          <span className="visually-hidden">{t("lang.label")}</span>
-          <select
-            className="lang-select"
-            aria-label={t("lang.label")}
-            value={i18n.resolvedLanguage}
-            onChange={(e) => void i18n.changeLanguage(e.target.value)}
-          >
-            <option value="en">English</option>
-            {/* i18n-exempt: a language is offered in its OWN name, never translated. */}
-            <option value="zh">中文</option>
-          </select>
-        </label>
+        {!online ? (
+          <label className="app-language">
+            <span className="visually-hidden">{t("lang.label")}</span>
+            <select
+              className="lang-select"
+              aria-label={t("lang.label")}
+              value={i18n.resolvedLanguage}
+              onChange={(e) => void i18n.changeLanguage(e.target.value)}
+            >
+              <option value="en">English</option>
+              {/* i18n-exempt: a language is offered in its OWN name, never translated. */}
+              <option value="zh">中文</option>
+            </select>
+          </label>
+        ) : null}
       </header>
       <main className="app-main">
         <PlayView />

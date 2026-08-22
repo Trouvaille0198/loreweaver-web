@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "../../components/ui"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
@@ -158,10 +159,11 @@ export default function InputBox() {
       {hints.length > 0 ? (
         <div className="command-hints" role="listbox" aria-label={t("session.commandHints")}>
           {hints.map((hint, index) => (
-            <button
+            <Button
               key={hint.key}
               type="button"
               role="option"
+              variant="quiet"
               aria-selected={index === hintIndex}
               className={`command-hint${index === hintIndex ? " is-active" : ""}`}
               onMouseDown={(e) => e.preventDefault()}
@@ -170,7 +172,7 @@ export default function InputBox() {
             >
               <span className="command-hint-word">{hint.display}</span>
               <span className="command-hint-hint">{hint.hint}</span>
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}
@@ -190,9 +192,9 @@ export default function InputBox() {
           disabled={!online}
           spellCheck={false}
         />
-        <button type="submit" disabled={!online || text.trim().length === 0}>
+        <Button type="submit" variant="primary" disabled={!online || text.trim().length === 0}>
           {t("session.send")}
-        </button>
+        </Button>
       </form>
     </div>
   )

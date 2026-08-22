@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { AdminKeyInfo, PlayerRole } from "@loreweaver/protocol"
+import { Button } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
 
@@ -72,18 +73,18 @@ export default function InviteKeysPanel() {
             <option value="keeper">{t("play.menu.role.keeper")}</option>
           </select>
         </label>
-        <button type="button" className="primary-button" disabled={!name.trim()} onClick={mint}>
+        <Button type="button" variant="primary" disabled={!name.trim()} onClick={mint}>
           {t("play.keys.mint")}
-        </button>
+        </Button>
       </div>
 
       {minted !== null ? (
         <div className="play-minted" role="status">
           <p>{t("play.keys.mintedOnce", { name: minted.name })}</p>
           <code className="play-minted-key">{minted.key}</code>
-          <button type="button" className="ghost-button" onClick={() => void copyMinted()}>
+          <Button type="button" size="sm" variant="quiet" onClick={() => void copyMinted()}>
             {copied ? t("play.keys.copied") : t("play.keys.copy")}
-          </button>
+          </Button>
         </div>
       ) : null}
 
@@ -115,19 +116,21 @@ export default function InviteKeysPanel() {
               <td>
                 <code className="play-minted-key">{key.key ?? key.key_masked}</code>
                 {key.key ? (
-                  <button
+                  <Button
                     type="button"
-                    className="ghost-button play-copy-inline"
+                    size="sm"
+                    variant="quiet"
+                    className="play-copy-inline"
                     onClick={() => void copyRow(key)}
                   >
                     {copiedId === key.id ? t("play.keys.copied") : t("play.keys.copy")}
-                  </button>
+                  </Button>
                 ) : null}
               </td>
               <td>
-                <button type="button" className="ghost-button" onClick={() => deleteKey(key.id)}>
+                <Button type="button" size="sm" variant="danger" onClick={() => deleteKey(key.id)}>
                   {t("play.keys.delete")}
-                </button>
+                </Button>
               </td>
             </tr>
           ))}

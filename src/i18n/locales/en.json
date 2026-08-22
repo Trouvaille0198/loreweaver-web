@@ -218,6 +218,8 @@
       "scribeEnabled": "Enable Scribe",
       "directorEnabled": "Enable Stage Director",
       "followNone": "No selection (use default)",
+      "followDefault": "Follow default ({{model}})",
+      "defaultUnknown": "Default model is not configured",
       "saveRoomUsage": "Save room assignments",
       "clearRoomUsage": "Clear room assignments",
       "inheritsMain": "Following primary",
@@ -337,6 +339,8 @@
       "deleteCancel": "Keep"
     },
     "settings": {
+      "appearanceSection": "Appearance & reading",
+      "theme": "Interface theme",
       "themeHint": "The table's palettes, same order as the TUI's F1–F5. Lamplight is the Loreweaver identity.",
       "themes": {
         "lamplight": "Lamplight",
@@ -348,8 +352,14 @@
       "narrativeWidth": "Narrative width",
       "narrativeWidthHint": "How wide the story column is on desktop. Mobile always uses full width.",
       "serverSection": "Server & invites",
+      "connectionTicket": "P2P connection ticket",
       "ticketHint": "Desktop players (TUI / Studio) dial straight into this room with this p2p ticket plus an invite key — no domain, TLS or port-forward.",
       "invitesSection": "Invite keys"
+    },
+    "keeperSettings": {
+      "roomGroup": "Room",
+      "contentGroup": "Content",
+      "systemGroup": "Rules & models"
     },
     "rooms": {
       "title": "Room lifecycle",
@@ -477,6 +487,7 @@
       "game": "At the table",
       "character": "My character",
       "settings": "Settings",
+      "keeperSettings": "Keeper settings",
       "keys": "Rooms & invites",
       "module": "Import module",
       "rules": "Rule systems",

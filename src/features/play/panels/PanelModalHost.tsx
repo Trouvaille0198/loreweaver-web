@@ -4,6 +4,7 @@
 
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "../../../components/ui"
 import { usePanelsStore } from "../../../store/panels"
 import { PanelBody } from "./PanelCard"
 import { pickText } from "./templates"
@@ -38,15 +39,16 @@ export default function PanelModalHost() {
       >
         <header className="desk-title panel-card-head">
           <span className="panel-card-title">{title}</span>
-          <button
+          <Button
             type="button"
-            className="icon-button"
+            variant="quiet"
+            size="icon"
             aria-label={t("panels.close")}
             title={t("panels.close")}
             onClick={closeModal}
           >
             ×
-          </button>
+          </Button>
         </header>
         <div className="panel-modal-body">
           <PanelBody panel={panel} />

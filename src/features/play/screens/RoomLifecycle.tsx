@@ -27,6 +27,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { AdminResetScope } from "@loreweaver/protocol"
+import { Button } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
 
@@ -67,9 +68,9 @@ function DangerAction({
             spellCheck={false}
           />
         </label>
-        <button
+        <Button
           type="button"
-          className="primary-button"
+          variant="danger"
           disabled={!armed}
           onClick={() => {
             onConfirm()
@@ -77,7 +78,7 @@ function DangerAction({
           }}
         >
           {confirmLabel}
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -113,9 +114,9 @@ export default function RoomLifecycle() {
             scope: admin.roomOp.scope ?? "",
             path: admin.roomOp.path ?? "",
           })}{" "}
-          <button type="button" className="ghost-button" onClick={() => admin.clearRoomOp()}>
+          <Button type="button" size="sm" variant="quiet" onClick={() => admin.clearRoomOp()}>
             {t("play.rooms.dismiss")}
-          </button>
+          </Button>
         </p>
       ) : null}
       {admin.serverUpdate !== null ? (
@@ -144,14 +145,14 @@ export default function RoomLifecycle() {
               spellCheck={false}
             />
           </label>
-          <button
+          <Button
             type="button"
-            className="ghost-button"
+            variant="quiet"
             disabled={admin.busy || !room}
             onClick={() => admin.exportRoom(room, exportPath.trim() || undefined)}
           >
             {t("play.rooms.export")}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -231,9 +232,9 @@ export default function RoomLifecycle() {
         {armUpdate ? (
           <div className="dialog-row" role="status">
             <span className="studio-hint">{t("play.rooms.selfUpdateConfirm")}</span>
-            <button
+            <Button
               type="button"
-              className="primary-button"
+              variant="primary"
               disabled={admin.busy}
               onClick={() => {
                 setArmUpdate(false)
@@ -241,20 +242,20 @@ export default function RoomLifecycle() {
               }}
             >
               {t("play.rooms.selfUpdateRun")}
-            </button>
-            <button type="button" className="ghost-button" onClick={() => setArmUpdate(false)}>
+            </Button>
+            <Button type="button" variant="quiet" onClick={() => setArmUpdate(false)}>
               {t("play.rooms.cancel")}
-            </button>
+            </Button>
           </div>
         ) : (
-          <button
+          <Button
             type="button"
-            className="ghost-button"
+            variant="quiet"
             disabled={!canUpdate || admin.busy}
             onClick={() => setArmUpdate(true)}
           >
             {t("play.rooms.selfUpdateRun")}
-          </button>
+          </Button>
         )}
       </div>
     </section>

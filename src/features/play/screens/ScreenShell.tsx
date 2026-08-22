@@ -26,9 +26,13 @@ export default function ScreenShell({
   const lastError = useAdminStore((s) => s.lastError)
   const busy = useAdminStore((s) => s.busy)
   const titleRef = useRef<HTMLHeadingElement>(null)
+  const focusedTitle = useRef(false)
 
   useEffect(() => {
-    if (!embedded) titleRef.current?.focus()
+    if (!embedded && !focusedTitle.current) {
+      focusedTitle.current = true
+      titleRef.current?.focus()
+    }
   }, [embedded, title])
 
   if (embedded) {
@@ -43,6 +47,8 @@ export default function ScreenShell({
           size="sm"
           className="play-screen-back"
           leadingIcon={<ArrowLeftIcon />}
+          aria-label={t("play.back")}
+          title={t("play.back")}
           onClick={onBack}
         >
           {t("play.back")}

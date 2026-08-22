@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "../../components/ui"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { quitTable } from "../../store/hostLocal"
@@ -70,9 +71,11 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
 
   return (
     <div className="app-menu" ref={rootRef}>
-      <button
+      <Button
         type="button"
-        className="ghost-button app-menu-toggle"
+        variant="quiet"
+        size="icon"
+        className="app-menu-toggle"
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={t("play.menu.label")}
@@ -80,7 +83,7 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
         onClick={() => setOpen((value) => !value)}
       >
         ≡
-      </button>
+      </Button>
       {open ? (
         <div className="app-menu-pop" role="menu" aria-label={t("play.menu.label")}>
           {rows.map((row, index) => (
@@ -88,25 +91,27 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
               {index === firstKeeper ? (
                 <p className="app-menu-section">{t("play.menu.keeperSection")}</p>
               ) : null}
-              <button
+              <Button
                 type="button"
                 role="menuitem"
+                variant="quiet"
                 className="app-menu-row"
                 onClick={() => (row.action ? row.action() : row.screen ? go(row.screen) : null)}
               >
                 {t(`play.menu.${row.key}`)}
-              </button>
+              </Button>
             </div>
           ))}
           <div className="app-menu-quit">
-            <button
+            <Button
               type="button"
               role="menuitem"
+              variant="quiet"
               className="app-menu-row"
               onClick={() => void quitTable()}
             >
               {t("connect.disconnect")}
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}

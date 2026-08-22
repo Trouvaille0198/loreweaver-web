@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { stripControlChars } from "@loreweaver/protocol"
+import { Button } from "../../components/ui"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
@@ -114,16 +115,16 @@ function OnboardingBanner({ onNavigate }: { onNavigate: (screen: PlayScreen) => 
       <p className="menu-onboarding-title">{t("play.onboarding.title")}</p>
       <p className="menu-onboarding-hint">{t("play.onboarding.hint")}</p>
       <div className="menu-onboarding-actions">
-        <button type="button" className="primary-button" onClick={() => onNavigate("keeperSettings")}>
+        <Button type="button" variant="primary" onClick={() => onNavigate("keeperSettings")}>
           {t("play.onboarding.importModule")}
-        </button>
-        <button type="button" className="ghost-button" onClick={() => onNavigate("keeperSettings")}>
+        </Button>
+        <Button type="button" variant="quiet" onClick={() => onNavigate("keeperSettings")}>
           {t("play.onboarding.invite")}
-        </button>
+        </Button>
         {hasDemo ? (
-          <button type="button" className="ghost-button" onClick={startDemo}>
+          <Button type="button" variant="quiet" onClick={startDemo}>
             {t("play.onboarding.sample")}
-          </button>
+          </Button>
         ) : null}
       </div>
     </section>
@@ -205,16 +206,18 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
           <StatusPill />
           <PanelMenu />
           <div className="session-more" ref={moreRef}>
-            <button
+            <Button
               type="button"
-              className="ghost-button session-more-toggle"
+              variant="quiet"
+              size="icon"
+              className="session-more-toggle"
               aria-expanded={moreOpen}
               aria-haspopup="menu"
               aria-label={t("session.moreAria")}
               onClick={() => setMoreOpen((open) => !open)}
             >
               ⋯
-            </button>
+            </Button>
             {moreOpen ? (
               <div className="session-more-pop" role="menu" aria-label={t("session.moreAria")}>
                 <div className="session-more-row session-more-status">
@@ -239,15 +242,16 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
         <TurnStatus />
         <NarrativeLog />
         <div className="input-dock">
-          <button
+          <Button
             type="button"
-            className="ghost-button desk-toggle"
+            variant="quiet"
+            className="desk-toggle"
             aria-expanded={deskOpen}
             aria-controls="session-desk"
             onClick={toggleDesk}
           >
             {t("session.deskToggle")}
-          </button>
+          </Button>
           <InputBox />
         </div>
       </div>
@@ -263,9 +267,9 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
           <span className="desk-drawer-grip" aria-hidden="true" />
           <div className="desk-drawer-title-row">
             <span className="desk-drawer-title">{t("session.deskTitle")}</span>
-            <button type="button" className="ghost-button desk-close" onClick={closeDesk}>
+            <Button type="button" size="sm" variant="quiet" className="desk-close" onClick={closeDesk}>
               {t("session.deskClose")}
-            </button>
+            </Button>
           </div>
         </div>
         {/* The desk column: every card is a draggable slot — grab a card's

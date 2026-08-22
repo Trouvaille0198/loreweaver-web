@@ -1,12 +1,12 @@
-import { useState, type KeyboardEvent } from "react"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Button } from "../../../components/ui"
 import KeysScreen from "./KeysScreen"
 import ModelScreen from "./ModelScreen"
 import ModuleScreen from "./ModuleScreen"
 import RulesScreen from "./RulesScreen"
 import ScreenShell from "./ScreenShell"
 import SkillsScreen from "./SkillsScreen"
+import SettingsWorkspace, { type SettingsNavGroup } from "./SettingsWorkspace"
 import WorldbookScreen from "./WorldbookScreen"
 
 type KeeperSection = "keys" | "module" | "worldbook" | "rules" | "skills" | "model"
@@ -44,21 +44,30 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
     }
   }
 
-  const moveTabFocus = (event: KeyboardEvent<HTMLButtonElement>, current: KeeperSection) => {
-    const currentIndex = SECTION_KEYS.indexOf(current)
-    let nextIndex: number | null = null
-    if (event.key === "ArrowDown" || event.key === "ArrowRight")
-      nextIndex = (currentIndex + 1) % SECTION_KEYS.length
-    if (event.key === "ArrowUp" || event.key === "ArrowLeft")
-      nextIndex = (currentIndex - 1 + SECTION_KEYS.length) % SECTION_KEYS.length
-    if (event.key === "Home") nextIndex = 0
-    if (event.key === "End") nextIndex = SECTION_KEYS.length - 1
-    if (nextIndex === null) return
-    event.preventDefault()
-    const next = SECTION_KEYS[nextIndex]
-    selectSection(next)
-    requestAnimationFrame(() => document.getElementById(`keeper-tab-${next}`)?.focus())
-  }
+  const groups = useMemo<SettingsNavGroup<KeeperSection>[]>(
+    () => [
+      {
+        label: t("play.keeperSettings.roomGroup"),
+        items: [{ key: "keys", label: t("play.menu.keys"), icon: "access" }],
+      },
+      {
+        label: t("play.keeperSettings.contentGroup"),
+        items: [
+          { key: "module", label: t("play.menu.module"), icon: "module" },
+          { key: "worldbook", label: t("play.menu.worldbook"), icon: "worldbook" },
+        ],
+      },
+      {
+        label: t("play.keeperSettings.systemGroup"),
+        items: [
+          { key: "rules", label: t("play.menu.rules"), icon: "rules" },
+          { key: "skills", label: t("play.menu.skills"), icon: "skills" },
+          { key: "model", label: t("play.menu.model"), icon: "model" },
+        ],
+      },
+    ],
+    [t],
+  )
 
   const content = (() => {
     switch (section) {
@@ -87,37 +96,20 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
 
   return (
     <ScreenShell title={t("play.menu.keeperSettings")} onBack={onBack} showAdminError wide>
-      <div className="keeper-settings-layout">
-        <nav className="keeper-settings-nav" aria-label={t("play.menu.keeperSettings")}>
-          <div role="tablist" aria-orientation="vertical">
-            {SECTION_KEYS.map((key) => (
-              <Button
-                key={key}
-                type="button"
-                role="tab"
-                id={`keeper-tab-${key}`}
-                aria-controls="keeper-settings-panel"
-                aria-selected={section === key}
-                tabIndex={section === key ? 0 : -1}
-                className={section === key ? "keeper-settings-tab is-selected" : "keeper-settings-tab"}
-                variant="quiet"
-                onClick={() => selectSection(key)}
-                onKeyDown={(event) => moveTabFocus(event, key)}
-              >
-                {t(`play.menu.${key}`)}
-              </Button>
-            ))}
-          </div>
-        </nav>
-        <section
-          id="keeper-settings-panel"
-          className="keeper-settings-detail"
-          role="tabpanel"
-          aria-labelledby={`keeper-tab-${section}`}
-        >
+      <SettingsWorkspace
+        ariaLabel={t("play.menu.keeperSettings")}
+        active={section}
+        groups={groups}
+        idPrefix="keeper-settings"
+        onSelect={selectSection}
+      >
+        <div className="keeper-settings-detail">
+          <header className="keeper-settings-panel-head">
+            <h3>{t(`play.menu.${section}`)}</h3>
+          </header>
           {content}
-        </section>
-      </div>
+        </div>
+      </SettingsWorkspace>
     </ScreenShell>
   )
 }

@@ -18,6 +18,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { stripControlChars, type UiManifestPanel } from "@loreweaver/protocol"
+import { Button } from "../../../components/ui"
 import { isTauri, transportSend } from "../../../lib/transport"
 import { useSessionStore } from "../../../store/session"
 import { subscribePanelEvents } from "../../../store/panels"
@@ -155,9 +156,9 @@ function Tier2NativeFrame({ panel }: { panel: UiManifestPanel }) {
       <div className="panel-frame-error">
         <p className="panel-frame-error-line" role="alert">
           {t("panels.assetError")}
-          <button type="button" className="ghost-button" onClick={() => setAttempt((n) => n + 1)}>
+          <Button type="button" size="sm" variant="quiet" onClick={() => setAttempt((n) => n + 1)}>
             {t("panels.retry")}
-          </button>
+          </Button>
         </p>
         <PanelFallback panel={panel} />
       </div>
@@ -176,9 +177,9 @@ function Tier2NativeFrame({ panel }: { panel: UiManifestPanel }) {
               {t("panels.crashDetail", { message: stripControlChars(crash) })}
             </span>
           ) : null}
-          <button type="button" className="ghost-button" onClick={() => setAttempt((n) => n + 1)}>
+          <Button type="button" size="sm" variant="quiet" onClick={() => setAttempt((n) => n + 1)}>
             {t("panels.retry")}
-          </button>
+          </Button>
         </p>
       ) : null}
       {src ? (

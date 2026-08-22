@@ -14,6 +14,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "../../components/ui"
 import { useConnectionStore } from "../../store/connection"
 import { QUICK_COMMANDS, type QuickCommand } from "./commands"
 
@@ -144,8 +145,10 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
 
   return (
     <div className="quick-menu" ref={rootRef}>
-      <button
+      <Button
         type="button"
+        variant="quiet"
+        size="icon"
         className="quick-menu-toggle"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -155,7 +158,7 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
         onClick={toggle}
       >
         <BoltIcon />
-      </button>
+      </Button>
       {open ? (
         <div className="quick-menu-pop" role="menu" aria-label={t("session.quickCommands")}>
           <div className="quick-menu-search">
@@ -185,10 +188,11 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
                     {labelOf("keeper")}
                   </div>
                 ) : row && pick !== null ? (
-                  <button
+                  <Button
                     key={row.word}
                     type="button"
                     role="menuitem"
+                    variant="quiet"
                     className={`quick-menu-row${pick === active ? " is-active" : ""}`}
                     onMouseDown={(e) => e.preventDefault()}
                     onMouseEnter={() => setActive(pick)}
@@ -199,7 +203,7 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
                   >
                     <span className="quick-menu-line">{row.line.trim()}</span>
                     <span className="quick-menu-label">{labelOf(row.word)}</span>
-                  </button>
+                  </Button>
                 ) : null,
               )}
             </div>

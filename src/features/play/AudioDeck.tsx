@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { AudioLayer } from "@loreweaver/protocol"
+import { Button } from "../../components/ui"
 import { assetFetch, assetReadBase64 } from "./panels/assets"
 import { AUDIO_LAYERS, effectiveVolume, useAudioStore, type LayerState } from "../../store/audio"
 import { transportSend } from "../../lib/transport"
@@ -182,25 +183,30 @@ function KeeperControls() {
           <input type="checkbox" checked={loop} onChange={(e) => setLoopOverride(e.target.checked)} />
           {t("play.audio.keeperLoop")}
         </label>
-        <button
+        <Button
           type="button"
-          className="primary-button"
+          variant="primary"
           disabled={choice === ""}
           onClick={() => run(playCommand(layer, choice, { loop: loopOverride ?? undefined }))}
         >
           {t("play.audio.keeperPlay")}
-        </button>
+        </Button>
       </div>
       <div className="dialog-row">
-        <button type="button" className="ghost-button" onClick={() => run(transportCommand(layer, "pause"))}>
+        <Button type="button" size="sm" variant="quiet" onClick={() => run(transportCommand(layer, "pause"))}>
           {t("play.audio.keeperPause")}
-        </button>
-        <button type="button" className="ghost-button" onClick={() => run(transportCommand(layer, "resume"))}>
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="quiet"
+          onClick={() => run(transportCommand(layer, "resume"))}
+        >
           {t("play.audio.keeperResume")}
-        </button>
-        <button type="button" className="ghost-button" onClick={() => run(transportCommand(layer, "stop"))}>
+        </Button>
+        <Button type="button" size="sm" variant="quiet" onClick={() => run(transportCommand(layer, "stop"))}>
           {t("play.audio.keeperStop")}
-        </button>
+        </Button>
         <input
           className="audio-gain"
           type="range"
@@ -222,14 +228,14 @@ function KeeperControls() {
             spellCheck={false}
           />
         </label>
-        <button
+        <Button
           type="button"
-          className="ghost-button"
+          variant="quiet"
           disabled={packId.trim() === ""}
           onClick={() => run(importPackAudioCommand(packId))}
         >
           {t("play.audio.keeperImportRun")}
-        </button>
+        </Button>
       </div>
       <p className="studio-hint">{t("play.audio.keeperHint")}</p>
     </div>
@@ -272,9 +278,9 @@ export default function AudioDeck() {
         // there no sound" is otherwise unanswerable from inside the app.
         <p className="studio-notice" role="status">
           {t("play.audio.unlockHint")}{" "}
-          <button type="button" className="primary-button" onClick={() => unlock()}>
+          <Button type="button" size="sm" variant="primary" onClick={() => unlock()}>
             {t("play.audio.unlock")}
-          </button>
+          </Button>
         </p>
       ) : null}
       {AUDIO_LAYERS.map((name) => (

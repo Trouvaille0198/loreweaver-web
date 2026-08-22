@@ -4,6 +4,7 @@
 // defensible, and blocks-only mode lives one click away in the panels menu.
 
 import { useTranslation } from "react-i18next"
+import { Button } from "../../../components/ui"
 import { useConnectionStore } from "../../../store/connection"
 import { usePanelsStore } from "../../../store/panels"
 import { tier2FootprintBytes } from "./assets"
@@ -20,9 +21,9 @@ export default function PanelNotice() {
   return (
     <div className="panel-notice" role="status">
       <span className="panel-notice-text">{t("panels.notice", { n: manifest.length, mb })}</span>
-      <button type="button" className="ghost-button" onClick={() => markNoticeSeen(room)}>
+      <Button type="button" size="sm" variant="quiet" onClick={() => markNoticeSeen(room)}>
         {t("panels.noticeOk")}
-      </button>
+      </Button>
     </div>
   )
 }
