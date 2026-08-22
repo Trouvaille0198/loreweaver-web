@@ -41,7 +41,8 @@ export default function InputBox() {
   //     whitespace-delimited token gets token-list or dice-grammar
   //     suggestions (`.r 3` → `d`, `.r 3d6` → `kh`/`kl`, `.pc ` → `list`…).
   const hints = useMemo<Hint[]>(() => {
-    if (!(text.startsWith(".") || text.startsWith("/"))) return []
+    // The engine's command prefixes: ".", "。" (zh full stop) and "/".
+    if (!(text.startsWith(".") || text.startsWith("。") || text.startsWith("/"))) return []
     const body = text.slice(1)
     const spaceAt = body.indexOf(" ")
     if (spaceAt < 0) {

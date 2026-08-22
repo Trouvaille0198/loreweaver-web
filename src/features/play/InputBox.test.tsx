@@ -199,7 +199,8 @@ describe("InputBox quick commands sub-menus", () => {
     const field = screen.getByRole("textbox")
     await user.type(field, ".r")
     // No highlight yet — Enter would send, Tab takes the first row. Walk
-    // down past the aliases (rd, rh…) to .ra.
+    // down past the dice family (roll, rd, rh) to .ra.
+    await user.keyboard("{ArrowDown}")
     await user.keyboard("{ArrowDown}")
     await user.keyboard("{ArrowDown}")
     await user.keyboard("{ArrowDown}")
