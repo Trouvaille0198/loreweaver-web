@@ -43,11 +43,16 @@
 
   --ink: var(--lw-fg);
   --ink-dim: var(--lw-dim);
-  --ink-faint: color-mix(in srgb, var(--lw-dim) 65%, var(--lw-bg) 35%);
+  /* 80% dim keeps faint a visible step below dim while staying legible for
+     the 10-11px captions that use it (65% measured ≈2.6:1 on lamplight). */
+  --ink-faint: color-mix(in srgb, var(--lw-dim) 80%, var(--lw-bg) 20%);
 
   --accent: var(--lw-accent);
   --accent-strong: color-mix(in srgb, var(--lw-accent) 70%, var(--lw-fg) 30%);
   --accent-ink: var(--lw-bg);
+  /* Ink that reads on the ok-green fill — same derivation as --accent-ink:
+     every palette's bg contrasts with its ok token. */
+  --ok-ink: var(--lw-bg);
 
   --danger: var(--lw-fumble);
   --warn: var(--lw-fail);
@@ -499,7 +504,9 @@ body {
 .app-menu-section {
   margin: 8px 0 2px;
   padding: 0 10px;
-  color: var(--lw-fumble);
+  /* The system tone, same as the quick palette's keeper zone — a quiet rail
+     label, not the fumble red it used to borrow (danger has its own meaning). */
+  color: var(--lw-system);
   font-size: 12px;
   letter-spacing: 0.05em;
 }
@@ -578,6 +585,9 @@ body {
 .narrative-log {
   flex: 1;
   overflow-y: auto;
+  /* Streaming entries make the scrollbar appear and disappear; a stable
+     gutter keeps the text column from shifting sideways mid-stream. */
+  scrollbar-gutter: stable;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -689,8 +699,19 @@ body {
 .entry-body h1,
 .entry-body h2,
 .entry-body h3 {
-  font-size: 1.1em;
   margin: 0.6em 0 0.3em;
+}
+
+.entry-body h1 {
+  font-size: 1.3em;
+}
+
+.entry-body h2 {
+  font-size: 1.15em;
+}
+
+.entry-body h3 {
+  font-size: 1.05em;
 }
 
 .entry-body table {
@@ -777,7 +798,7 @@ body {
 .rank-crit {
   --rank-color: var(--rank-crit);
   font-weight: 700;
-  text-shadow: 0 0 14px rgba(232, 191, 89, 0.35);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--rank-crit) 35%, transparent);
 }
 
 /* A line this client sent, waiting for the table to reflect it back. */
@@ -857,6 +878,11 @@ body {
   .stream-cursor,
   .status-dot {
     animation: none;
+  }
+
+  /* The phone desk drawer slides in; reduced motion shows it in place. */
+  .session .desk-pane {
+    transition: none;
   }
 }
 
@@ -1047,8 +1073,9 @@ body {
   padding-top: 10px;
 }
 
-/* Rows: the command-hint anatomy (mono line, dim label) and the app-wide
-   selection — the TUI's inverted cursor, solid brass. */
+/* Rows: the command-hint anatomy (mono line, dim label) in the app's quiet
+   floating-layer language — dim raised block on hover, a soft accent border
+   marking the keyboard-active row. No loud inverted fill (fb3e062). */
 .quick-menu-row {
   display: flex;
   align-items: center;
@@ -1056,19 +1083,25 @@ body {
   width: 100%;
   text-align: left;
   background: none;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 7px 10px;
   cursor: pointer;
   color: var(--ink);
   font: 13px/1.3 var(--font-ui);
+  transition:
+    background-color 90ms ease,
+    border-color 90ms ease;
 }
 
 .quick-menu-row:hover,
-.quick-menu-row:focus-visible,
 .quick-menu-row.is-active {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--bg-inset);
+  border-color: var(--border-soft);
+}
+
+.quick-menu-row.is-active {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .quick-menu-line {
@@ -1079,12 +1112,6 @@ body {
   white-space: nowrap;
 }
 
-.quick-menu-row:hover .quick-menu-line,
-.quick-menu-row:focus-visible .quick-menu-line,
-.quick-menu-row.is-active .quick-menu-line {
-  color: var(--accent-ink);
-}
-
 .quick-menu-label {
   flex: 1;
   min-width: 0;
@@ -1093,12 +1120,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.quick-menu-row:hover .quick-menu-label,
-.quick-menu-row:focus-visible .quick-menu-label,
-.quick-menu-row.is-active .quick-menu-label {
-  color: var(--accent-ink);
 }
 
 .quick-menu-empty {
@@ -1172,9 +1193,9 @@ body {
 }
 
 /* Header buttons sit on the right where the grip hint appears — nudge them
-   over while the desk is sortable so nothing overlaps. */
+   past the grip's full hit area (right 6px + 18px wide) so nothing overlaps. */
 .desk-sortable .desk-title > button {
-  margin-right: 16px;
+  margin-right: 24px;
 }
 
 /* The dragged card stays solid and lifts above the stack — a soft shadow plus
@@ -1368,7 +1389,9 @@ body {
 
 .meter {
   display: grid;
-  grid-template-columns: 42px 1fr auto;
+  /* Label column sizes to its content (with a floor for the bar) — a fixed
+     42px truncated longer labels in the character screen. */
+  grid-template-columns: auto minmax(40px, 1fr) auto;
   align-items: center;
   gap: 8px;
   font-size: 12px;
@@ -1376,6 +1399,10 @@ body {
 
 .meter-label {
   color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 9ch;
 }
 
 .meter-track {
@@ -1429,7 +1456,7 @@ body {
 
 .chip-ai {
   color: var(--rank-extreme);
-  border-color: rgba(100, 169, 217, 0.4);
+  border-color: color-mix(in srgb, var(--rank-extreme) 40%, transparent);
 }
 
 .chip-effect {
@@ -1565,22 +1592,22 @@ body {
 
 .badge-info {
   color: var(--rank-extreme);
-  border-color: rgba(100, 169, 217, 0.4);
+  border-color: color-mix(in srgb, var(--rank-extreme) 40%, transparent);
 }
 
 .badge-warn {
   color: var(--warn);
-  border-color: rgba(224, 180, 92, 0.4);
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
 }
 
 .badge-danger {
   color: var(--danger);
-  border-color: rgba(224, 87, 79, 0.4);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
 .chip-on {
   color: var(--ok);
-  border-color: rgba(127, 209, 168, 0.4);
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
 }
 
 .chip-off {
@@ -1824,42 +1851,9 @@ body {
   color: var(--ink-dim);
 }
 
-/* ---- Studio (card forge) ---- */
-
-.studio {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.studio-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--border-soft);
-  flex-wrap: wrap;
-}
-
-.studio-project-select {
-  background: var(--bg-inset);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 5px 8px;
-  font: inherit;
-  max-width: 220px;
-}
-
-.studio-issues {
-  font-size: 12px;
-  color: var(--ok);
-}
-
-.studio-issues.has-issues {
-  color: var(--warn);
-}
+/* ---- Shared hint / notice / row primitives ----
+   These three started in the studio forge but the play screens now lean on
+   them everywhere (audio/media decks, room lifecycle, screen forms). */
 
 .studio-notice {
   margin: 0;
@@ -1867,32 +1861,6 @@ body {
   font-size: 12px;
   color: var(--ink-dim);
   border-bottom: 1px solid var(--border-soft);
-}
-
-.studio-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 8px 16px 0;
-}
-
-.studio-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.studio-empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.studio-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 860px;
 }
 
 .studio-hint {
@@ -1910,150 +1878,6 @@ body {
   font-size: 12px;
 }
 
-.studio input,
-.studio textarea,
-.studio select {
-  background: var(--bg-inset);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 7px 9px;
-  font: 13px/1.4 var(--font-ui);
-  resize: vertical;
-}
-
-.studio input:focus,
-.studio textarea:focus,
-.studio select:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.var-editor {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.var-editor-grid,
-.wb-trigger-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  align-items: end;
-}
-
-.field-wide {
-  grid-column: 1 / -1;
-}
-
-.var-remove {
-  justify-self: start;
-}
-
-.issue-list {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--danger);
-  font-size: 12px;
-}
-
-.wb-layout {
-  display: flex;
-  gap: 16px;
-  min-height: 0;
-  height: 100%;
-}
-
-.wb-list {
-  width: 220px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.wb-list ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
-}
-
-.wb-item {
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: var(--ink-dim);
-  font: 13px/1.4 var(--font-ui);
-  padding: 6px 9px;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wb-item:hover {
-  color: var(--ink);
-}
-
-.wb-item.active {
-  color: var(--accent-strong);
-  border-color: var(--border);
-  background: var(--bg-inset);
-}
-
-.wb-item.disabled {
-  text-decoration: line-through;
-  opacity: 0.6;
-}
-
-.wb-detail {
-  flex: 1;
-  min-width: 0;
-}
-
-.wb-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 760px;
-}
-
-.wb-flag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.flag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--ink-dim);
-}
-
-.hooks-form {
-  height: 100%;
-}
-
-.hooks-editor {
-  flex: 1;
-  min-height: 320px;
-  font: 13px/1.5 var(--font-mono) !important;
-  white-space: pre;
-}
-
 /* ---- Shared buttons / fields introduced with the split-era forge ---- */
 
 .primary-button {
@@ -2061,8 +1885,7 @@ body {
   border: 1px solid var(--accent);
   border-radius: 6px;
   color: var(--accent-ink);
-  font: 12px/1 var(--font-ui);
-  font-weight: 600;
+  font: 600 13px/1 var(--font-ui);
   padding: 6px 12px;
   cursor: pointer;
 }
@@ -2077,60 +1900,11 @@ body {
   cursor: not-allowed;
 }
 
-.link-button {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font: inherit;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-}
-
 .field-narrow {
   max-width: 120px;
 }
 
-/* ---- Dialogs (AI panel / settings) ---- */
-
-.dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgb(0 0 0 / 55%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 40;
-}
-
-.dialog {
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px;
-  width: min(480px, calc(100vw - 48px));
-  max-height: calc(100vh - 64px);
-  max-height: calc(100dvh - 64px);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.dialog-wide {
-  width: min(640px, calc(100vw - 48px));
-}
-
-.dialog h2 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.dialog h3 {
-  margin: 0;
-  font-size: 14px;
-}
-
+/* A generic horizontal form row (media deck, room lifecycle, model screen). */
 .dialog-row {
   display: flex;
   gap: 8px;
@@ -2143,186 +1917,10 @@ body {
   min-width: 160px;
 }
 
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.dialog .studio-notice {
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-}
-
 /* Raw model output on its way to the validation gate — monospace tail-follow,
    deliberately not parsed or styled as content. */
-.ai-stream-preview {
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 12px;
-  margin: 0;
-  max-height: 14rem;
-  overflow-y: auto;
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: var(--ink-dim);
-}
-
-.ai-problems,
-.ai-draft-summary {
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ai-draft-description {
-  margin: 0;
-  font-size: 13px;
-  color: var(--ink-dim);
-  max-height: 120px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-}
-
-/* ---- Card split view ---- */
-
-.split-view {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.split-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-  justify-content: center;
-}
-
-.split-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.split-file {
-  font: 12px/1 var(--font-mono);
-  color: var(--ink-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 32ch;
-}
-
-.split-badge {
-  font-size: 11px;
-  color: var(--ink-dim);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px 8px;
-  white-space: nowrap;
-}
-
-.split-badge.world {
-  color: var(--warn);
-  border-color: var(--warn);
-}
-
-.split-badge.ok {
-  color: var(--ok);
-  border-color: var(--ok);
-}
-
-.split-counts {
-  font-size: 12px;
-  color: var(--ink-faint);
-}
 
 .split-error {
-  color: var(--danger);
-}
-
-.split-columns {
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px;
-  padding: 16px;
-  overflow-y: auto;
-  align-items: start;
-}
-
-@media (max-width: 900px) {
-  .split-columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.split-column {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.split-column-head h2 {
-  margin: 0 0 4px;
-  font-size: 15px;
-}
-
-.split-column h3 {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--ink-dim);
-}
-
-.split-code {
-  background: var(--bg-inset);
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  padding: 10px;
-  margin: 0;
-  font: 12px/1.5 var(--font-mono);
-  color: var(--ink-dim);
-  overflow-x: auto;
-  max-height: 240px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.split-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-/* --- Panels editor (the pack wizard's panels step) --------------------------
-   Forms, not a YAML box: one card per panel, one row per block, and every field
-   laid out on the same two-column grid so a long block list stays scannable. */
-.panels-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.panels-error {
   color: var(--danger);
 }
 
@@ -2338,269 +1936,13 @@ body {
   min-width: 0;
 }
 
-.panel-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.panel-field-name {
-  flex: 0 0 96px;
-  font-size: 12px;
-  color: var(--ink-dim);
-}
-
-.panel-field input,
-.panel-field select,
-.panel-field textarea {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.panel-blocks {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.panel-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border-left: 2px solid var(--border-soft);
-  padding-left: 10px;
-  min-width: 0;
-}
-
-.panel-block-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.panel-block-head select {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-/* A `choices` block's option rows: one bordered row per option, its label
-   fields on the line below the id / sends pair. */
-.panel-options {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.panel-option-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.panel-option {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px 8px;
-  border: 1px dashed var(--border-soft);
-  border-radius: 6px;
-  min-width: 0;
-}
-
-.pack-file-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: min(560px, 100%);
-}
-
-.pack-file-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  padding: 6px 10px;
-}
-
-.pack-file-list li span:first-child {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pack-panel {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 980px;
-}
-
-.pack-item {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.pack-item-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pack-item-name {
-  font: 13px/1.3 var(--font-mono);
-  flex: 1;
-  min-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+/* A labeled checkbox row (room lifecycle's backup options). */
 .pack-checkbox {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   color: var(--ink-dim);
-}
-
-.pack-promote-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.pack-promote-card h3 {
-  margin: 0;
-  font-size: 14px;
-}
-
-.pack-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
-  align-items: start;
-}
-
-.pack-path {
-  font: 12px/1.3 var(--font-mono);
-  color: var(--ink-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 40ch;
-}
-
-.pack-command {
-  max-height: none;
-}
-
-.pack-terminal {
-  max-height: 260px;
-}
-
-.pack-output {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.pack-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border-soft);
-}
-
-/* M19 presentation kit stage (演出资料包). */
-
-.pack-kit-empty h3 {
-  margin: 0;
-  font-size: 14px;
-}
-
-.pack-doctrine {
-  margin: 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--ink-dim);
-  max-width: 70ch;
-}
-
-.pack-gen-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 10px;
-}
-
-.pack-gen-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 10px 12px;
-  cursor: pointer;
-}
-
-.pack-gen-card.active {
-  border-color: var(--accent-strong);
-  background: var(--bg-raised);
-}
-
-.pack-gen-label {
-  font-size: 13px;
-  color: var(--ink);
-}
-
-.pack-ref-thumb {
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid var(--border-soft);
-  flex-shrink: 0;
-}
-
-.pack-ref-empty {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-style: dashed;
-  color: var(--ink-faint);
-  font-size: 10px;
-}
-
-.pack-warn {
-  color: var(--warn);
 }
 
 /* Keeper view: unexposed module variables (state frames with hidden:true). */
@@ -2626,10 +1968,9 @@ body {
 
 /* Panel cards share the desk-card look; the deck sits above the state panel. */
 
-.panel-deck {
-  margin-bottom: 12px;
-}
-
+/* Panel cards share the desk-card look; the deck sits above the state panel.
+   The deck and tray are always slots inside a .desk-stack whose 12px gap owns
+   the vertical rhythm — extra margin-bottoms here doubled the gap to 24px. */
 /* The module-panel header IS the .desk-title look — no tighter gap override,
    so every card header in the desk column has the same rhythm. */
 
@@ -2669,9 +2010,8 @@ body {
 .panel-tray {
   display: flex;
   flex-direction: column;
-  /* Same 12px rhythm as .desk-stack / .panel-deck above it. */
+  /* Same 12px rhythm as .desk-stack above it. */
   gap: 12px;
-  margin-bottom: 12px;
 }
 
 .panel-tray .panel-card {
@@ -2760,9 +2100,9 @@ body {
   width: 300px;
   background: var(--bg-raised);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.4);
 }
 
 .panel-menu-list {
@@ -2925,7 +2265,7 @@ body {
   gap: 8px;
   margin-bottom: 18px;
   padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .play-server-info h3 {
@@ -3101,7 +2441,7 @@ body {
 
 .host-local-button {
   background: var(--ok);
-  color: var(--accent-ink);
+  color: var(--ok-ink);
   border: none;
   border-radius: 6px;
   padding: 10px 18px;
@@ -3146,38 +2486,8 @@ body {
   font: 12px/1.4 var(--font-mono);
 }
 
-/* --- undo toast ---------------------------------------------------------- */
-
 /* App-root, above everything: the delete it offers to take back may have
    happened in a view the author has since left. */
-.undo-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 20px;
-  transform: translateX(-50%);
-  z-index: 60;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  max-width: min(560px, calc(100vw - 32px));
-  padding: 8px 10px 8px 14px;
-  font-size: 12px;
-  color: var(--ink);
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 6px 24px rgb(0 0 0 / 45%);
-}
-
-.undo-toast > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.undo-toast button {
-  flex: none;
-}
 
 /* --- room lifecycle ------------------------------------------------------ */
 
@@ -3359,11 +2669,6 @@ body {
   color: var(--ink-dim);
 }
 
-.audio-gain {
-  flex: none;
-  width: 72px;
-}
-
 .member-avatar {
   flex: none;
   width: 20px;
@@ -3386,13 +2691,6 @@ body {
   padding: 1px 7px;
   font-size: 12px;
   line-height: 1.5;
-}
-
-.var-set-input {
-  flex: 1;
-  min-width: 0;
-  padding: 1px 6px;
-  font: 11px/1.6 var(--font-mono);
 }
 
 /* ============================================================
@@ -3541,15 +2839,16 @@ input[type="checkbox"]:hover {
 input[type="checkbox"]:checked {
   background-color: var(--accent);
   border-color: var(--accent);
-  /* A theme-colored checkmark: the SVG's `fill` is replaced by the element's
-     background — mask the glyph, tint with currentColor via background-image
-     is not possible, so the check is drawn as a mask over the accent fill. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%2317130e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-}
-
-/* Paperwhite flips the palette: the same check needs the light ink there. */
-html[data-lw-theme="paperwhite"] input[type="checkbox"]:checked {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%23f5f0e6' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  /* The check glyph is a data URI stroked with a literal color (data URIs
+     can't read custom properties). applyTheme() injects a themed copy as
+     --checkbox-check; this static lamplight-stroked copy is the first-paint
+     fallback before JS runs. The stroke color is the palette's bg token —
+     it reads on the accent fill for every palette (light accent + dark bg,
+     or paperwhite's dark accent + light bg). */
+  background-image: var(
+    --checkbox-check,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%2317130e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+  );
 }
 
 input[type="checkbox"]:focus-visible {
@@ -3573,8 +2872,7 @@ input[type="radio"] {
 .audio-mute,
 .pack-checkbox,
 .play-skill-row,
-.panel-menu-setting,
-.flag {
+.panel-menu-setting {
   cursor: pointer;
 }
 
@@ -3602,8 +2900,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 9px;
-  height: 9px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   background: var(--accent);
   border: 2px solid var(--bg);
@@ -3700,8 +2998,10 @@ code {
 .ghost-button,
 .choice-button,
 .icon-button,
-.wb-item,
-.app-menu-row {
+.app-menu-row,
+.connect-form button,
+.input-box button,
+.host-local-button {
   transition:
     background-color 120ms ease,
     border-color 120ms ease,
@@ -3713,14 +3013,20 @@ code {
 .primary-button:hover:not(:disabled),
 .ghost-button:hover:not(:disabled),
 .choice-button:hover:not(:disabled),
-.icon-button:hover:not(:disabled) {
+.icon-button:hover:not(:disabled),
+.connect-form button:hover:not(:disabled),
+.input-box button:hover:not(:disabled),
+.host-local-button:hover:not(:disabled) {
   filter: brightness(1.12);
 }
 
 .primary-button:active:not(:disabled),
 .ghost-button:active:not(:disabled),
 .choice-button:active:not(:disabled),
-.icon-button:active:not(:disabled) {
+.icon-button:active:not(:disabled),
+.connect-form button:active:not(:disabled),
+.input-box button:active:not(:disabled),
+.host-local-button:active:not(:disabled) {
   transform: translateY(1px);
 }
 
@@ -3729,8 +3035,10 @@ code {
   .ghost-button,
   .choice-button,
   .icon-button,
-  .wb-item,
-  .app-menu-row {
+  .app-menu-row,
+  .connect-form button,
+  .input-box button,
+  .host-local-button {
     transition: none;
   }
 }
@@ -3738,7 +3046,6 @@ code {
 /* ---- dialogs & the connect card: depth, not flat panels ---- */
 
 .connect-card,
-.dialog,
 .panel-modal {
   box-shadow: 0 18px 48px rgb(0 0 0 / 0.35);
 }
@@ -3827,7 +3134,9 @@ code {
 /* ---- empty-table onboarding card ---- */
 
 .menu-onboarding {
-  margin: 10px 0 14px;
+  /* margin-block only: .onboarding-banner (same element) owns the horizontal
+     auto-centering — a full `margin` shorthand here would clobber it. */
+  margin-block: 10px 14px;
   padding: 12px 14px;
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
@@ -3886,8 +3195,8 @@ code {
     bottom: 0;
     z-index: 35;
     width: auto;
-    max-height: 70dvh;
     max-height: 70vh;
+    max-height: 70dvh;
     padding: 6px 16px calc(14px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
     border-radius: 16px 16px 0 0;
@@ -3970,9 +3279,6 @@ code {
   .input-dock .input-box {
     padding: 0;
     border-top: none;
-  }
-
-  .input-dock .input-box {
     gap: 6px;
   }
 
@@ -4001,8 +3307,8 @@ code {
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom));
     z-index: 40;
-    max-height: 75dvh;
     max-height: 75vh;
+    max-height: 75dvh;
     width: auto;
     min-width: 0;
     border-radius: 14px;
@@ -4035,8 +3341,8 @@ code {
   }
 
   .session-more-toggle {
-    min-width: 36px;
-    padding: 0 8px;
+    min-width: 44px;
+    padding: 0 10px;
     font-size: 15px;
     line-height: 1;
   }
@@ -4048,8 +3354,8 @@ code {
     bottom: calc(12px + env(safe-area-inset-bottom));
     left: 12px;
     z-index: 30;
-    max-height: 75dvh;
     max-height: 75vh;
+    max-height: 75dvh;
     width: auto;
     background: var(--bg-raised);
     border: 1px solid var(--border);
@@ -4200,6 +3506,8 @@ code {
   /* The player's own bubble sits on the right, like a sent message. */
   .speaker-player .entry-body {
     background: color-mix(in srgb, var(--lw-player) 12%, var(--bg-raised));
+    margin-left: auto;
+    max-width: 85%;
   }
 
   /* Pending echoes and dice lines stay flat lines, not bubbles. */
@@ -4230,13 +3538,8 @@ code {
   }
 
   /* --- dialogs & modals: edge-to-edge --- */
-  .dialog-backdrop,
   .panel-modal-backdrop {
     padding: 12px;
-  }
-
-  .dialog {
-    width: min(480px, calc(100vw - 24px));
   }
 
   .panel-menu-pop {
@@ -4269,25 +3572,34 @@ code {
     font-size: 16px;
   }
 
-  /* --- touch targets: at least thumb-sized --- */
+  /* --- touch targets: at least thumb-sized (44px) --- */
   .ghost-button,
   .primary-button,
   .icon-button,
   .app-menu-row,
+  .app-menu-toggle,
   .input-box button,
   .connect-form button {
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .input-box input {
     min-height: 44px;
   }
 
-  /* --- wide tables scroll sideways instead of squashing --- */
+  /* --- wide tables scroll sideways instead of squashing; the key column
+     wraps so a base64 blob doesn't drag the scroll out to screen-widths --- */
   .play-table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
+  }
+
+  .play-table td:first-child,
+  .play-table th:first-child {
+    white-space: normal;
+    word-break: break-all;
+    max-width: 24ch;
   }
 }
 

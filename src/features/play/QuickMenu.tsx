@@ -226,10 +226,14 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
               aria-label={t("session.quickMenuSearch")}
               spellCheck={false}
             />
-            {display.length === 0 ? (
-              <p className="quick-menu-empty">{t("session.quickMenuEmpty")}</p>
-            ) : (
-              display.map(({ row, pick }) =>
+          </div>
+          {/* The scrollable body is its own container — the search field above
+             must stay a one-line inset chrome, never wrapping the rows. */}
+          {display.length === 0 ? (
+            <p className="quick-menu-empty">{t("session.quickMenuEmpty")}</p>
+          ) : (
+            <div className="quick-menu-list" role="presentation">
+              {display.map(({ row, pick }) =>
                 row.header ? (
                   <div
                     key={`section-${row.labelKey}`}
@@ -252,9 +256,9 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
                     <span className="quick-menu-label">{labelOf(row.labelKey)}</span>
                   </button>
                 ),
-              )
-            )}
-          </div>
+              )}
+            </div>
+          )}
           <footer className="quick-menu-foot">
             <span>{t("session.quickMenuHint")}</span>
           </footer>

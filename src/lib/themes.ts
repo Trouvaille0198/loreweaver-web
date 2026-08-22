@@ -182,4 +182,15 @@ export function applyTheme(name: ThemeName): void {
   root.dataset.lwTheme = name
   // Paperwhite is the one light palette: flip the UA hint so form controls follow.
   root.style.colorScheme = name === "paperwhite" ? "light" : "dark"
+  // The checkbox checkmark is a data-URI glyph, and data URIs cannot read CSS
+  // variables — so the theme injects its own copy, stroked with the palette's
+  // bg. Every current palette pairs a light accent with a dark bg (or, for
+  // paperwhite, a dark accent with a light bg), so the bg token always reads
+  // on the accent fill. styles.css keeps a static lamplight copy as the
+  // first-paint fallback.
+  const check = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='${encodeURIComponent(palette.bg)}' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`
+  root.style.setProperty("--checkbox-check", check)
+  // The mobile browser chrome tint follows the palette (index.html ships the
+  // lamplight value for first paint).
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", palette.bg)
 }

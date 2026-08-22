@@ -39,6 +39,9 @@ void i18n.use(initReactI18next).init({
 
 i18n.on("languageChanged", (lng) => {
   if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, lng)
+  // Keep <html lang> in step with the UI language so screen readers pronounce
+  // the right language (index.html ships lang="en" regardless of the start locale).
+  if (typeof document !== "undefined") document.documentElement.lang = lng
 })
 
 export default i18n
