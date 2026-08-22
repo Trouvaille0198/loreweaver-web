@@ -35,12 +35,6 @@ export default defineConfig({
               test: /node_modules[\\/](react-markdown|remark-|rehype-|unified|micromark|mdast-|hast-|unist-)/,
               priority: 20,
             },
-            {
-              name: "vendor",
-              test: /node_modules/,
-              maxSize: 300_000,
-              priority: 10,
-            },
           ],
         },
       },

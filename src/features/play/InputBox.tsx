@@ -105,23 +105,30 @@ export default function InputBox() {
     inputRef.current?.focus()
   }
 
+  const moveHint = (direction: 1 | -1) => {
+    setHintIndex((value) => {
+      if (direction === 1) return (value + 1) % hints.length
+      return value <= 0 ? hints.length - 1 : value - 1
+    })
+  }
+
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    // ↑/↓ walk the completion dropdown while it is open (and take priority
-    // over the send history); Tab inserts the highlighted row — or the first.
+    // Arrow keys and Tab only move the selection. Enter applies the selected
+    // completion, keeping selection and application as two distinct actions.
     if (hints.length > 0) {
       if (event.key === "ArrowDown") {
         event.preventDefault()
-        setHintIndex((value) => (value + 1) % hints.length)
+        moveHint(1)
         return
       }
       if (event.key === "ArrowUp") {
         event.preventDefault()
-        setHintIndex((value) => (value <= 0 ? hints.length - 1 : value - 1))
+        moveHint(-1)
         return
       }
       if (event.key === "Tab") {
         event.preventDefault()
-        applyHint(activeHint ?? hints[0])
+        moveHint(event.shiftKey ? -1 : 1)
         return
       }
       if (event.key === "Enter" && activeHint) {

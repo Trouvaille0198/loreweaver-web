@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { PROTOCOL_VERSION, type WelcomeFrame } from "@loreweaver/protocol"
 import { hasManualDisconnect, sanitizeTicket, useConnectionStore } from "./connection"
+import { useAdminStore } from "./admin"
 
 const WELCOME: WelcomeFrame = {
   type: "welcome",
@@ -19,6 +20,7 @@ function reset() {
     welcome: null,
     refused: false,
   })
+  useAdminStore.getState().reset()
   sessionStorage.clear()
 }
 
@@ -60,6 +62,27 @@ describe("connection store", () => {
     handle({ kind: "frame", frame: "not even an object" })
     handle({ kind: "frame", frame: { type: "state" } })
     expect(useConnectionStore.getState().welcome).toBeNull()
+  })
+  it("routes additive room configuration frames to the admin store", () => {
+    const frame = {
+      type: "admin_room_config",
+      room: "table",
+      active: true,
+      providers: ["deepseek::deepseek-chat"],
+      saved_providers: ["deepseek::deepseek-chat"],
+      stored: {
+        main: "deepseek::deepseek-chat",
+        scribe: "",
+        director: "",
+        imagegen: "",
+        scribe_enabled: true,
+        director_enabled: true,
+      },
+    }
+
+    useConnectionStore.getState().handleEvent({ kind: "frame", frame })
+
+    expect(useAdminStore.getState()).toMatchObject({ roomConfig: frame, busy: false, lastError: null })
   })
 
   it("keeps the fatal error and clears the welcome when going offline", () => {

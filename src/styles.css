@@ -1618,6 +1618,12 @@ body {
   border-color: color-mix(in srgb, var(--ok) 40%, transparent);
 }
 
+.chip-warn {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 50%, transparent);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+
 .chip-off {
   color: var(--ink-faint);
 }
@@ -2487,6 +2493,27 @@ body {
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   background: var(--bg-inset);
+}
+
+.module-source-editor {
+  display: block;
+  width: 100%;
+  min-height: min(62vh, 720px);
+  margin-top: 16px;
+  padding: 16px;
+  resize: vertical;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-inset);
+  color: var(--ink);
+  font: 12px/1.5 var(--font-mono);
+}
+
+.module-detail-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .module-delete-disabled {

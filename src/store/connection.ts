@@ -8,22 +8,23 @@ import {
   type TransportEvent,
   type TransportStatus,
 } from "../lib/transport"
+import { isAdditiveServerFrame } from "../lib/webTransport"
 import { useAdminStore } from "./admin"
 import { useAudioStore } from "./audio"
 import { useMediaStore } from "./media"
 import { useSessionStore } from "./session"
 
 /**
-* "The operator left on purpose." Mobile browsers freeze or discard background
-* tabs (iOS especially): when the page comes back, the JS heap is gone and the
-* connect form is showing again even though the connection was fine. The app
-* re-joins automatically with the remembered connection on `visibilitychange` /
-* `pageshow` — but NOT when the player deliberately disconnected (or the
-* handshake was refused). This sessionStorage flag is that distinction: set on
-* explicit disconnect/refusal, cleared on any fresh connect. It lives in
-* sessionStorage (not the store) because the whole store is what a discarded
-* tab loses — the flag must survive the very page death it answers to.
-*/
+ * "The operator left on purpose." Mobile browsers freeze or discard background
+ * tabs (iOS especially): when the page comes back, the JS heap is gone and the
+ * connect form is showing again even though the connection was fine. The app
+ * re-joins automatically with the remembered connection on `visibilitychange` /
+ * `pageshow` — but NOT when the player deliberately disconnected (or the
+ * handshake was refused). This sessionStorage flag is that distinction: set on
+ * explicit disconnect/refusal, cleared on any fresh connect. It lives in
+ * sessionStorage (not the store) because the whole store is what a discarded
+ * tab loses — the flag must survive the very page death it answers to.
+ */
 const MANUAL_DISCONNECT_KEY = "loreweaver-web.manual-disconnect"
 
 function markManualDisconnect(): void {
@@ -156,6 +157,10 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     // not droppable, though: the bridge has already marked the session settled
     // (which disarms its join deadline) and announced `online`, so staying
     // quiet would leave the app online with no room and nothing to show for it.
+    if (isAdditiveServerFrame(frame)) {
+      useAdminStore.getState().ingest(frame)
+      return
+    }
     if (!isServerFrame(frame)) {
       if (looksLikeWelcome(frame)) refuse(set, get, i18n.t("connect.welcomeUnreadable"))
       return

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseAdditiveServerFrame } from "./webTransport"
+import { isAdditiveServerFrame, parseAdditiveServerFrame } from "./webTransport"
 
 describe("additive web transport frames", () => {
   it("accepts a complete room model configuration", () => {
@@ -22,6 +22,26 @@ describe("additive web transport frames", () => {
     )
 
     expect(frame).toMatchObject({ type: "admin_room_config", room: "table", active: true })
+  })
+
+  it("recognizes the parsed frame before shared protocol validation", () => {
+    const frame = {
+      type: "admin_room_config",
+      room: "table",
+      active: true,
+      providers: [],
+      saved_providers: [],
+      stored: {
+        main: "",
+        scribe: "",
+        director: "",
+        imagegen: "",
+        scribe_enabled: true,
+        director_enabled: true,
+      },
+    }
+
+    expect(isAdditiveServerFrame(frame)).toBe(true)
   })
 
   it("rejects malformed or unrelated frames", () => {

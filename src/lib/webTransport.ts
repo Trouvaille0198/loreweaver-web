@@ -32,17 +32,10 @@ function isStringArray(value: unknown): value is string[] {
 }
 
 /** Validates project-owned additive frames before they enter application state. */
-export function parseAdditiveServerFrame(data: unknown): AdminRoomConfigFrame | null {
-  if (typeof data !== "string") return null
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(data)
-  } catch {
-    return null
-  }
-  if (isServerFrame(parsed) || typeof parsed !== "object" || parsed === null) return null
-  const frame = parsed as Record<string, unknown>
-  if (frame.type !== "admin_room_config") return null
+export function isAdditiveServerFrame(data: unknown): data is AdminRoomConfigFrame {
+  if (typeof data !== "object" || data === null) return false
+  const frame = data as Record<string, unknown>
+  if (frame.type !== "admin_room_config") return false
   const stored = frame.stored
   if (
     typeof frame.room !== "string" ||
@@ -52,20 +45,30 @@ export function parseAdditiveServerFrame(data: unknown): AdminRoomConfigFrame | 
     typeof stored !== "object" ||
     stored === null
   ) {
-    return null
+    return false
   }
   const selection = stored as Record<string, unknown>
-  if (
-    typeof selection.main !== "string" ||
-    typeof selection.scribe !== "string" ||
-    typeof selection.director !== "string" ||
-    typeof selection.imagegen !== "string" ||
-    typeof selection.scribe_enabled !== "boolean" ||
-    typeof selection.director_enabled !== "boolean"
-  ) {
+  return (
+    typeof selection.main === "string" &&
+    typeof selection.scribe === "string" &&
+    typeof selection.director === "string" &&
+    typeof selection.imagegen === "string" &&
+    typeof selection.scribe_enabled === "boolean" &&
+    typeof selection.director_enabled === "boolean"
+  )
+}
+
+/** Parses a project-owned additive frame omitted by the published protocol package. */
+export function parseAdditiveServerFrame(data: unknown): AdminRoomConfigFrame | null {
+  if (typeof data !== "string") return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(data)
+  } catch {
     return null
   }
-  return parsed as AdminRoomConfigFrame
+  if (isServerFrame(parsed) || !isAdditiveServerFrame(parsed)) return null
+  return parsed
 }
 
 /** A browser `WebSocket` delivers binary messages as `Blob` by default; the

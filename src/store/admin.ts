@@ -30,15 +30,19 @@ export interface ModuleSource {
   size: number
   modified: number
   current: boolean
+  importing?: boolean
 }
 
 export interface ModuleDetail {
   name: string
+  title: string
   size: number
   modified: number
   content: string
   current: boolean
   status: string
+  importStatus?: string
+  importing?: boolean
   pool: {
     keeper?: Record<string, unknown>
     player?: Record<string, unknown>
@@ -83,7 +87,7 @@ export interface WorldbookOperation {
 }
 
 export interface ModuleOperation {
-  kind: "module_upload" | "module_bundle_upload" | "module_import" | "module_delete"
+  kind: "module_upload" | "module_update" | "module_bundle_upload" | "module_import" | "module_delete"
   ok: boolean
   name: string
   error?: string
@@ -120,7 +124,8 @@ function isModuleSource(value: unknown): value is ModuleSource {
 }
 
 function parseModuleSources(value: unknown): ModuleSource[] {
-  return Array.isArray(value) ? value.filter(isModuleSource) : []
+  if (!Array.isArray(value)) return []
+  return value.filter(isModuleSource).map((item) => (item.importing ? { ...item, importing: true } : item))
 }
 
 function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | null {
@@ -152,11 +157,14 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
   }
   return {
     name: value.name,
+    title: typeof value.title === "string" && value.title.trim() ? value.title : value.name,
     size: value.size,
     modified: value.modified,
     content: value.content,
     current: value.current,
     status: typeof value.status === "string" ? value.status : "",
+    importStatus: typeof value.import_status === "string" ? value.import_status : "",
+    importing: value.importing === true,
     pool,
   }
 }
@@ -251,6 +259,7 @@ interface AdminState {
   moduleSources: ModuleSource[]
   moduleDetail: ModuleDetail | null
   moduleOperation: ModuleOperation | null
+  moduleImporting: string | null
   worldbookSources: WorldbookSource[]
   worldbookDetail: WorldbookDetail | null
   worldbookOperation: WorldbookOperation | null
@@ -319,6 +328,7 @@ interface AdminState {
   listModules: () => void
   getModuleDetail: (name: string) => void
   uploadModule: (name: string, content: string) => void
+  updateModule: (name: string, content: string) => void
   uploadModuleBundle: (name: string, archive: string) => void
   importModule: (name: string) => void
   deleteModule: (name: string) => void
@@ -389,6 +399,7 @@ const EMPTY = {
   moduleSources: [],
   moduleDetail: null,
   moduleOperation: null,
+  moduleImporting: null,
   worldbookSources: [],
   worldbookDetail: null,
   worldbookOperation: null,
@@ -453,6 +464,7 @@ export const useAdminStore = create<AdminState>((set) => ({
                 receipt: typeof detail.receipt === "string" ? detail.receipt : undefined,
                 status: typeof detail.status === "string" ? detail.status : undefined,
               },
+              ...(kind === "module_import" ? { moduleImporting: null } : {}),
               busy: false,
               lastError: frame.ok ? null : frame.error || "Module operation failed.",
             })
@@ -499,7 +511,7 @@ export const useAdminStore = create<AdminState>((set) => ({
         set({ serverUpdate: frame, busy: false })
         return true
       case "admin_error":
-        set({ lastError: frame.message ?? frame.code, busy: false })
+        set({ lastError: frame.message ?? frame.code, busy: false, moduleImporting: null })
         return true
       default:
         return false
@@ -612,8 +624,18 @@ export const useAdminStore = create<AdminState>((set) => ({
   listModules: () => moduleAction("module_list", {}, set),
   getModuleDetail: (name) => moduleAction("module_detail", { name }, set),
   uploadModule: (name, content) => moduleAction("module_upload", { name, content }, set),
+  updateModule: (name, content) => moduleAction("module_update", { name, content }, set),
   uploadModuleBundle: (name, archive) => moduleAction("module_bundle_upload", { name, archive }, set),
-  importModule: (name) => moduleAction("module_import", { name }, set),
+  importModule: (name) => {
+    set({ busy: true, lastError: null, moduleImporting: name })
+    transportSend({
+      type: "admin_generate",
+      kind: "module_import",
+      description: JSON.stringify({ name, locale: i18n.resolvedLanguage === "zh" ? "zh" : "en" }),
+    } as unknown as ClientFrame).catch((cause) => {
+      set({ busy: false, moduleImporting: null, lastError: cause instanceof Error ? cause.message : String(cause) })
+    })
+  },
   deleteModule: (name) => moduleAction("module_delete", { name }, set),
   exportRoom: (room, path) => send({ type: "admin_export_room", room, ...(path ? { path } : {}) }, set),
   importRoom: (path) => send({ type: "admin_import_room", path }, set),

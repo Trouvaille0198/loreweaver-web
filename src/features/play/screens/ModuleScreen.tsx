@@ -20,14 +20,26 @@ function itemName(value: unknown): string | null {
   return typeof name === "string" ? name : null
 }
 
-function displayValue(value: unknown): string {
+function localizePoolValue(value: unknown, t: (key: string, options?: { defaultValue?: string }) => string): unknown {
+  if (Array.isArray(value)) return value.map((item) => localizePoolValue(item, t))
+  if (typeof value !== "object" || value === null) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([key, nested]) => [
+      t(`play.module.poolFields.${key}`, { defaultValue: key }),
+      localizePoolValue(nested, t),
+    ]),
+  )
+}
+
+function displayValue(value: unknown, t: (key: string, options?: { defaultValue?: string }) => string): string {
   if (typeof value === "string") return value
   if (value === null || value === undefined) return ""
-  return JSON.stringify(value, null, 2)
+  return JSON.stringify(localizePoolValue(value, t), null, 2)
 }
 type SendStatus = "idle" | "sent" | "failed"
 
 export function KnowledgePool({ detail, label }: { detail: ModuleDetail; label: string }) {
+  const { t } = useTranslation()
   const pool = detail.pool?.keeper
   if (!pool) return null
   return (
@@ -37,18 +49,18 @@ export function KnowledgePool({ detail, label }: { detail: ModuleDetail; label: 
         if (value === null || value === undefined || value === "") return null
         return (
           <article className="module-knowledge-block" key={category}>
-            <h5>{category}</h5>
+            <h5>{t(`play.module.poolCategories.${category}`, { defaultValue: category })}</h5>
             {Array.isArray(value) ? (
               <ul className="play-list">
                 {value.map((item, index) => (
                   <li key={`${category}-${index}`}>
                     {itemName(item) ? <strong>{itemName(item)}</strong> : null}
-                    <pre>{displayValue(item)}</pre>
+                    <pre>{displayValue(item, t)}</pre>
                   </li>
                 ))}
               </ul>
             ) : (
-              <pre>{displayValue(value)}</pre>
+              <pre>{displayValue(value, t)}</pre>
             )}
           </article>
         )
@@ -65,6 +77,8 @@ function ModuleDetailPanel({
   readyLabel,
   bytesLabel,
   importLabel,
+  importingLabel,
+  importing: importingOverride,
   deleteLabel,
   onImport,
   onDelete,
@@ -76,34 +90,40 @@ function ModuleDetailPanel({
   readyLabel: string
   bytesLabel: string
   importLabel: string
+  importingLabel: string
+  importing?: boolean
   deleteLabel: string
   onImport: () => void
   onDelete: () => void
 }) {
+  const importing = detail.importing || importingOverride === true
   return (
     <section className="play-form module-detail-card">
       <div className="module-detail-head">
         <div>
-          <h3 className="play-form-title">{detail.name}</h3>
+            <h3 className="play-form-title">{detail.title || detail.name}</h3>
           <p className="studio-hint">
             {detail.current
-              ? `${detail.status || readyLabel} · ${detail.size} ${bytesLabel}`
+              ? `${importing ? importingLabel : detail.status || readyLabel} · ${detail.size} ${bytesLabel}`
               : `${detail.size} ${bytesLabel}`}
           </p>
         </div>
         <div className="module-detail-actions">
-          {detail.current ? <span className="chip chip-on">{currentLabel}</span> : null}
-          <Button type="button" size="sm" variant="quiet" onClick={onImport}>
+          {detail.current && !importing ? <span className="chip chip-on">{currentLabel}</span> : null}
+          {importing ? <span className="chip chip-warn">{importingLabel}</span> : null}
+          <Button type="button" size="sm" variant="quiet" onClick={onImport} disabled={importing}>
             {importLabel}
           </Button>
-          {!detail.current ? (
+          {!detail.current && !importing ? (
             <Button type="button" size="sm" variant="danger" onClick={onDelete}>
               {deleteLabel}
             </Button>
           ) : null}
         </div>
       </div>
-      {detail.current ? <KnowledgePool detail={detail} label={poolLabel} /> : null}
+      {importing ? (
+        <p className="connect-warning" role="status">{importingLabel}</p>
+      ) : detail.current ? <KnowledgePool detail={detail} label={poolLabel} /> : null}
       <details open>
         <summary>{sourceLabel}</summary>
         <pre className="module-source-preview">{detail.content}</pre>
@@ -148,6 +168,7 @@ export default function ModuleScreen({
   const { t } = useTranslation()
   const generated = useAdminStore((s) => s.generated)
   const busy = useAdminStore((s) => s.busy)
+  const moduleImporting = useAdminStore((s) => s.moduleImporting)
   const generateModule = useAdminStore((s) => s.generateModule)
   const sources = useAdminStore((s) => s.moduleSources)
   const detail = useAdminStore((s) => s.moduleDetail)
@@ -296,10 +317,19 @@ export default function ModuleScreen({
                 <span className="studio-hint">
                   {source.size} {t("play.module.bytes")}
                 </span>
-                {source.current ? <span className="chip chip-on">{t("play.module.current")}</span> : null}
+                {source.current && !source.importing ? <span className="chip chip-on">{t("play.module.current")}</span> : null}
+                {source.importing || moduleImporting === source.name ? (
+                  <span className="chip chip-warn">{t("play.module.importing")}</span>
+                ) : null}
               </Button>
               <div className="module-source-actions">
-                <Button type="button" size="sm" variant="quiet" onClick={() => importModule(source.name)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="quiet"
+                  onClick={() => importModule(source.name)}
+                  disabled={busy || source.importing || moduleImporting === source.name}
+                >
                   {t("play.module.importRoom")}
                 </Button>
               </div>
@@ -313,6 +343,8 @@ export default function ModuleScreen({
         <ModuleDetailPanel
           detail={detail}
           poolLabel={t("play.module.knowledgePool")}
+          importingLabel={t("play.module.importing")}
+          importing={Boolean(moduleImporting)}
           sourceLabel={t("play.module.sourceText")}
           currentLabel={t("play.module.current")}
           readyLabel={t("play.module.ready")}

@@ -79,15 +79,18 @@ describe("InputBox", () => {
     expect(screen.getByRole("textbox")).toBeDisabled()
   })
 
-  it("offers command hints while typing a dot command, and Tab completes", async () => {
+  it("uses Tab to select a command hint and Enter to apply it", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
     const field = screen.getByRole("textbox")
     await user.type(field, ".ra")
-    // The hint list is a listbox with matching commands; `.ra` matches only `ra`.
+    // The hint list is a listbox with matching commands; `.ra` is the first match.
     const listbox = screen.getByRole("listbox", { name: "Commands" })
     expect(listbox).toBeInTheDocument()
     await user.keyboard("{Tab}")
+    expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true")
+    expect(field).toHaveValue(".ra")
+    await user.keyboard("{Enter}")
     expect(field).toHaveValue(".ra ")
     // Hints disappear once the line no longer looks like a command prefix.
     await user.type(field, "spot hidden{Enter}")
@@ -198,7 +201,7 @@ describe("InputBox quick commands sub-menus", () => {
     render(<InputBox />)
     const field = screen.getByRole("textbox")
     await user.type(field, ".r")
-    // No highlight yet — Enter would send, Tab takes the first row. Walk
+    // No highlight yet — Enter would send. Walk
     // down past the dice family (roll, rd, rh) to .ra.
     await user.keyboard("{ArrowDown}")
     await user.keyboard("{ArrowDown}")
@@ -210,6 +213,29 @@ describe("InputBox quick commands sub-menus", () => {
     expect(transportSend).not.toHaveBeenCalled()
   })
 
+  it("cycles command hints with Tab and Shift+Tab without applying them", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+    await user.type(field, ".r")
+    const options = screen.getAllByRole("option")
+
+    await user.keyboard("{Tab}")
+    expect(options[0]).toHaveAttribute("aria-selected", "true")
+    expect(field).toHaveValue(".r")
+
+    await user.keyboard("{Tab}")
+    expect(options[1]).toHaveAttribute("aria-selected", "true")
+    await user.keyboard("{Shift>}{Tab}{/Shift}")
+    expect(options[0]).toHaveAttribute("aria-selected", "true")
+    await user.keyboard("{Shift>}{Tab}{/Shift}")
+    expect(options.at(-1)).toHaveAttribute("aria-selected", "true")
+    await user.keyboard("{Tab}{Enter}")
+
+    expect(field).toHaveValue(".r ")
+    expect(transportSend).not.toHaveBeenCalled()
+  })
+
   it("suggests only dice-grammar glue, never concrete numbers", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
@@ -217,13 +243,13 @@ describe("InputBox quick commands sub-menus", () => {
     // Cold start: nothing — the numbers are the player's to type.
     await user.type(field, ".r ")
     expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
-    // `3` → `d`; Tab appends it. The die size is typed, not suggested.
+    // `3` → `d`; Tab selects it and Enter appends it. The die size is typed, not suggested.
     await user.type(field, "3")
-    await user.keyboard("{Tab}")
+    await user.keyboard("{Tab}{Enter}")
     expect(field).toHaveValue(".r 3d")
     await user.type(field, "6")
-    // `3d6` → kh/kl/+/-; the first Tab appends kh. The keep count is typed.
-    await user.keyboard("{Tab}")
+    // `3d6` → kh/kl/+/-; Tab selects kh and Enter appends it. The keep count is typed.
+    await user.keyboard("{Tab}{Enter}")
     expect(field).toHaveValue(".r 3d6kh")
     await user.type(field, "3")
     expect(field).toHaveValue(".r 3d6kh3")
@@ -247,7 +273,7 @@ describe("InputBox quick commands sub-menus", () => {
     await user.type(field, "d6")
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["/Sanity check (alias)"])
     // After the slash the same digit → d rule applies; complete → silence.
-    await user.keyboard("{Tab}")
+    await user.keyboard("{Tab}{Enter}")
     await user.type(field, "1")
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["dSanity check (alias)"])
     await user.type(field, "d6")

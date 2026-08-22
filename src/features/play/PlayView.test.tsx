@@ -354,6 +354,7 @@ describe("PlayView", () => {
     useAdminStore.setState({
       moduleDetail: {
         name: "scene.md",
+        title: "Foggy scene",
         size: 42,
         modified: 1,
         content: "A foggy scene",
@@ -376,6 +377,7 @@ describe("PlayView", () => {
     useAdminStore.setState({
       moduleDetail: {
         name: "scene.md",
+        title: "Foggy scene",
         size: 42,
         modified: 1,
         content: "A foggy scene",

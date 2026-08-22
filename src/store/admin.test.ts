@@ -194,7 +194,23 @@ describe("admin model requests", () => {
 
     expect(sent).toEqual([
       { type: "admin_generate", kind: "module_list", description: "{}" },
-      { type: "admin_generate", kind: "module_import", description: JSON.stringify({ name: "scene.md" }) },
+      {
+        type: "admin_generate",
+        kind: "module_import",
+        description: JSON.stringify({ name: "scene.md", locale: "en" }),
+      },
+    ])
+  })
+
+  it("sends edited module source through the generated reply lane", () => {
+    useAdminStore.getState().updateModule("scene.md", "# Revised scene")
+
+    expect(sent).toEqual([
+      {
+        type: "admin_generate",
+        kind: "module_update",
+        description: JSON.stringify({ name: "scene.md", content: "# Revised scene" }),
+      },
     ])
   })
   it("requests and selects a worldbook for the current room", () => {
@@ -287,6 +303,7 @@ describe("admin model requests", () => {
       error: "",
       detail: JSON.stringify({
         name: "scene.md",
+        title: "Scene",
         size: 12,
         modified: 100,
         content: "# Scene",
