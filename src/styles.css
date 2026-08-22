@@ -948,6 +948,9 @@ body {
 .quick-menu {
   position: relative;
   flex-shrink: 0;
+  /* A flex container so the toggle stretches to the input row's full height
+     (the stretch on .input-box reaches this wrapper, not the button inside). */
+  display: flex;
 }
 
 /* The toggle is one of the input row's own controls: the same inset field
