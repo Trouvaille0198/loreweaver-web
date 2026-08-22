@@ -14,3 +14,6 @@ src-tauri/gen/schemas/
 
 # 运行时数据（bind mount 的目标：钥匙/战役库/媒体/备份——绝不进 git）
 data/
+
+# compose 环境覆盖（本机 uid 映射——data/ 属主是 1000，VPS 是 1001）
+.env
