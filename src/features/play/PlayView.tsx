@@ -164,19 +164,28 @@ function HostLocalBlock() {
 
 function OnlineView() {
   const { t } = useTranslation()
-  const room = useConnectionStore((s) => s.welcome?.room ?? "")
-  const role = useConnectionStore((s) => s.welcome?.you.role ?? "player")
+  const welcome = useConnectionStore((s) => s.welcome)
+  const room = welcome?.room ?? ""
+  const role = welcome?.you.role
   const isKeeper = role === "keeper"
+  const roleKnown = welcome !== null
 
   // The hash is the primary source of truth; a tab-local fallback covers
-  // embedded hosts that discard fragments during a reload.
+  // embedded hosts that discard fragments during a reload. Do not classify an
+  // unknown role as a player: the status event can arrive just before welcome
+  // during a cold reconnect.
   const [screen, setScreen] = useState<PlayScreen>(() => {
     const initial = screenFromInitialLoad()
-    const safeScreen = isKeeperScreen(initial) && !isKeeper ? "game" : initial
+    const safeScreen = roleKnown && isKeeperScreen(initial) && !isKeeper ? "game" : initial
     storeScreen(safeScreen)
     return safeScreen
   })
 
+  useEffect(() => {
+    if (!roleKnown || isKeeper || !isKeeperScreen(screen)) return
+    storeScreen("game")
+    setScreen("game")
+  }, [isKeeper, roleKnown, screen])
   // The browser tab says where you are: `牌桌 · room` or `Settings · room`.
   useEffect(() => {
     const title = `${t(`play.title.${screen}`)} · ${room}`
@@ -206,14 +215,15 @@ function OnlineView() {
     const onHash = () => {
       const next = screenFromHash()
       // Same guard as the initializer: a player must never land on a keeper
-      // screen, no matter how the hash got there.
-      const safeScreen = isKeeperScreen(next) && !isKeeper ? "game" : next
+      // screen, no matter how the hash got there. Unknown role means the
+      // welcome frame has not arrived yet, not that this is a player.
+      const safeScreen = roleKnown && isKeeperScreen(next) && !isKeeper ? "game" : next
       storeScreen(safeScreen)
       setScreen(safeScreen)
     }
     window.addEventListener("hashchange", onHash)
     return () => window.removeEventListener("hashchange", onHash)
-  }, [isKeeper])
+  }, [isKeeper, roleKnown])
 
   // Escape is overlay-owned: the desk drawer, the ⋯ popup, the app menu and
   // the panel modal each close on their own Esc. There is deliberately NO

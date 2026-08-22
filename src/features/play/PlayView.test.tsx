@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { WelcomeFrame } from "@loreweaver/protocol"
@@ -311,6 +311,18 @@ describe("PlayView", () => {
     window.history.replaceState(null, "", "#/game")
     window.dispatchEvent(new HashChangeEvent("hashchange"))
     expect(await screen.findByLabelText("Speak, act, or type a command…")).toBeInTheDocument()
+  })
+
+  it("does not discard a keeper screen when welcome arrives after online status", async () => {
+    useConnectionStore.setState({ status: "online", welcome: null })
+    window.history.replaceState(null, "", "#/module")
+    render(<PlayView />)
+
+    expect(screen.getByRole("heading", { name: "Import module" })).toBeInTheDocument()
+    act(() => {
+      useConnectionStore.setState({ welcome: WELCOME })
+    })
+    expect(screen.getByRole("heading", { name: "Import module" })).toBeInTheDocument()
   })
 
   it("sends a player on a stale keeper hash to the game instead", async () => {
