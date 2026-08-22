@@ -2,7 +2,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import "../../i18n"
 import { PENDING_ECHO_TIMEOUT_MS, useSessionStore } from "../../store/session"
-import NarrativeLog, { ECHO_SWEEP_MS } from "./NarrativeLog"
+import NarrativeLog from "./NarrativeLog"
+import { ECHO_SWEEP_MS } from "./timing"
 
 const ingest = useSessionStore.getState().ingest
 

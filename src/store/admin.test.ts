@@ -83,6 +83,69 @@ describe("admin model requests", () => {
       { type: "admin_generate", kind: "module_import", description: JSON.stringify({ name: "scene.md" }) },
     ])
   })
+  it("requests and selects a worldbook for the current room", () => {
+    useAdminStore.getState().listWorldbooks()
+    useAdminStore.getState().selectWorldbook("north.json")
+
+    expect(sent).toEqual([
+      { type: "admin_generate", kind: "worldbook_list", description: "{}" },
+      {
+        type: "admin_generate",
+        kind: "worldbook_select",
+        description: JSON.stringify({ name: "north.json" }),
+      },
+    ])
+  })
+
+  it("parses worldbook source lists and entry details", () => {
+    const ingest = useAdminStore.getState().ingest
+    ingest({
+      type: "admin_generated",
+      kind: "worldbook_list",
+      ok: true,
+      id: "north.json",
+      name: "north.json",
+      error: "",
+      detail: JSON.stringify({
+        worldbooks: [{ name: "north.json", size: 42, modified: 100, current: true }],
+      }),
+    } as never)
+    expect(useAdminStore.getState().worldbookSources).toEqual([
+      {
+        name: "north.json",
+        size: 42,
+        modified: 100,
+        current: true,
+        attached: false,
+        origin: "library",
+        entryCount: 0,
+        sourceKind: "file",
+      },
+    ])
+
+    ingest({
+      type: "admin_generated",
+      kind: "worldbook_detail",
+      ok: true,
+      id: "north.json",
+      name: "north.json",
+      error: "",
+      detail: JSON.stringify({
+        name: "north.json",
+        size: 42,
+        modified: 100,
+        content: '{"entries":[]}',
+        current: true,
+        entry_count: 1,
+        entries: [{ title: "North", content: "Cold coast.", keys: ["north"], secret: false }],
+      }),
+    } as never)
+    expect(useAdminStore.getState().worldbookDetail).toMatchObject({
+      name: "north.json",
+      entryCount: 1,
+      entries: [{ title: "North", content: "Cold coast." }],
+    })
+  })
 
   it("parses module source lists and keeper details from generated replies", () => {
     const ingest = useAdminStore.getState().ingest

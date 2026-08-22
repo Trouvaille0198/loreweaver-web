@@ -22,18 +22,28 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1 className="app-title">{t("app.title")}</h1>
+        <div className="app-brand">
+          <span className="app-mark" aria-hidden="true">
+            <span>LW</span>
+          </span>
+          <div className="app-brand-copy">
+            <h1 className="app-title">{t("app.title")}</h1>
+          </div>
+        </div>
         <div className="header-spacer" />
-        <select
-          className="lang-select"
-          aria-label={t("lang.label")}
-          value={i18n.resolvedLanguage}
-          onChange={(e) => void i18n.changeLanguage(e.target.value)}
-        >
-          <option value="en">English</option>
-          {/* i18n-exempt: a language is offered in its OWN name, never translated. */}
-          <option value="zh">中文</option>
-        </select>
+        <label className="app-language">
+          <span className="visually-hidden">{t("lang.label")}</span>
+          <select
+            className="lang-select"
+            aria-label={t("lang.label")}
+            value={i18n.resolvedLanguage}
+            onChange={(e) => void i18n.changeLanguage(e.target.value)}
+          >
+            <option value="en">English</option>
+            {/* i18n-exempt: a language is offered in its OWN name, never translated. */}
+            <option value="zh">中文</option>
+          </select>
+        </label>
       </header>
       <main className="app-main">
         <PlayView />

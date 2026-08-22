@@ -43,6 +43,43 @@ export interface ModuleDetail {
     player?: Record<string, unknown>
   } | null
 }
+export interface WorldbookSource {
+  name: string
+  size: number
+  modified: number
+  current: boolean
+  attached: boolean
+  origin: "library" | "room"
+  entryCount: number
+  sourceKind: "file" | "attached"
+}
+
+export interface WorldbookEntry {
+  title: string
+  content: string
+  keys: unknown
+  secret: boolean
+}
+
+export interface WorldbookDetail {
+  name: string
+  size: number
+  modified: number
+  content: string
+  current: boolean
+  attached: boolean
+  sourceKind: "file" | "attached"
+  entryCount: number
+  entries: WorldbookEntry[]
+}
+
+export interface WorldbookOperation {
+  kind: "worldbook_upload" | "worldbook_select" | "worldbook_disable"
+  ok: boolean
+  name: string
+  error?: string
+  count?: number
+}
 
 export interface ModuleOperation {
   kind: "module_upload" | "module_import" | "module_delete"
@@ -80,7 +117,6 @@ function isModuleSource(value: unknown): value is ModuleSource {
   )
 }
 
-
 function parseModuleSources(value: unknown): ModuleSource[] {
   return Array.isArray(value) ? value.filter(isModuleSource) : []
 }
@@ -102,12 +138,14 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
     const keeper = poolRecord.keeper
     const player = poolRecord.player
     pool = {
-      keeper: typeof keeper === "object" && keeper !== null && !Array.isArray(keeper)
-        ? Object.fromEntries(Object.entries(keeper))
-        : undefined,
-      player: typeof player === "object" && player !== null && !Array.isArray(player)
-        ? Object.fromEntries(Object.entries(player))
-        : undefined,
+      keeper:
+        typeof keeper === "object" && keeper !== null && !Array.isArray(keeper)
+          ? Object.fromEntries(Object.entries(keeper))
+          : undefined,
+      player:
+        typeof player === "object" && player !== null && !Array.isArray(player)
+          ? Object.fromEntries(Object.entries(player))
+          : undefined,
     }
   }
   return {
@@ -118,6 +156,79 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
     current: value.current,
     status: typeof value.status === "string" ? value.status : "",
     pool,
+  }
+}
+
+function isWorldbookSource(value: unknown): value is WorldbookSource {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "size" in value &&
+    typeof value.size === "number" &&
+    "modified" in value &&
+    typeof value.modified === "number" &&
+    "current" in value &&
+    typeof value.current === "boolean"
+  )
+}
+
+function parseWorldbookSources(value: unknown): WorldbookSource[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    if (!isWorldbookSource(item)) return []
+    const record = Object.fromEntries(Object.entries(item))
+    return [
+      {
+        name: item.name,
+        size: item.size,
+        modified: item.modified,
+        current: item.current,
+        attached: record.attached === true,
+        origin: record.origin === "room" ? "room" : "library",
+        entryCount: typeof record.entry_count === "number" ? record.entry_count : 0,
+        sourceKind: record.source_kind === "attached" ? "attached" : "file",
+      },
+    ]
+  })
+}
+
+function parseWorldbookDetailValue(value: Record<string, unknown>): WorldbookDetail | null {
+  if (
+    typeof value.name !== "string" ||
+    typeof value.size !== "number" ||
+    typeof value.modified !== "number" ||
+    typeof value.content !== "string" ||
+    typeof value.current !== "boolean"
+  ) {
+    return null
+  }
+  const rawEntries = Array.isArray(value.entries) ? value.entries : []
+  return {
+    name: value.name,
+    size: value.size,
+    modified: value.modified,
+    content: value.content,
+    current: value.current,
+    attached: value.attached === true,
+    sourceKind: value.source_kind === "attached" ? "attached" : "file",
+    entryCount: typeof value.entry_count === "number" ? value.entry_count : rawEntries.length,
+    entries: rawEntries.flatMap((entry) => {
+      if (typeof entry !== "object" || entry === null || Array.isArray(entry)) return []
+      const record = Object.fromEntries(Object.entries(entry))
+      return typeof record.title === "string" && typeof record.content === "string"
+        ? [
+            {
+              title: record.title,
+              content: record.content,
+              keys: record.keys ?? [],
+              secret: record.secret === true,
+            },
+          ]
+        : []
+    }),
   }
 }
 
@@ -137,6 +248,9 @@ interface AdminState {
   moduleSources: ModuleSource[]
   moduleDetail: ModuleDetail | null
   moduleOperation: ModuleOperation | null
+  worldbookSources: WorldbookSource[]
+  worldbookDetail: WorldbookDetail | null
+  worldbookOperation: WorldbookOperation | null
   /** The last room lifecycle result (export/import/delete/reset). It carries
    * the counts the operator needs to believe the operation happened — and, for
    * an export, the server-side path the backup landed at. */
@@ -166,13 +280,7 @@ interface AdminState {
       reasoningEffort?: string
     },
   ) => void
-  setImagegen: (
-    provider: string,
-    model: string,
-    apiKey?: string,
-    baseUrl?: string,
-    size?: string,
-  ) => void
+  setImagegen: (provider: string, model: string, apiKey?: string, baseUrl?: string, size?: string) => void
   /** Fetch the caller's room's LLM override state (admin_get_room_config reply). */
   refreshRoomConfig: () => void
   /** Pin/change the caller's room's own LLM override. Fields present in the
@@ -202,6 +310,11 @@ interface AdminState {
   uploadModule: (name: string, content: string) => void
   importModule: (name: string) => void
   deleteModule: (name: string) => void
+  listWorldbooks: () => void
+  getWorldbookDetail: (name: string) => void
+  uploadWorldbook: (name: string, content: string) => void
+  selectWorldbook: (name: string, sourceKind?: "file" | "attached") => void
+  disableWorldbook: () => void
   /** Write a room backup JSON server-side. Omitting `path` lets the server
    * choose, under `<data_dir>/room_backups/`. */
   exportRoom: (room: string, path?: string) => void
@@ -235,7 +348,11 @@ function send(frame: ClientFrame, set: (patch: Partial<AdminState>) => void): vo
   })
 }
 
-function moduleAction(kind: string, payload: Record<string, unknown>, set: (patch: Partial<AdminState>) => void): void {
+function moduleAction(
+  kind: string,
+  payload: Record<string, unknown>,
+  set: (patch: Partial<AdminState>) => void,
+): void {
   send(
     {
       type: "admin_generate",
@@ -259,6 +376,9 @@ const EMPTY = {
   moduleSources: [],
   moduleDetail: null,
   moduleOperation: null,
+  worldbookSources: [],
+  worldbookDetail: null,
+  worldbookOperation: null,
   roomOp: null,
   serverUpdate: null,
   lastError: null,
@@ -321,6 +441,36 @@ export const useAdminStore = create<AdminState>((set) => ({
           }
           return true
         }
+        if (kind.startsWith("worldbook_")) {
+          const detail = parseModuleDetail(frame)
+          if (kind === "worldbook_list") {
+            set({
+              worldbookSources: parseWorldbookSources(detail.worldbooks),
+              worldbookDetail: null,
+              busy: false,
+              lastError: null,
+            })
+          } else if (kind === "worldbook_detail") {
+            set({
+              worldbookDetail: parseWorldbookDetailValue(detail),
+              busy: false,
+              lastError: frame.ok ? null : frame.error || "Unable to read worldbook.",
+            })
+          } else {
+            set({
+              worldbookOperation: {
+                kind: kind as WorldbookOperation["kind"],
+                ok: frame.ok,
+                name: frame.name || frame.id || "",
+                error: frame.ok ? undefined : frame.error,
+                count: typeof detail.count === "number" ? detail.count : undefined,
+              },
+              busy: false,
+              lastError: frame.ok ? null : frame.error || "Worldbook operation failed.",
+            })
+          }
+          return true
+        }
         set({ generated: frame, busy: false })
         return true
       }
@@ -361,8 +511,7 @@ export const useAdminStore = create<AdminState>((set) => ({
       } as unknown as ClientFrame,
       set,
     ),
-  deleteLlm: (profileId) =>
-    send({ type: "admin_delete_llm", id: profileId } as unknown as ClientFrame, set),
+  deleteLlm: (profileId) => send({ type: "admin_delete_llm", id: profileId } as unknown as ClientFrame, set),
   setLlmLane: (lane, patch) =>
     send(
       {
@@ -402,8 +551,7 @@ export const useAdminStore = create<AdminState>((set) => ({
       set,
     ),
   // Room choices reference global LLM profiles; credentials never cross this boundary.
-  refreshRoomConfig: () =>
-    send({ type: "admin_get_room_config" } as unknown as ClientFrame, set),
+  refreshRoomConfig: () => send({ type: "admin_get_room_config" } as unknown as ClientFrame, set),
   setRoomModel: (patch) =>
     send(
       {
@@ -417,8 +565,7 @@ export const useAdminStore = create<AdminState>((set) => ({
       } as unknown as ClientFrame,
       set,
     ),
-  clearRoomModel: () =>
-    send({ type: "admin_set_room_model", clear: true } as unknown as ClientFrame, set),
+  clearRoomModel: () => send({ type: "admin_set_room_model", clear: true } as unknown as ClientFrame, set),
   listKeys: () => send({ type: "admin_list_keys" }, set),
   mintKey: (room, name, role, purpose) =>
     send({ type: "admin_mint_key", room, name, role, ...(purpose ? { purpose } : {}) }, set),
@@ -443,6 +590,12 @@ export const useAdminStore = create<AdminState>((set) => ({
   deleteRoom: (room) => send({ type: "admin_delete_room", room }, set),
   deleteRoomData: (room, backup, path) =>
     send({ type: "admin_delete_room_data", room, backup, ...(path ? { path } : {}) }, set),
+  listWorldbooks: () => moduleAction("worldbook_list", {}, set),
+  getWorldbookDetail: (name) => moduleAction("worldbook_detail", { name }, set),
+  uploadWorldbook: (name, content) => moduleAction("worldbook_upload", { name, content }, set),
+  selectWorldbook: (name, sourceKind) =>
+    moduleAction("worldbook_select", { name, ...(sourceKind ? { source_kind: sourceKind } : {}) }, set),
+  disableWorldbook: () => moduleAction("worldbook_disable", {}, set),
   updateServer: () => send({ type: "admin_update_server" }, set),
   clearMinted: () => set({ minted: null }),
   clearRoomOp: () => set({ roomOp: null, serverUpdate: null }),

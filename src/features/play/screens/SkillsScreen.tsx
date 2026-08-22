@@ -3,10 +3,17 @@
 
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
+import { EmptyState } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
-export default function SkillsScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
+export default function SkillsScreen({
+  onBack,
+  embedded = false,
+}: {
+  onBack: () => void
+  embedded?: boolean
+}) {
   const { t, i18n } = useTranslation()
   const skills = useAdminStore((s) => s.skills)
   const listSkills = useAdminStore((s) => s.listSkills)
@@ -34,7 +41,7 @@ export default function SkillsScreen({ onBack, embedded = false }: { onBack: () 
           </li>
         ))}
       </ul>
-      {skills.length === 0 ? <p className="placeholder">{t("play.skills.empty")}</p> : null}
+      {skills.length === 0 ? <EmptyState title={t("play.skills.empty")} /> : null}
     </ScreenShell>
   )
 }

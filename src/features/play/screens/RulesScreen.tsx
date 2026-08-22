@@ -3,10 +3,17 @@
 
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
+import { EmptyState } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
-export default function RulesScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
+export default function RulesScreen({
+  onBack,
+  embedded = false,
+}: {
+  onBack: () => void
+  embedded?: boolean
+}) {
   const { t } = useTranslation()
   const rules = useAdminStore((s) => s.rules)
   const listRules = useAdminStore((s) => s.listRules)
@@ -25,7 +32,7 @@ export default function RulesScreen({ onBack, embedded = false }: { onBack: () =
           </li>
         ))}
       </ul>
-      {rules.length === 0 ? <p className="placeholder">{t("play.rules.empty")}</p> : null}
+      {rules.length === 0 ? <EmptyState title={t("play.rules.empty")} /> : null}
     </ScreenShell>
   )
 }

@@ -2821,6 +2821,35 @@ body {
   opacity: 0.7;
 }
 
+.worldbook-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(55vh, 640px);
+  overflow: auto;
+}
+
+.worldbook-entry {
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-inset);
+}
+
+.worldbook-entry strong {
+  margin-right: 8px;
+}
+
+.worldbook-entry p {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}
+
+.worldbook-entry small {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink-faint);
+}
 .module-knowledge {
   display: flex;
   flex-direction: column;

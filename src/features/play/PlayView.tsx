@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { useTranslation } from "react-i18next"
+import { Button, Field, Notice, Surface } from "../../components/ui"
 import { pickDirectory } from "../../lib/native"
 import { isTauri } from "../../lib/transport"
 import { clearSavedConnect, loadSavedConnect, saveConnect } from "../../lib/savedConnect"
@@ -17,8 +18,7 @@ import SettingsScreen from "./screens/SettingsScreen"
 import SessionView from "./SessionView"
 import StatusPill from "./StatusPill"
 
-export type PlayScreen =
-  "game" | "character" | "settings" | "keeperSettings" | "moduleDetail"
+export type PlayScreen = "game" | "character" | "settings" | "keeperSettings" | "moduleDetail"
 
 /** Every play screen, keyed by the URL hash that selects it. The hash is the
  * primary source of truth for bookmarks and browser history; the tab-local
@@ -118,14 +118,16 @@ function HostLocalBlock() {
 
   return (
     <div className="host-local">
-      <button
+      <Button
         type="button"
+        variant="success"
+        size="lg"
         className="host-local-button"
         disabled={!native || phase === "starting"}
         onClick={() => void start()}
       >
         {phase === "starting" ? t("connect.hostLocal.starting") : t("connect.hostLocal.button")}
-      </button>
+      </Button>
       <p className="studio-hint">
         {native ? t("connect.hostLocal.hint") : t("connect.hostLocal.desktopOnly")}
       </p>
@@ -140,14 +142,14 @@ function HostLocalBlock() {
             onChange={(e) => setHomeOverride(e.target.value)}
           />
         </label>
-        <button
+        <Button
           type="button"
-          className="ghost-button"
+          size="sm"
           disabled={!native || phase === "starting"}
           onClick={() => void browse()}
         >
           {t("studio.ai.browse")}
-        </button>
+        </Button>
       </div>
       {phase !== "idle" && (log.length > 0 || error !== null) ? (
         <div className="host-local-log" role="log">
@@ -162,9 +164,9 @@ function HostLocalBlock() {
             </p>
           ) : null}
           {phase === "starting" ? (
-            <button type="button" className="ghost-button" onClick={() => void stop()}>
+            <Button type="button" size="sm" variant="quiet" onClick={() => void stop()}>
               {t("connect.hostLocal.cancel")}
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}
@@ -359,14 +361,17 @@ export default function PlayView() {
   // or there is nothing remembered to rejoin with.
   if (autoDial && !hasManualDisconnect() && !refused && lastError === null) {
     return (
-      <div className="play-view">
-        <section className="connect-card">
+      <div className="play-view play-view-connect">
+        <Surface className="connect-card connect-card-waiting" tone="accent">
           <header className="connect-head">
             <h2>{t("connect.title")}</h2>
             <StatusPill />
           </header>
-          <p>{t("connect.status.connecting")}</p>
-        </section>
+          <div className="connect-waiting-copy">
+            <span className="connect-loader" aria-hidden="true" />
+            <p>{t("connect.status.connecting")}</p>
+          </div>
+        </Surface>
       </div>
     )
   }
@@ -393,66 +398,83 @@ export default function PlayView() {
   }
 
   return (
-    <div className="play-view">
-      <section className="connect-card">
-        <header className="connect-head">
-          <h2>{t("connect.title")}</h2>
-          <StatusPill />
-        </header>
+    <div className="play-view play-view-connect">
+      <div className="connect-layout connect-layout-single">
+        <Surface className="connect-card" tone="accent" labelledBy="connect-title">
+          <header className="connect-head">
+            <h2 id="connect-title">{t("connect.title")}</h2>
+            <StatusPill />
+          </header>
 
-        {isTauri() ? <HostLocalBlock /> : null}
+          {isTauri() ? <HostLocalBlock /> : null}
 
-        <form className="connect-form" onSubmit={onSubmit}>
-          <label>
-            {web ? t("connect.serverUrl") : t("connect.ticket")}
-            <textarea
-              value={ticket}
-              onChange={(e) => setTicket(e.target.value)}
-              placeholder={web ? t("connect.serverUrlPlaceholder") : t("connect.ticketPlaceholder")}
-              rows={3}
-              spellCheck={false}
-              disabled={!offline}
-            />
-          </label>
-          <label>
-            {t("connect.key")}
-            <input
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              placeholder={t("connect.keyPlaceholder")}
-              spellCheck={false}
-              disabled={!offline}
-            />
-          </label>
-          <label>
-            {t("connect.name")}
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("connect.namePlaceholder")}
-              disabled={!offline}
-            />
-          </label>
-          <button type="submit" disabled={!canSubmit}>
-            {t("connect.submit")}
-          </button>
-        </form>
+          <form className="connect-form" onSubmit={onSubmit}>
+            <Field label={web ? t("connect.serverUrl") : t("connect.ticket")}>
+              {({ id, describedBy, invalid }) => (
+                <textarea
+                  id={id}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                  value={ticket}
+                  onChange={(e) => setTicket(e.target.value)}
+                  placeholder={web ? t("connect.serverUrlPlaceholder") : t("connect.ticketPlaceholder")}
+                  rows={2}
+                  spellCheck={false}
+                  disabled={!offline}
+                />
+              )}
+            </Field>
+            <Field label={t("connect.key")}>
+              {({ id, describedBy, invalid }) => (
+                <input
+                  id={id}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                  value={key}
+                  onChange={(e) => setKey(e.target.value)}
+                  placeholder={t("connect.keyPlaceholder")}
+                  spellCheck={false}
+                  disabled={!offline}
+                />
+              )}
+            </Field>
+            <Field label={t("connect.name")}>
+              {({ id, describedBy, invalid }) => (
+                <input
+                  id={id}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t("connect.namePlaceholder")}
+                  disabled={!offline}
+                />
+              )}
+            </Field>
+            <Button type="submit" variant="primary" size="lg" disabled={!canSubmit}>
+              {t("connect.submit")}
+              <span className="connect-submit-arrow" aria-hidden="true">
+                →
+              </span>
+            </Button>
+          </form>
 
-        {remembered ? (
-          <div className="connect-forget">
-            <span className="connect-forget-hint">{t("connect.remembered")}</span>
-            <button type="button" className="ghost-button" onClick={forget}>
-              {t("connect.forget")}
-            </button>
-          </div>
-        ) : null}
+          {remembered ? (
+            <div className="connect-forget">
+              <span className="connect-forget-hint">{t("connect.remembered")}</span>
+              <Button type="button" variant="quiet" size="sm" onClick={forget}>
+                {t("connect.forget")}
+              </Button>
+            </div>
+          ) : null}
 
-        {lastError ? (
-          <p className="connect-error" role="alert">
-            {lastError}
-          </p>
-        ) : null}
-      </section>
+          {lastError ? (
+            <Notice tone="danger" role="alert">
+              {lastError}
+            </Notice>
+          ) : null}
+        </Surface>
+      </div>
     </div>
   )
 }

@@ -9,6 +9,7 @@
 
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "../../../components/ui"
 import { themeOrder, themes } from "../../../lib/themes"
 import { MAX_NARRATIVE_WIDTH, MIN_NARRATIVE_WIDTH, useAppStore } from "../../../store/app"
 import { useConnectionStore } from "../../../store/connection"
@@ -46,9 +47,9 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
               <p className="studio-hint">{t("play.settings.ticketHint")}</p>
               <div className="play-ticket-row">
                 <code className="play-minted-key">{p2pTicket}</code>
-                <button type="button" className="ghost-button" onClick={() => void copyTicket()}>
+                <Button type="button" size="sm" onClick={() => void copyTicket()}>
                   {ticketCopied ? t("play.keys.copied") : t("play.keys.copy")}
-                </button>
+                </Button>
               </div>
             </>
           ) : null}
@@ -70,6 +71,7 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
               key={name}
               type="button"
               className={name === theme ? "play-theme-card active" : "play-theme-card"}
+              aria-pressed={name === theme}
               style={{ background: palette.bg, color: palette.fg, borderColor: palette.border }}
               onClick={() => setTheme(name)}
             >

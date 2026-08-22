@@ -172,10 +172,10 @@
       "keeperSection": "── Keeper ──",
       "keys": "Rooms & invites",
       "module": "Import module",
+      "worldbook": "Worldbooks",
       "rules": "Rule systems",
       "skills": "KP skills",
-      "model": "Model / config",
-      "quit": "Disconnect"
+      "model": "Model / config"
     },
     "keys": {
       "name": "Name",
@@ -275,6 +275,23 @@
       "imported": "Imported into this room.",
       "saved": "Saved",
       "operationFailed": "Module operation failed."
+    },
+    "worldbook": {
+      "library": "Worldbook library",
+      "libraryHint": "Upload and inspect worldbooks, then choose the one this room actually uses. Switching keeps previous sources available.",
+      "addSource": "Add worldbook",
+      "noSources": "No JSON worldbook sources are available.",
+      "current": "Used by this room",
+      "attached": "Attached source",
+      "librarySource": "Library source",
+      "selected": "Selected",
+      "useRoom": "Use in this room",
+      "disable": "Disable worldbook",
+      "entries": "Entries",
+      "raw": "View raw JSON",
+      "uploaded": "Worldbook saved.",
+      "selectedNotice": "This room's worldbook was changed.",
+      "operationFailed": "Worldbook operation failed."
     },
     "pack": {
       "title": "Install a community pack",

@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Button, Notice } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 import { KnowledgePool } from "./ModuleScreen"
 
-export default function ModuleDetailScreen({ moduleName, onBack }: { moduleName: string; onBack: () => void }) {
+export default function ModuleDetailScreen({
+  moduleName,
+  onBack,
+}: {
+  moduleName: string
+  onBack: () => void
+}) {
   const { t } = useTranslation()
   const detail = useAdminStore((s) => s.moduleDetail)
   const operation = useAdminStore((s) => s.moduleOperation)
@@ -50,27 +57,42 @@ export default function ModuleDetailScreen({ moduleName, onBack }: { moduleName:
                 </p>
               </div>
               <div className="module-detail-actions">
-                {detailReady.current ? <span className="chip chip-on">{t("play.module.current")}</span> : null}
-                <button type="button" className="ghost-button" onClick={() => importModule(detailReady.name)} disabled={busy || deleting}>
+                {detailReady.current ? (
+                  <span className="chip chip-on">{t("play.module.current")}</span>
+                ) : null}
+                <Button
+                  type="button"
+                  onClick={() => importModule(detailReady.name)}
+                  disabled={busy || deleting}
+                >
                   {t("play.module.importRoom")}
-                </button>
+                </Button>
                 {!detailReady.current ? (
-                  <button type="button" className="ghost-button danger-button" onClick={remove} disabled={busy || deleting}>
+                  <Button type="button" variant="danger" onClick={remove} disabled={busy || deleting}>
                     {deleting ? t("play.busy") : t("play.module.delete")}
-                  </button>
+                  </Button>
                 ) : (
-                  <button type="button" className="ghost-button module-delete-disabled" disabled title={t("play.module.deleteUnavailable")}>
+                  <Button
+                    type="button"
+                    className="module-delete-disabled"
+                    disabled
+                    title={t("play.module.deleteUnavailable")}
+                  >
                     {t("play.module.delete")}
-                  </button>
+                  </Button>
                 )}
               </div>
             </header>
 
             {matchingOperation?.kind === "module_import" && matchingOperation.ok ? (
-              <p className="studio-hint" role="status">{matchingOperation.receipt || t("play.module.imported")}</p>
+              <Notice tone="success" role="status">
+                {matchingOperation.receipt || t("play.module.imported")}
+              </Notice>
             ) : null}
 
-            {detailReady.current ? <KnowledgePool detail={detailReady} label={t("play.module.knowledgePool")} /> : null}
+            {detailReady.current ? (
+              <KnowledgePool detail={detailReady} label={t("play.module.knowledgePool")} />
+            ) : null}
 
             <section className="module-detail-source-card" aria-label={t("play.module.sourceText")}>
               <div className="module-detail-source-head">
@@ -78,13 +100,17 @@ export default function ModuleDetailScreen({ moduleName, onBack }: { moduleName:
                   <p className="module-detail-eyebrow">{t("play.module.sourceEyebrow")}</p>
                   <h3>{t("play.module.sourceText")}</h3>
                 </div>
-                <span className="module-detail-size">{detailReady.size} {t("play.module.bytes")}</span>
+                <span className="module-detail-size">
+                  {detailReady.size} {t("play.module.bytes")}
+                </span>
               </div>
               <pre className="module-source-preview">{detailReady.content}</pre>
             </section>
           </>
         ) : (
-          <p className="studio-hint" role="status">{busy ? t("play.busy") : lastError || t("play.module.detailLoading")}</p>
+          <p className="studio-hint" role="status">
+            {busy ? t("play.busy") : lastError || t("play.module.detailLoading")}
+          </p>
         )}
       </div>
     </ScreenShell>

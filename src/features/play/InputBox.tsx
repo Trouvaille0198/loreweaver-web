@@ -48,16 +48,15 @@ export default function InputBox() {
     if (spaceAt < 0) {
       // Stage 1: the word itself.
       const prefix = body.toLowerCase()
-      return matchCommands(prefix)
-        .filter((entry) => prefix.length > 0)
-        .map((entry) => ({
-          key: `w-${entry.word}`,
-          display: `.${entry.word}`,
-          hint: entry.example
-            ? `${t(`play.commands.${entry.word}`)} · ${entry.example}`
-            : t(`play.commands.${entry.word}`),
-          next: `.${entry.word} `,
-        }))
+      if (prefix.length === 0) return []
+      return matchCommands(prefix).map((entry) => ({
+        key: `w-${entry.word}`,
+        display: `.${entry.word}`,
+        hint: entry.example
+          ? `${t(`play.commands.${entry.word}`)} · ${entry.example}`
+          : t(`play.commands.${entry.word}`),
+        next: `.${entry.word} `,
+      }))
     }
     // Stage 2: the argument token being typed.
     const word = body.slice(0, spaceAt).toLowerCase()
@@ -96,13 +95,6 @@ export default function InputBox() {
     setHistory((prev) => [trimmed, ...prev.filter((line) => line !== trimmed)].slice(0, HISTORY_MAX))
     setHistoryIndex(-1)
     setText("")
-  }
-
-  const applyCommand = (word: string) => {
-    setText(`.${word} `)
-    setHintIndex(-1)
-    // Keep focus in the box so the player can keep typing the arguments.
-    inputRef.current?.focus()
   }
 
   /** Quick menu: insert the whole line into the box and keep typing focus. */

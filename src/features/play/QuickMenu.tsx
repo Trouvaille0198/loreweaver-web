@@ -5,7 +5,14 @@
 // cursor lands right where the completions take over. Full keyboard support:
 // ↑/↓ to move, Enter to insert, Esc to close.
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react"
 import { useTranslation } from "react-i18next"
 import { useConnectionStore } from "../../store/connection"
 import { QUICK_COMMANDS, type QuickCommand } from "./commands"
@@ -47,7 +54,7 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
 
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
 
-  const labelOf = (key: string) => t(`play.commands.${key}`)
+  const labelOf = useCallback((key: string) => t(`play.commands.${key}`), [t])
 
   /** The commands on screen: filtered by the search field, else the whole
    * first-level surface for the seat. */
@@ -60,8 +67,7 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
       command.line.toLowerCase().includes(q) ||
       labelOf(command.word).toLowerCase().includes(q)
     return visible.filter(match)
-    // `t` is stable across renders; the memo recomputes on language change.
-  }, [query, isKeeper, t])
+  }, [query, isKeeper, labelOf])
 
   // Display list interleaves the Keeper section header before the first
   // keeper row.

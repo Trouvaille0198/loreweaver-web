@@ -15,6 +15,7 @@ import AudioDeck from "./AudioDeck"
 import Avatar from "./Avatar"
 import MediaDeck from "./MediaDeck"
 import Meter, { type MeterTone } from "./Meter"
+import { PACK_CARDS_REPLY_TIMEOUT_MS } from "./timing"
 import { addVarCommand, isWritable, setVarCommand, stepFor } from "./varCommands"
 import UiBlocks from "./UiBlocks"
 
@@ -422,11 +423,6 @@ function PackCardRow({
     </li>
   )
 }
-
-/** How long the picker waits for a `pack_cards` reply before it stops claiming
- * to load and offers a retry. An older (<2.2) server never answers the request
- * at all, so without this the card would spin forever. */
-export const PACK_CARDS_REPLY_TIMEOUT_MS = 8_000
 
 /** v2.2 "import from installed pack" picker: opening it asks the server for
  * the card files installed packs ship (`list_pack_cards`), so a player never

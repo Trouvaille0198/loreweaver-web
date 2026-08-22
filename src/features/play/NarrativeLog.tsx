@@ -10,6 +10,7 @@ import {
 } from "@loreweaver/protocol"
 import { useSessionStore, type LogEntry, type PendingEcho } from "../../store/session"
 import DiceLine from "./DiceLine"
+import { ECHO_SWEEP_MS, FOLLOW_SLACK_PX } from "./timing"
 import UiBlocks from "./UiBlocks"
 
 function speakerLabel(frame: NarrativeFrame, systemLabel: string): string {
@@ -93,12 +94,6 @@ function Entry({ entry }: { entry: LogEntry }) {
       return <PendingEntry pending={entry.pending} />
   }
 }
-
-/** How close to the bottom (px) still counts as "following the stream". */
-export const FOLLOW_SLACK_PX = 48
-
-/** How often the log checks whether an un-echoed line has run out of time. */
-export const ECHO_SWEEP_MS = 5_000
 
 export default function NarrativeLog() {
   const { t } = useTranslation()
