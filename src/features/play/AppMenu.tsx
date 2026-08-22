@@ -64,13 +64,7 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
     { key: "settings", screen: "settings", keeper: false },
   )
   if (isKeeper) {
-    rows.push(
-      { key: "keys", screen: "keys", keeper: true },
-      { key: "module", screen: "module", keeper: true },
-      { key: "rules", screen: "rules", keeper: true },
-      { key: "skills", screen: "skills", keeper: true },
-      { key: "model", screen: "model", keeper: true },
-    )
+    rows.push({ key: "keeperSettings", screen: "keeperSettings", keeper: true })
   }
   const firstKeeper = rows.findIndex((row) => row.keeper)
 

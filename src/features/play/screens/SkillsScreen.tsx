@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
-export default function SkillsScreen({ onBack }: { onBack: () => void }) {
+export default function SkillsScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
   const { t, i18n } = useTranslation()
   const skills = useAdminStore((s) => s.skills)
   const listSkills = useAdminStore((s) => s.listSkills)
@@ -17,7 +17,7 @@ export default function SkillsScreen({ onBack }: { onBack: () => void }) {
   }, [listSkills, i18n.language])
 
   return (
-    <ScreenShell title={t("play.menu.skills")} onBack={onBack} showAdminError>
+    <ScreenShell title={t("play.menu.skills")} onBack={onBack} showAdminError embedded={embedded}>
       <ul className="play-list">
         {skills.map((skill) => (
           <li key={skill.id}>

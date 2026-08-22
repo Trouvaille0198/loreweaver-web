@@ -64,6 +64,10 @@ function ModuleDetailPanel({
   currentLabel,
   readyLabel,
   bytesLabel,
+  importLabel,
+  deleteLabel,
+  onImport,
+  onDelete,
 }: {
   detail: ModuleDetail
   poolLabel: string
@@ -71,6 +75,10 @@ function ModuleDetailPanel({
   currentLabel: string
   readyLabel: string
   bytesLabel: string
+  importLabel: string
+  deleteLabel: string
+  onImport: () => void
+  onDelete: () => void
 }) {
   return (
     <section className="play-form module-detail-card">
@@ -81,10 +89,20 @@ function ModuleDetailPanel({
             {detail.current ? `${detail.status || readyLabel} · ${detail.size} ${bytesLabel}` : `${detail.size} ${bytesLabel}`}
           </p>
         </div>
-        {detail.current ? <span className="chip chip-on">{currentLabel}</span> : null}
+        <div className="module-detail-actions">
+          {detail.current ? <span className="chip chip-on">{currentLabel}</span> : null}
+          <button type="button" className="ghost-button" onClick={onImport}>
+            {importLabel}
+          </button>
+          {!detail.current ? (
+            <button type="button" className="ghost-button" onClick={onDelete}>
+              {deleteLabel}
+            </button>
+          ) : null}
+        </div>
       </div>
       {detail.current ? <KnowledgePool detail={detail} label={poolLabel} /> : null}
-      <details>
+      <details open>
         <summary>{sourceLabel}</summary>
         <pre className="module-source-preview">{detail.content}</pre>
       </details>
@@ -101,7 +119,7 @@ function OperationNotice({ operation, t }: { operation: ModuleOperation | null; 
   return <p className="studio-hint" role="status">{`${t("play.module.saved")} ${operation.name}`}</p>
 }
 
-export default function ModuleScreen({ onBack }: { onBack: () => void }) {
+export default function ModuleScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
   const { t } = useTranslation()
   const generated = useAdminStore((s) => s.generated)
   const busy = useAdminStore((s) => s.busy)
@@ -129,8 +147,7 @@ export default function ModuleScreen({ onBack }: { onBack: () => void }) {
   }, [listModules])
 
   useEffect(() => {
-    const preferred = sources.find((source) => source.current)?.name ?? sources[0]?.name ?? ""
-    if (!selectedName || !sources.some((source) => source.name === selectedName)) setSelectedName(preferred)
+    if (selectedName && !sources.some((source) => source.name === selectedName)) setSelectedName("")
   }, [selectedName, sources])
 
   useEffect(() => {
@@ -140,7 +157,12 @@ export default function ModuleScreen({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (!operation) return
     listModules()
-    if (operation.ok && operation.name) {
+    if (!operation.ok) return
+    if (operation.kind === "module_delete") {
+      setSelectedName("")
+      return
+    }
+    if (operation.name) {
       setSelectedName(operation.name)
       getModuleDetail(operation.name)
     }
@@ -182,7 +204,7 @@ export default function ModuleScreen({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <ScreenShell title={t("play.menu.module")} onBack={onBack} showAdminError>
+    <ScreenShell title={t("play.menu.module")} onBack={onBack} showAdminError embedded={embedded}>
       <section className="play-form">
         <h3 className="play-form-title">{t("play.module.library")}</h3>
         <p className="studio-hint">{t("play.module.libraryHint")}</p>
@@ -218,17 +240,6 @@ export default function ModuleScreen({ onBack }: { onBack: () => void }) {
                 <button type="button" className="ghost-button" onClick={() => importModule(source.name)}>
                   {t("play.module.importRoom")}
                 </button>
-                <button type="button" className="ghost-button" onClick={() => setSelectedName(source.name)}>
-                  {t("play.module.inspect")}
-                </button>
-                {!source.current ? (
-                  <button type="button" className="ghost-button" onClick={() => {
-                    setSelectedName(source.name)
-                    if (window.confirm(t("play.module.deleteConfirm"))) deleteModule(source.name)
-                  }}>
-                    {t("play.module.delete")}
-                  </button>
-                ) : null}
               </div>
             </li>
           ))}
@@ -244,6 +255,10 @@ export default function ModuleScreen({ onBack }: { onBack: () => void }) {
           currentLabel={t("play.module.current")}
           readyLabel={t("play.module.ready")}
           bytesLabel={t("play.module.bytes")}
+          importLabel={t("play.module.importRoom")}
+          deleteLabel={t("play.module.delete")}
+          onImport={() => importModule(detail.name)}
+          onDelete={removeSelected}
         />
       ) : null}
 

@@ -2,9 +2,9 @@
 // the author in Studio: the entry lives here, only for the keeper seat, and it
 // says nothing about the outcome that the server's own receipt does not.
 
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { PlayerRole } from "@loreweaver/protocol"
 
 const sent: unknown[] = []
@@ -18,6 +18,7 @@ vi.mock("../../../lib/transport", () => ({
 }))
 
 import "../../../i18n"
+import { useAdminStore } from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
 import ModuleScreen from "./ModuleScreen"
 
@@ -45,6 +46,11 @@ describe("ModuleScreen — community packs", () => {
     seat("keeper")
   })
 
+  afterEach(() => {
+    useAdminStore.getState().reset()
+    vi.restoreAllMocks()
+  })
+
   it("sends the reference as an ordinary .pack install command", async () => {
     const user = userEvent.setup()
     render(<ModuleScreen onBack={() => {}} />)
@@ -55,7 +61,7 @@ describe("ModuleScreen — community packs", () => {
 
     await user.type(field, "  gh:1A7432/antu@v1.0.0  ")
     await user.click(button)
-    expect(sent).toEqual([{ type: "input", text: ".pack install gh:1A7432/antu@v1.0.0" }])
+    expect(sent.at(-1)).toEqual({ type: "input", text: ".pack install gh:1A7432/antu@v1.0.0" })
     expect(field).toHaveValue("")
   })
 
@@ -71,6 +77,7 @@ describe("ModuleScreen — community packs", () => {
   // must not promise one — and it keeps the reference so the retry is one click.
   it("says so when the send fails, and keeps the reference typed", async () => {
     const user = userEvent.setup()
+    transportSend.mockResolvedValueOnce(undefined)
     transportSend.mockRejectedValueOnce(new Error("offline"))
     render(<ModuleScreen onBack={() => {}} />)
     const field = screen.getByLabelText("Pack reference")
@@ -83,6 +90,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("says so when the module path send fails, and keeps the path typed", async () => {
     const user = userEvent.setup()
+    transportSend.mockResolvedValueOnce(undefined)
     transportSend.mockRejectedValueOnce(new Error("offline"))
     render(<ModuleScreen onBack={() => {}} />)
     const field = screen.getByLabelText("Module path on the server")
@@ -96,5 +104,47 @@ describe("ModuleScreen — community packs", () => {
     seat("player")
     render(<ModuleScreen onBack={() => {}} />)
     expect(screen.queryByLabelText("Pack reference")).toBeNull()
+  })
+
+  it("opens a source only after clicking it and deletes from its detail view", async () => {
+    const user = userEvent.setup()
+    useAdminStore.setState({
+      moduleSources: [{ name: "scene.md", size: 42, modified: 1, current: false }],
+      moduleDetail: null,
+    })
+    render(<ModuleScreen onBack={() => {}} />)
+
+    expect(screen.queryByText("A foggy scene")).toBeNull()
+    await user.click(screen.getByRole("button", { name: /scene\.md/ }))
+    await waitFor(() =>
+      expect(sent.at(-1)).toEqual({
+        type: "admin_generate",
+        kind: "module_detail",
+        description: JSON.stringify({ name: "scene.md" }),
+      }),
+    )
+
+    act(() => {
+      useAdminStore.setState({
+        moduleDetail: {
+          name: "scene.md",
+          size: 42,
+          modified: 1,
+          content: "A foggy scene",
+          current: false,
+          status: "ready",
+          pool: null,
+        },
+      })
+    })
+    expect(screen.getByText("A foggy scene")).toBeInTheDocument()
+
+    vi.spyOn(window, "confirm").mockReturnValue(true)
+    await user.click(screen.getByRole("button", { name: "Delete source" }))
+    expect(sent.at(-1)).toEqual({
+      type: "admin_generate",
+      kind: "module_delete",
+      description: JSON.stringify({ name: "scene.md" }),
+    })
   })
 })

@@ -167,8 +167,7 @@ describe("PlayView", () => {
     await user.click(screen.getByRole("button", { name: "Main menu" }))
     expect(screen.getByText("── Keeper ──")).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /Play sample adventure/ })).toBeInTheDocument()
-    expect(screen.getByRole("menuitem", { name: /Rooms & invites/ })).toBeInTheDocument()
-    expect(screen.getByRole("menuitem", { name: /Model \/ config/ })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /Keeper settings/ })).toBeInTheDocument()
   })
 
   it("hides the keeper section from players", async () => {
@@ -254,10 +253,11 @@ describe("PlayView", () => {
   it("restores the screen from the URL hash, and writes it on navigation", async () => {
     const user = userEvent.setup()
     useConnectionStore.setState({ status: "online", welcome: WELCOME })
-    // A shared #/keys URL (or a reload mid-screen) lands on that screen.
-    window.history.replaceState(null, "", "#/keys")
+    // A shared keeper-settings URL (or a reload mid-screen) lands on the unified page.
+    window.history.replaceState(null, "", "#/keeper-settings")
     render(<PlayView />)
-    expect(screen.getByRole("heading", { name: /Rooms & invites/ })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /Keeper settings/ })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: /Rooms & invites/ })).toBeInTheDocument()
 
     // In-app navigation writes the hash, so the URL and the screen stay in step.
     await user.click(screen.getByRole("button", { name: /Back to the table/ }))
@@ -285,16 +285,17 @@ describe("PlayView", () => {
     const user = userEvent.setup()
     useConnectionStore.setState({ status: "online", welcome: WELCOME })
     const first = render(<PlayView />)
-
     await user.click(screen.getByRole("button", { name: "Main menu" }))
-    await user.click(screen.getByRole("menuitem", { name: "Import module" }))
-    expect(screen.getByRole("heading", { name: "Import module" })).toBeInTheDocument()
+    await user.click(screen.getByRole("menuitem", { name: "Keeper settings" }))
+    expect(screen.getByRole("heading", { name: "Keeper settings" })).toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: "Import module" }))
+    expect(screen.getByText("Module source library")).toBeInTheDocument()
 
     window.history.replaceState(null, "", window.location.pathname + window.location.search)
     first.unmount()
     render(<PlayView />)
 
-    expect(screen.getByRole("heading", { name: "Import module" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Keeper settings" })).toBeInTheDocument()
   })
 
   it("drives the screen from hashchange — the browser back/forward path", async () => {
@@ -318,11 +319,11 @@ describe("PlayView", () => {
     window.history.replaceState(null, "", "#/module")
     render(<PlayView />)
 
-    expect(screen.getByRole("heading", { name: "Import module" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Keeper settings" })).toBeInTheDocument()
     act(() => {
       useConnectionStore.setState({ welcome: WELCOME })
     })
-    expect(screen.getByRole("heading", { name: "Import module" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Keeper settings" })).toBeInTheDocument()
   })
 
   it("sends a player on a stale keeper hash to the game instead", async () => {

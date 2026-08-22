@@ -11,15 +11,22 @@ export default function ScreenShell({
   onBack,
   children,
   showAdminError = false,
+  embedded = false,
+  wide = false,
 }: {
   title: string
   onBack: () => void
   children: ReactNode
   showAdminError?: boolean
+  embedded?: boolean
+  wide?: boolean
 }) {
   const { t } = useTranslation()
   const lastError = useAdminStore((s) => s.lastError)
   const busy = useAdminStore((s) => s.busy)
+  if (embedded) {
+    return <>{children}</>
+  }
   return (
     <div className="play-screen">
       <header className="play-screen-head">
@@ -34,7 +41,7 @@ export default function ScreenShell({
           {lastError}
         </p>
       ) : null}
-      <div className="play-screen-body">{children}</div>
+      <div className={wide ? "play-screen-body play-screen-body-wide" : "play-screen-body"}>{children}</div>
     </div>
   )
 }

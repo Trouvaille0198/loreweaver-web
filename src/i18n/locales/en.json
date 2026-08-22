@@ -168,6 +168,7 @@
       "demoAction": "Start the built-in sample adventure",
       "character": "My character",
       "settings": "Settings",
+      "keeperSettings": "Keeper settings",
       "keeperSection": "── Keeper ──",
       "keys": "Rooms & invites",
       "module": "Import module",

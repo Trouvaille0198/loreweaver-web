@@ -11,17 +11,13 @@ import { clearSavedConnect, loadSavedConnect, saveConnect } from "../../lib/save
 import { useConnectionStore, hasManualDisconnect } from "../../store/connection"
 import { useHostLocalStore } from "../../store/hostLocal"
 import CharacterScreen from "./screens/CharacterScreen"
-import KeysScreen from "./screens/KeysScreen"
-import ModelScreen from "./screens/ModelScreen"
-import ModuleScreen from "./screens/ModuleScreen"
-import RulesScreen from "./screens/RulesScreen"
+import KeeperSettingsScreen from "./screens/KeeperSettingsScreen"
 import SettingsScreen from "./screens/SettingsScreen"
-import SkillsScreen from "./screens/SkillsScreen"
 import SessionView from "./SessionView"
 import StatusPill from "./StatusPill"
 
 export type PlayScreen =
-  "game" | "character" | "settings" | "keys" | "module" | "rules" | "skills" | "model"
+  "game" | "character" | "settings" | "keeperSettings"
 
 /** Every play screen, keyed by the URL hash that selects it. The hash is the
  * primary source of truth for bookmarks and browser history; the tab-local
@@ -30,11 +26,7 @@ const SCREEN_HASHES: Record<PlayScreen, string> = {
   game: "#/game",
   character: "#/character",
   settings: "#/settings",
-  keys: "#/keys",
-  module: "#/module",
-  rules: "#/rules",
-  skills: "#/skills",
-  model: "#/model",
+  keeperSettings: "#/keeper-settings",
 }
 
 const SCREEN_STORAGE_KEY = "loreweaver-web.play-screen"
@@ -57,11 +49,10 @@ function storeScreen(screen: PlayScreen): void {
   }
 }
 
-/** Parse the current hash back into a screen; unknown/empty hashes fall back
- * to the game (e.g. a plain bookmark or the first visit). */
 function screenFromHash(): PlayScreen {
   if (typeof window === "undefined") return "game"
   const hash = window.location.hash
+  if (["#/keys", "#/module", "#/rules", "#/skills", "#/model"].includes(hash)) return "keeperSettings"
   return SCREENS.find((screen) => SCREEN_HASHES[screen] === hash) ?? "game"
 }
 
@@ -73,10 +64,10 @@ function screenFromInitialLoad(): PlayScreen {
   return readStoredScreen() ?? "game"
 }
 
-/** The keeper-only management screens — a player landing on one of these
- * (stale hash from a keeper session on the same browser) falls back to the
- * menu, since the server refuses every admin frame they would send. */
-const KEEPER_SCREENS: readonly PlayScreen[] = ["keys", "module", "rules", "skills", "model"]
+/** The keeper-only management screen — a player landing on this screen
+ * (including a legacy keeper hash) falls back to the table because the server
+ * refuses every admin frame they would send. */
+const KEEPER_SCREENS: readonly PlayScreen[] = ["keeperSettings"]
 
 function isKeeperScreen(screen: PlayScreen): boolean {
   return KEEPER_SCREENS.includes(screen)
@@ -238,16 +229,8 @@ function OnlineView() {
       return <CharacterScreen onBack={back} />
     case "settings":
       return <SettingsScreen onBack={back} />
-    case "keys":
-      return <KeysScreen onBack={back} />
-    case "module":
-      return <ModuleScreen onBack={back} />
-    case "rules":
-      return <RulesScreen onBack={back} />
-    case "skills":
-      return <SkillsScreen onBack={back} />
-    case "model":
-      return <ModelScreen onBack={back} />
+    case "keeperSettings":
+      return <KeeperSettingsScreen onBack={back} />
   }
 }
 

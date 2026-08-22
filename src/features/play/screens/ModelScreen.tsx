@@ -88,7 +88,7 @@ function UsageSelect({
   )
 }
 
-export default function ModelScreen({ onBack }: { onBack: () => void }) {
+export default function ModelScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
   const { t } = useTranslation()
   const config = useAdminStore((state) => state.config)
   const roomConfig = useAdminStore((state) => state.roomConfig)
@@ -193,7 +193,7 @@ export default function ModelScreen({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <ScreenShell title={t("play.menu.model")} onBack={onBack} showAdminError>
+    <ScreenShell title={t("play.menu.model")} onBack={onBack} showAdminError embedded={embedded}>
       {config?.using_demo === true ? <p className="studio-notice">{t("play.model.demoActive")}</p> : null}
 
       <section className="play-model-card play-model-global" aria-label={t("play.model.globalSection")}>

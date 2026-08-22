@@ -168,6 +168,7 @@
       "demoAction": "开始内置示例冒险",
       "character": "我的角色",
       "settings": "设置",
+      "keeperSettings": "守秘人设置",
       "keeperSection": "── 守秘人 ──",
       "keys": "房间与邀请",
       "module": "导入模组",

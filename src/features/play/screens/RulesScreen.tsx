@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
-export default function RulesScreen({ onBack }: { onBack: () => void }) {
+export default function RulesScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
   const { t } = useTranslation()
   const rules = useAdminStore((s) => s.rules)
   const listRules = useAdminStore((s) => s.listRules)
@@ -16,7 +16,7 @@ export default function RulesScreen({ onBack }: { onBack: () => void }) {
   }, [listRules])
 
   return (
-    <ScreenShell title={t("play.menu.rules")} onBack={onBack} showAdminError>
+    <ScreenShell title={t("play.menu.rules")} onBack={onBack} showAdminError embedded={embedded}>
       <ul className="play-list">
         {rules.map((rule) => (
           <li key={rule.id}>

@@ -7,11 +7,11 @@ import InviteKeysPanel from "./InviteKeysPanel"
 import RoomLifecycle from "./RoomLifecycle"
 import ScreenShell from "./ScreenShell"
 
-export default function KeysScreen({ onBack }: { onBack: () => void }) {
+export default function KeysScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
   const { t } = useTranslation()
 
   return (
-    <ScreenShell title={t("play.menu.keys")} onBack={onBack} showAdminError>
+    <ScreenShell title={t("play.menu.keys")} onBack={onBack} showAdminError embedded={embedded}>
       <InviteKeysPanel />
       <RoomLifecycle />
     </ScreenShell>

@@ -114,10 +114,10 @@ function OnboardingBanner({ onNavigate }: { onNavigate: (screen: PlayScreen) => 
       <p className="menu-onboarding-title">{t("play.onboarding.title")}</p>
       <p className="menu-onboarding-hint">{t("play.onboarding.hint")}</p>
       <div className="menu-onboarding-actions">
-        <button type="button" className="primary-button" onClick={() => onNavigate("module")}>
+        <button type="button" className="primary-button" onClick={() => onNavigate("keeperSettings")}>
           {t("play.onboarding.importModule")}
         </button>
-        <button type="button" className="ghost-button" onClick={() => onNavigate("keys")}>
+        <button type="button" className="ghost-button" onClick={() => onNavigate("keeperSettings")}>
           {t("play.onboarding.invite")}
         </button>
         {hasDemo ? (
