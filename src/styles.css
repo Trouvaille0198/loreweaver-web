@@ -2454,27 +2454,6 @@ body {
   min-height: 38px;
 }
 
-.play-model-usage {
-  gap: 16px;
-}
-
-.play-model-assignment {
-  min-width: 0;
-  padding: 14px;
-  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  box-shadow: none;
-}
-
-.play-model-assignment .play-model-card-head {
-  min-height: 48px;
-}
-
-.play-model-assignment .play-form {
-  gap: 12px;
-}
-
 .play-model-room {
   background: color-mix(in srgb, var(--bg-raised) 82%, var(--lw-player) 18%);
 }
@@ -4099,8 +4078,7 @@ code {
     align-self: flex-start;
   }
 
-  .play-model-fields,
-  .play-model-assignment-grid {
+  .play-model-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -4184,22 +4162,6 @@ code {
   padding: 6px 8px;
   color: var(--ink-dim);
   font-size: 11px;
-}
-
-.play-usage-field select {
-  width: 100%;
-}
-
-.play-usage-toggle {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 38px;
-  padding: 8px 10px;
-  background: var(--bg-inset);
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
 }
 
 @media (max-width: 760px) {

@@ -1095,6 +1095,91 @@ select {
     var(--surface-1);
 }
 
+.play-llm-profile-copy span,
+.play-llm-profile-key,
+.play-embedding-summary span {
+  color: var(--text-secondary);
+}
+
+.play-model-status.is-active,
+.play-model-status.is-custom {
+  color: var(--text-accent);
+}
+
+.play-model-usage {
+  gap: var(--space-6);
+}
+
+.play-model-usage .play-form-title {
+  color: var(--text-primary);
+  font: 650 18px/1.3 var(--font-story);
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.play-model-assignment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.ui-surface.play-model-assignment {
+  min-width: 0;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+.play-model-assignment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 24px;
+}
+
+.play-model-assignment-title {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.play-model-assignment-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.play-model-assignment-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.play-model-assignment-control {
+  width: 100%;
+}
+
+.play-model-assignment.is-disabled .play-model-assignment-select {
+  opacity: 0.58;
+}
+
+.play-model-usage-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line-subtle);
+}
+
 .play-room-lifecycle {
   display: flex;
   flex-direction: column;
@@ -1713,6 +1798,19 @@ select {
   }
 
   .play-mint-row > .ui-button {
+    width: 100%;
+  }
+
+  .play-model-assignment-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .play-model-usage-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .play-model-usage-actions > .ui-button {
     width: 100%;
   }
 

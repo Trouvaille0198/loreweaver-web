@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useId, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Button } from "../../../components/ui"
+import { Button, Surface } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
@@ -58,33 +58,67 @@ function ProfileCard({
     </article>
   )
 }
-
-function UsageSelect({
+function UsageAssignment({
   label,
   value,
   profiles,
   defaultLabel,
+  enabled,
+  enabledLabel,
   onChange,
+  onEnabledChange,
 }: {
   label: string
   value: string
   profiles: LLMProfile[]
   defaultLabel: string
+  enabled?: boolean
+  enabledLabel?: string
   onChange: (value: string) => void
+  onEnabledChange?: (enabled: boolean) => void
 }) {
   const { t } = useTranslation()
+  const titleId = useId()
+  const isDisabled = enabled === false
+
   return (
-    <label className="field play-usage-field">
-      {label}
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">{t("play.model.followDefault", { model: defaultLabel })}</option>
-        {profiles.map((profile) => (
-          <option key={profile.id} value={profile.id}>
-            {profile.provider} · {profile.chat_model || t("play.model.noModel")}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Surface
+      tone="subtle"
+      className={`play-model-assignment${isDisabled ? " is-disabled" : ""}`}
+      labelledBy={titleId}
+    >
+      <div className="play-model-assignment-head">
+        <h4 id={titleId} className="play-model-assignment-title">
+          {label}
+        </h4>
+        {enabledLabel && enabled !== undefined && onEnabledChange ? (
+          <label className="play-model-assignment-toggle">
+            <span>{enabledLabel}</span>
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(event) => onEnabledChange(event.target.checked)}
+            />
+          </label>
+        ) : null}
+      </div>
+      <div className="field play-model-assignment-control">
+        <select
+          className="play-model-assignment-select"
+          aria-labelledby={titleId}
+          value={value}
+          disabled={isDisabled}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          <option value="">{t("play.model.followDefault", { model: defaultLabel })}</option>
+          {profiles.map((profile) => (
+            <option key={profile.id} value={profile.id}>
+              {profile.provider} · {profile.chat_model || t("play.model.noModel")}
+            </option>
+          ))}
+        </select>
+      </div>
+    </Surface>
   )
 }
 export default function ModelScreen({
@@ -115,10 +149,7 @@ export default function ModelScreen({
     }
     return Array.from(grouped, ([provider, groupProfiles]) => ({ provider, profiles: groupProfiles }))
   }, [profiles])
-  const defaultModel =
-    config?.provider && config.chat_model
-      ? `${config.provider} · ${config.chat_model}`
-      : t("play.model.defaultUnknown")
+  const defaultModel = config?.chat_model || t("play.model.defaultUnknown")
   const [selectedProvider, setSelectedProvider] = useState("")
   const [selectedProfileId, setSelectedProfileId] = useState("")
   const [chatModel, setChatModel] = useState("")
@@ -128,23 +159,31 @@ export default function ModelScreen({
   const profileDirty = useRef(false)
   const savePending = useRef(false)
 
-  useEffect(() => {
-    refreshConfig()
-    refreshRoomConfig()
-  }, [refreshConfig, refreshRoomConfig])
-
-  useEffect(() => {
+  const storedRoomSelection = useMemo<RoomSelection>(() => {
     const stored = roomConfig?.stored
-    if (!stored) return
-    setRoomSelection({
+    if (!stored) return EMPTY_ROOM_SELECTION
+    return {
       main: stored.main || "",
       scribe: stored.scribe || "",
       director: stored.director || "",
       imagegen: stored.imagegen || "",
       scribe_enabled: stored.scribe_enabled !== false,
       director_enabled: stored.director_enabled !== false,
-    })
-  }, [roomConfig])
+    }
+  }, [roomConfig?.stored])
+
+  const roomDirty = (Object.keys(EMPTY_ROOM_SELECTION) as Array<keyof RoomSelection>).some(
+    (key) => roomSelection[key] !== storedRoomSelection[key],
+  )
+
+  useEffect(() => {
+    refreshConfig()
+    refreshRoomConfig()
+  }, [refreshConfig, refreshRoomConfig])
+
+  useEffect(() => {
+    setRoomSelection(storedRoomSelection)
+  }, [storedRoomSelection])
 
   useEffect(() => {
     if (!savePending.current) return
@@ -208,6 +247,11 @@ export default function ModelScreen({
 
   const updateRoom = (key: keyof RoomSelection, value: string | boolean) => {
     setRoomSelection((current) => ({ ...current, [key]: value }))
+  }
+
+  const clearRoom = () => {
+    setRoomSelection(EMPTY_ROOM_SELECTION)
+    clearRoomModel()
   }
 
   return (
@@ -325,44 +369,34 @@ export default function ModelScreen({
           <span className="play-model-status is-inherited">{t("play.model.roomScoped")}</span>
         </div>
         <div className="play-model-assignment-grid">
-          <UsageSelect
+          <UsageAssignment
             label={t("play.model.mainUsage")}
             value={roomSelection.main}
             profiles={profiles}
             defaultLabel={defaultModel}
             onChange={(value) => updateRoom("main", value)}
           />
-          <UsageSelect
+          <UsageAssignment
             label={t("play.model.scribeUsage")}
             value={roomSelection.scribe}
             defaultLabel={defaultModel}
             profiles={profiles}
+            enabled={roomSelection.scribe_enabled}
+            enabledLabel={t("play.model.scribeEnabled")}
             onChange={(value) => updateRoom("scribe", value)}
+            onEnabledChange={(enabled) => updateRoom("scribe_enabled", enabled)}
           />
-          <label className="field play-usage-toggle">
-            {t("play.model.scribeEnabled")}
-            <input
-              type="checkbox"
-              checked={roomSelection.scribe_enabled}
-              onChange={(event) => updateRoom("scribe_enabled", event.target.checked)}
-            />
-          </label>
-          <UsageSelect
+          <UsageAssignment
             label={t("play.model.directorUsage")}
             value={roomSelection.director}
             profiles={profiles}
             defaultLabel={defaultModel}
+            enabled={roomSelection.director_enabled}
+            enabledLabel={t("play.model.directorEnabled")}
             onChange={(value) => updateRoom("director", value)}
+            onEnabledChange={(enabled) => updateRoom("director_enabled", enabled)}
           />
-          <label className="field play-usage-toggle">
-            {t("play.model.directorEnabled")}
-            <input
-              type="checkbox"
-              checked={roomSelection.director_enabled}
-              onChange={(event) => updateRoom("director_enabled", event.target.checked)}
-            />
-          </label>
-          <UsageSelect
+          <UsageAssignment
             label={t("play.model.imagegenUsage")}
             value={roomSelection.imagegen}
             defaultLabel={defaultModel}
@@ -370,17 +404,12 @@ export default function ModelScreen({
             onChange={(value) => updateRoom("imagegen", value)}
           />
         </div>
-        <div className="play-mint-row">
-          <Button type="button" variant="primary" onClick={applyRoom}>
-            {t("play.model.saveRoomUsage")}
-          </Button>
-          <Button
-            type="button"
-            variant="quiet"
-            onClick={() => clearRoomModel()}
-            disabled={!roomConfig?.active}
-          >
+        <div className="play-model-usage-actions">
+          <Button type="button" variant="quiet" onClick={clearRoom} disabled={!roomConfig?.active}>
             {t("play.model.clearRoomUsage")}
+          </Button>
+          <Button type="button" variant="primary" onClick={applyRoom} disabled={!roomDirty}>
+            {t("play.model.saveRoomUsage")}
           </Button>
         </div>
       </section>
