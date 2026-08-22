@@ -12,12 +12,13 @@ import { useConnectionStore, hasManualDisconnect } from "../../store/connection"
 import { useHostLocalStore } from "../../store/hostLocal"
 import CharacterScreen from "./screens/CharacterScreen"
 import KeeperSettingsScreen from "./screens/KeeperSettingsScreen"
+import ModuleDetailScreen from "./screens/ModuleDetailScreen"
 import SettingsScreen from "./screens/SettingsScreen"
 import SessionView from "./SessionView"
 import StatusPill from "./StatusPill"
 
 export type PlayScreen =
-  "game" | "character" | "settings" | "keeperSettings"
+  "game" | "character" | "settings" | "keeperSettings" | "moduleDetail"
 
 /** Every play screen, keyed by the URL hash that selects it. The hash is the
  * primary source of truth for bookmarks and browser history; the tab-local
@@ -27,6 +28,7 @@ const SCREEN_HASHES: Record<PlayScreen, string> = {
   character: "#/character",
   settings: "#/settings",
   keeperSettings: "#/keeper-settings",
+  moduleDetail: "#/module-detail",
 }
 
 const SCREEN_STORAGE_KEY = "loreweaver-web.play-screen"
@@ -52,8 +54,19 @@ function storeScreen(screen: PlayScreen): void {
 function screenFromHash(): PlayScreen {
   if (typeof window === "undefined") return "game"
   const hash = window.location.hash
+  if (hash.startsWith("#/module-detail/")) return "moduleDetail"
   if (["#/keys", "#/module", "#/rules", "#/skills", "#/model"].includes(hash)) return "keeperSettings"
   return SCREENS.find((screen) => SCREEN_HASHES[screen] === hash) ?? "game"
+}
+
+function moduleNameFromHash(): string | null {
+  if (typeof window === "undefined" || !window.location.hash.startsWith("#/module-detail/")) return null
+  try {
+    const name = decodeURIComponent(window.location.hash.slice("#/module-detail/".length))
+    return name || null
+  } catch {
+    return null
+  }
 }
 
 /** A few embedded hosts rebuild the document without restoring its fragment.
@@ -64,10 +77,10 @@ function screenFromInitialLoad(): PlayScreen {
   return readStoredScreen() ?? "game"
 }
 
-/** The keeper-only management screen — a player landing on this screen
+/** The keeper-only management screens — a player landing on one of these
  * (including a legacy keeper hash) falls back to the table because the server
  * refuses every admin frame they would send. */
-const KEEPER_SCREENS: readonly PlayScreen[] = ["keeperSettings"]
+const KEEPER_SCREENS: readonly PlayScreen[] = ["keeperSettings", "moduleDetail"]
 
 function isKeeperScreen(screen: PlayScreen): boolean {
   return KEEPER_SCREENS.includes(screen)
@@ -218,7 +231,7 @@ function OnlineView() {
 
   // Escape is overlay-owned: the desk drawer, the ⋯ popup, the app menu and
   // the panel modal each close on their own Esc. There is deliberately NO
-  // global Esc here — a web player pressing Esc in the middle of a scene
+  // global Esc here - a web player pressing Esc in the middle of a scene
   // must not be ejected from the table.
   const back = useCallback(() => navigate("game"), [navigate])
 
@@ -231,6 +244,14 @@ function OnlineView() {
       return <SettingsScreen onBack={back} />
     case "keeperSettings":
       return <KeeperSettingsScreen onBack={back} />
+    case "moduleDetail": {
+      const moduleName = moduleNameFromHash()
+      return moduleName ? (
+        <ModuleDetailScreen moduleName={moduleName} onBack={() => navigate("keeperSettings")} />
+      ) : (
+        <KeeperSettingsScreen onBack={back} />
+      )
+    }
   }
 }
 

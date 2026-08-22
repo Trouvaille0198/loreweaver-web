@@ -2663,6 +2663,101 @@ body {
   gap: 6px;
 }
 
+.module-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.module-detail-hero,
+.module-detail-source-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-raised) 92%, var(--accent) 8%),
+    var(--bg-raised)
+  );
+}
+
+.module-detail-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border) 58%);
+  box-shadow: 0 12px 32px color-mix(in srgb, black 16%, transparent);
+}
+
+.module-detail-hero h3,
+.module-detail-source-head h3 {
+  margin: 0;
+}
+
+.module-detail-hero h3 {
+  font-size: clamp(22px, 3vw, 34px);
+  letter-spacing: -0.02em;
+}
+
+.module-detail-eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font: 600 11px/1.3 var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.module-detail-summary {
+  margin: 8px 0 0;
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+
+.module-detail-hero .module-detail-actions {
+  flex: 0 0 auto;
+}
+
+.danger-button {
+  color: var(--danger, var(--error));
+}
+
+.module-detail-page .module-knowledge {
+  padding: 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--bg-raised);
+}
+
+.module-detail-source-card {
+  padding: 20px;
+}
+
+.module-detail-source-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.module-detail-size {
+  color: var(--ink-faint);
+  font: 12px/1.4 var(--font-mono);
+  white-space: nowrap;
+}
+
+.module-detail-source-card .module-source-preview {
+  max-height: min(62vh, 720px);
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-inset);
+}
+
 .module-knowledge {
   display: flex;
   flex-direction: column;
@@ -3545,6 +3640,19 @@ code {
     flex: 0 0 auto;
     width: auto;
     white-space: nowrap;
+  }
+
+  .module-detail-hero {
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .module-detail-hero .module-detail-actions {
+    justify-content: flex-start;
+  }
+
+  .module-detail-source-card {
+    padding: 16px;
   }
 
   .chronicle-pane {

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { WelcomeFrame } from "@loreweaver/protocol"
 import "../../i18n"
+import { useAdminStore } from "../../store/admin"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import PlayView from "./PlayView"
@@ -324,6 +325,29 @@ describe("PlayView", () => {
       useConnectionStore.setState({ welcome: WELCOME })
     })
     expect(screen.getByRole("heading", { name: "Keeper settings" })).toBeInTheDocument()
+  })
+
+  it("opens module details as a standalone keeper page", async () => {
+    const user = userEvent.setup()
+    useConnectionStore.setState({ status: "online", welcome: WELCOME })
+    useAdminStore.setState({
+      moduleDetail: {
+        name: "scene.md",
+        size: 42,
+        modified: 1,
+        content: "A foggy scene",
+        current: false,
+        status: "ready",
+        pool: null,
+      },
+    })
+    window.history.replaceState(null, "", "#/module-detail/scene.md")
+    render(<PlayView />)
+
+    expect(screen.getByRole("heading", { name: "Module details" })).toBeInTheDocument()
+    expect(screen.getByText("A foggy scene")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Back to the table/ }))
+    expect(window.location.hash).toBe("#/keeper-settings")
   })
 
   it("sends a player on a stale keeper hash to the game instead", async () => {

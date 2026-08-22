@@ -198,8 +198,10 @@ describe("InputBox quick commands sub-menus", () => {
     render(<InputBox />)
     const field = screen.getByRole("textbox")
     await user.type(field, ".r")
-    // No highlight yet — Enter would send, Tab takes the first row. The
-    // first ArrowDown highlights row 0 (.r), the second walks to .ra.
+    // No highlight yet — Enter would send, Tab takes the first row. Walk
+    // down past the aliases (rd, rh…) to .ra.
+    await user.keyboard("{ArrowDown}")
+    await user.keyboard("{ArrowDown}")
     await user.keyboard("{ArrowDown}")
     await user.keyboard("{ArrowDown}")
     await user.keyboard("{Enter}")
@@ -261,7 +263,7 @@ describe("InputBox quick commands sub-menus", () => {
     const lines = quickCommandLines()
     // One line per command — argument-taking words land ready for typing.
     expect(lines).toContain(".r ")
-    expect(lines).toContain(".hr ")
+    expect(lines).toContain(".rh ")
     expect(lines).toContain(".pc ")
     expect(lines).toContain(".sc 1/1d6")
     expect(lines).toContain(".recap")

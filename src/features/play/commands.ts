@@ -19,36 +19,75 @@ export interface CommandEntry {
   example?: string
 }
 
+// The word list mirrors the engine's dispatch surface (gateway/commands/
+// router.py's spec table + the rulepacks' `commands:` words) — aliases the
+// engine actually resolves (rd/rh/rc/rcv/nn/…), not invented ones.
 export const COMMANDS: readonly CommandEntry[] = [
+  // Dice & checks
   { word: "r", example: "3d6+2" },
-  { word: "hr" },
+  { word: "rd" },
+  { word: "rh", example: "1d100" },
+  { word: "hroll" },
   { word: "ra" },
   { word: "rav" },
+  { word: "rc" },
+  { word: "rcv" },
   { word: "opposed" },
   { word: "st", example: "力量=70" }, // i18n-exempt: a CJK example argument, data not UI
+  { word: "sanity" },
+  { word: "sc" },
+  { word: "li" },
+  { word: "ti" },
+  { word: "growth" },
+  { word: "en" },
+  // Characters
+  { word: "genchar" },
+  { word: "coc" },
+  { word: "coc7" },
+  { word: "dnd" },
+  { word: "dnd5e" },
+  { word: "pc" },
+  { word: "rename" },
+  { word: "nn" },
+  { word: "avatar" },
+  { word: "bind" },
+  { word: "unbind" },
+  // The table & the story
+  { word: "party" },
+  { word: "jrrp" },
+  { word: "luck" },
+  { word: "draw" },
+  { word: "init" },
+  { word: "recap" },
+  { word: "report" },
+  { word: "chronicle" },
+  { word: "phase" },
+  { word: "help" },
+  { word: "language" },
+  // Keeper & operator surface
   { word: "var" },
   { word: "module" },
   { word: "pack" },
   { word: "import" },
-  { word: "pc" },
   { word: "skill" },
   { word: "cast" },
-  { word: "init" },
-  { word: "sanity" },
-  { word: "genchar" },
-  { word: "growth" },
-  { word: "chronicle" },
-  { word: "recap" },
-  { word: "report" },
-  { word: "save" },
-  { word: "undo" },
-  { word: "phase" },
-  { word: "help" },
-  { word: "language" },
+  { word: "rule" },
   { word: "room" },
+  { word: "panel" },
   { word: "panels" },
   { word: "audio" },
-  { word: "avatar" },
+  { word: "bgm" },
+  { word: "ambience" },
+  { word: "sfx" },
+  { word: "save" },
+  { word: "undo" },
+  { word: "bot" },
+  { word: "botlist" },
+  { word: "model" },
+  { word: "reset" },
+  { word: "preset" },
+  { word: "dev" },
+  { word: "habits" },
 ]
 
 /** Does this word match the typed prefix (after the dot)? Case-insensitive. */
@@ -80,7 +119,7 @@ export interface QuickCommand {
 export const QUICK_COMMANDS: readonly QuickCommand[] = [
   // --- Player surface ---
   { word: "r", line: ".r " },
-  { word: "hr", line: ".hr " },
+  { word: "rh", line: ".rh " },
   { word: "ra", line: ".ra " },
   { word: "rav", line: ".rav " },
   { word: "sanity", line: ".sc 1/1d6" },
@@ -89,6 +128,12 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "pc", line: ".pc " },
   { word: "recap", line: ".recap" },
   { word: "help", line: ".help" },
+  { word: "draw", line: ".draw" },
+  { word: "jrrp", line: ".jrrp" },
+  { word: "rename", line: ".rename " },
+  { word: "party", line: ".party" },
+  { word: "genchar", line: ".genchar" },
+  { word: "report", line: ".report" },
   // --- Keeper-only surface (hidden from player seats) ---
   { word: "module", line: ".module ", keeper: true },
   { word: "var", line: ".var ", keeper: true },
@@ -131,25 +176,25 @@ export function quickCommandLines(commands: readonly QuickCommand[] = QUICK_COMM
 
 /** Curated common CoC skill names (zh) — data, not UI prose (i18n-exempt). */
 export const COMMON_SKILLS: readonly string[] = [
-  "侦查",
-  "聆听",
-  "图书馆使用",
-  "闪避",
-  "攀爬",
-  "游泳",
-  "斗殴",
-  "手枪",
-  "急救",
-  "潜行",
-  "心理学",
-  "母语",
-  "敏捷",
-  "力量",
-  "体质",
-  "外貌",
-  "意志",
-  "教育",
-  "运气",
+  "侦查", // i18n-exempt: data
+  "聆听", // i18n-exempt: data
+  "图书馆使用", // i18n-exempt: data
+  "闪避", // i18n-exempt: data
+  "攀爬", // i18n-exempt: data
+  "游泳", // i18n-exempt: data
+  "斗殴", // i18n-exempt: data
+  "手枪", // i18n-exempt: data
+  "急救", // i18n-exempt: data
+  "潜行", // i18n-exempt: data
+  "心理学", // i18n-exempt: data
+  "母语", // i18n-exempt: data
+  "敏捷", // i18n-exempt: data
+  "力量", // i18n-exempt: data
+  "体质", // i18n-exempt: data
+  "外貌", // i18n-exempt: data
+  "意志", // i18n-exempt: data
+  "教育", // i18n-exempt: data
+  "运气", // i18n-exempt: data
 ]
 
 /** Argument completion spec for one command word. */
@@ -162,12 +207,22 @@ export interface ArgSpec {
 
 export const ARG_SPECS: Record<string, ArgSpec> = {
   r: { dice: true },
-  hr: { dice: true },
+  rd: { dice: true },
+  rh: { dice: true },
+  hroll: { dice: true },
   ra: { tokens: COMMON_SKILLS },
   rav: { tokens: COMMON_SKILLS },
+  rc: { tokens: COMMON_SKILLS },
+  rcv: { tokens: COMMON_SKILLS },
   sanity: { tokens: ["1/1d6", "1/d6", "0/1d4", "1/1d8"] },
+  sc: { tokens: ["1/1d6", "1/d6", "0/1d4", "1/1d8"] },
   st: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
   pc: { tokens: ["list", "claim", "release"] },
+  party: { tokens: ["add", "act", "auto", "remove"] },
+  avatar: { tokens: ["gen", "clear"] },
+  bgm: { tokens: ["stop", "pause", "resume", "volume"] },
+  ambience: { tokens: ["stop", "pause", "resume", "volume"] },
+  sfx: { tokens: ["stop", "pause", "resume", "volume"] },
   var: { tokens: ["list", "expose", "add", "set"] },
   skill: { tokens: ["list", "enable", "disable"] },
   room: { tokens: ["list", "reset"] },

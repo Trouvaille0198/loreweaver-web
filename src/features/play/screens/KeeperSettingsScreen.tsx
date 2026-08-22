@@ -20,7 +20,15 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
       case "keys":
         return <KeysScreen onBack={() => {}} embedded />
       case "module":
-        return <ModuleScreen onBack={() => {}} embedded />
+        return (
+          <ModuleScreen
+            onBack={() => {}}
+            embedded
+            onOpenDetail={(name) => {
+              window.location.hash = `#/module-detail/${encodeURIComponent(name)}`
+            }}
+          />
+        )
       case "rules":
         return <RulesScreen onBack={() => {}} embedded />
       case "skills":

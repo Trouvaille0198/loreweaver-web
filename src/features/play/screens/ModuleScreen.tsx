@@ -27,7 +27,7 @@ function displayValue(value: unknown): string {
 type SendStatus = "idle" | "sent" | "failed"
 
 
-function KnowledgePool({ detail, label }: { detail: ModuleDetail; label: string }) {
+export function KnowledgePool({ detail, label }: { detail: ModuleDetail; label: string }) {
   const pool = detail.pool?.keeper
   if (!pool) return null
   return (
@@ -119,7 +119,15 @@ function OperationNotice({ operation, t }: { operation: ModuleOperation | null; 
   return <p className="studio-hint" role="status">{`${t("play.module.saved")} ${operation.name}`}</p>
 }
 
-export default function ModuleScreen({ onBack, embedded = false }: { onBack: () => void; embedded?: boolean }) {
+export default function ModuleScreen({
+  onBack,
+  embedded = false,
+  onOpenDetail,
+}: {
+  onBack: () => void
+  embedded?: boolean
+  onOpenDetail?: (name: string) => void
+}) {
   const { t } = useTranslation()
   const generated = useAdminStore((s) => s.generated)
   const busy = useAdminStore((s) => s.busy)
@@ -230,7 +238,13 @@ export default function ModuleScreen({ onBack, embedded = false }: { onBack: () 
                 type="button"
                 className="ghost-button module-source-select"
                 aria-pressed={source.name === selectedName}
-                onClick={() => setSelectedName(source.name)}
+                onClick={() => {
+                  if (onOpenDetail) {
+                    onOpenDetail(source.name)
+                    return
+                  }
+                  setSelectedName(source.name)
+                }}
               >
                 <strong>{source.name}</strong>
                 <span className="studio-hint">{source.size} {t("play.module.bytes")}</span>
