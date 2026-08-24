@@ -706,7 +706,7 @@ function adminOp(room, frame, { timeoutMs = 120_000 } = {}) {
       } else if (
         joined &&
         f.type &&
-        /^(admin_room_op|admin_keys|admin_config|admin_models|admin_skills|admin_rules|error)$/.test(f.type)
+        /^(admin_room_op|admin_keys|admin_config|admin_models|admin_skills|admin_rules|admin_generated|error)$/.test(f.type)
       ) {
         finish(f)
       }
@@ -717,6 +717,118 @@ function adminOp(room, frame, { timeoutMs = 120_000 } = {}) {
 /** Turn an admin error frame into a readable message. */
 function adminError(resp) {
   return `${resp.code ?? "error"}: ${resp.message ?? JSON.stringify(resp)}`
+}
+
+/** Run a module-admin op (admin_generate kind) and parse its admin_generated reply. */
+async function moduleOp(room, kind, payload, { timeoutMs = 120_000 } = {}) {
+  const resp = await adminOp(room, { type: "admin_generate", kind, ...payload }, { timeoutMs })
+  if (resp.type === "error") throw new Error(adminError(resp))
+  if (resp.type !== "admin_generated") throw new Error(`unexpected response: ${resp.type}`)
+  if (resp.ok !== true) throw new Error(resp.error || "module operation failed")
+  try {
+    return { name: resp.name, detail: JSON.parse(resp.detail || "{}") }
+  } catch {
+    return { name: resp.name, detail: {} }
+  }
+}
+
+function loreweaverModuleList() {
+  return tool(
+    "loreweaver_module_list",
+    "List the room's module library (Markdown text sources + installed content packs), which one is current, and import status. Keeper-only, over the wire.",
+    { room: { type: "string", description: "Room name (default sheep)." } },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const { detail } = await moduleOp(room, "module_list", {}, { timeoutMs: 60_000 })
+        const mods = Array.isArray(detail.modules) ? detail.modules : []
+        const lines = [`module library — current: ${detail.current || "(none)"}, status: ${detail.status || "?"}`]
+        for (const m of mods) {
+          lines.push(
+            `- ${m.name}${m.current ? " ← current" : ""}${m.importing ? " (importing…)" : ""} [${m.source_kind ?? "text"}] ${m.title ?? ""} (${m.size ?? 0} B)`,
+          )
+        }
+        if (mods.length === 0) lines.push("(no modules)")
+        return ok(lines.join("\n"))
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverModuleDetail() {
+  return tool(
+    "loreweaver_module_detail",
+    "Show one module's detail (Markdown source or installed content pack): title, size, whether it is current, and a content preview. Keeper-only, over the wire.",
+    {
+      name: { type: "string", required: true, description: "Module name, e.g. 汐浦送灯.md or a pack id." },
+      room: { type: "string", description: "Room name (default sheep)." },
+    },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const { detail } = await moduleOp(room, "module_detail", { name: args.name.trim() }, { timeoutMs: 60_000 })
+        const lines = []
+        if (detail.name) lines.push(`name: ${detail.name}`)
+        if (detail.title) lines.push(`title: ${detail.title}`)
+        if (detail.size) lines.push(`size: ${detail.size} B`)
+        if (detail.current !== undefined) lines.push(`current: ${detail.current}`)
+        if (Array.isArray(detail.entries)) lines.push(`entries: ${detail.entries.length}`)
+        const text = detail.text ?? detail.content ?? detail.preview ?? ""
+        if (typeof text === "string" && text.trim()) lines.push("--- preview ---", truncate(text, 2000))
+        if (Object.keys(detail).length === 0) lines.push("(no detail returned)")
+        return ok(lines.join("\n"))
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverModuleDelete() {
+  return tool(
+    "loreweaver_module_delete",
+    "Delete a module file from the library (Markdown text source only — installed packs are not deletable here). The module currently in use cannot be deleted. Keeper-only, over the wire.",
+    {
+      name: { type: "string", required: true, description: "Module file name to delete, e.g. 模组.md." },
+      room: { type: "string", description: "Room name (default sheep)." },
+    },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const { name, detail } = await moduleOp(room, "module_delete", { name: args.name.trim() }, { timeoutMs: 60_000 })
+        return ok(`Module "${detail.name ?? name}" deleted from room "${room}".`)
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverWorldbookList() {
+  return tool(
+    "loreweaver_worldbook_list",
+    "List the room's worldbooks (files + attached entries) and which one is active. Keeper-only, over the wire.",
+    { room: { type: "string", description: "Room name (default sheep)." } },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const { detail } = await moduleOp(room, "worldbook_list", {}, { timeoutMs: 60_000 })
+        const books = Array.isArray(detail.worldbooks) ? detail.worldbooks : []
+        const lines = [`worldbooks — enabled: ${detail.enabled !== false}, current: ${detail.current || "(none)"}`]
+        for (const b of books) {
+          lines.push(
+            `- ${b.name}${b.current ? " ← current" : ""} [${b.source_kind ?? "file"}] ${b.entry_count ?? 0} entries${b.attached ? " (attached)" : ""}`,
+          )
+        }
+        if (books.length === 0) lines.push("(no worldbooks)")
+        return ok(lines.join("\n"))
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
 }
 
 function loreweaverRoomExport() {
@@ -980,6 +1092,10 @@ function apply(ctx) {
     loreweaverDeleteKey(),
     loreweaverListModels(),
     loreweaverSetModel(),
+    loreweaverModuleList(),
+    loreweaverModuleDetail(),
+    loreweaverModuleDelete(),
+    loreweaverWorldbookList(),
   ]
   const markers = []
   try {
