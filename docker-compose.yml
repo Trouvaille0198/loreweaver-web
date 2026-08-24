@@ -47,6 +47,7 @@ services:
     environment:
       # TUI locale of the server (en/zh).
       - LANG=C.UTF-8
+      - TRPG_LOCALE=zh
       # Example provider wiring — uncomment and fill in:
       # - TRPG_LLM__PROVIDER=deepseek
       # - TRPG_LLM__API_KEY=sk-…

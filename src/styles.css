@@ -89,6 +89,7 @@ body,
    app shell actually means; 100vh on iOS Safari overshoots under the collapsed
    chrome. Fall back to 100% where dvh is unsupported (old WebViews). */
 @supports (height: 100dvh) {
+
   html,
   body,
   #root {
@@ -177,7 +178,7 @@ body {
   min-height: 0;
 }
 
-.app-main > .placeholder {
+.app-main>.placeholder {
   margin: auto;
 }
 
@@ -679,7 +680,7 @@ body {
   font: 15px/1.65 var(--font-story);
 }
 
-.entry-body > :first-child,
+.entry-body> :first-child,
 .entry-body p:first-child {
   margin-top: 0;
 }
@@ -983,7 +984,7 @@ body {
   border-color: var(--accent);
 }
 
-.input-box > button {
+.input-box>button {
   background: var(--accent);
   color: var(--accent-ink);
   border: none;
@@ -1202,7 +1203,7 @@ body {
   color: var(--ink-faint);
 }
 
-.input-box > button:disabled {
+.input-box>button:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -1657,7 +1658,13 @@ body {
 .var-list {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 10px;
+}
+
+.var-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .badge-info {
@@ -2032,7 +2039,7 @@ body {
   opacity: 0.55;
 }
 
-.var-hidden-row > :last-child {
+.var-hidden-row> :last-child {
   flex: 1;
   min-width: 0;
 }
@@ -2426,6 +2433,7 @@ body {
   gap: 8px;
   align-items: flex-start;
 }
+
 .play-form .field {
   width: 100%;
 }
@@ -2447,6 +2455,7 @@ body {
   border: 1px solid var(--hairline);
   border-radius: 6px;
 }
+
 .play-form-select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -2621,11 +2630,9 @@ body {
 .module-detail-source-card {
   border: 1px solid var(--border-soft);
   border-radius: 14px;
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--bg-raised) 92%, var(--accent) 8%),
-    var(--bg-raised)
-  );
+  background: linear-gradient(145deg,
+      color-mix(in srgb, var(--bg-raised) 92%, var(--accent) 8%),
+      var(--bg-raised));
 }
 
 .module-detail-hero {
@@ -2761,6 +2768,7 @@ body {
   margin-top: 8px;
   color: var(--ink-faint);
 }
+
 .module-pool-item {
   display: flex;
   flex-direction: column;
@@ -3200,20 +3208,14 @@ body {
 
 /* ---- text fields (inputs, textareas, selects) ---- */
 
-.field
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .field select,
 .field textarea,
-.dialog-row
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .play-table select,
-.play-table
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .var-set-input,
-.host-local-home
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-    [type="color"]
-  ) {
+.host-local-home input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]) {
   background-color: var(--bg-inset);
   color: var(--ink);
   border: 1px solid var(--border);
@@ -3319,10 +3321,8 @@ input[type="checkbox"]:checked {
      fallback before JS runs. The stroke color is the palette's bg token —
      it reads on the accent fill for every palette (light accent + dark bg,
      or paperwhite's dark accent + light bg). */
-  background-image: var(
-    --checkbox-check,
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%2317130e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-  );
+  background-image: var(--checkbox-check,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%2317130e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"));
 }
 
 input[type="checkbox"]:focus-visible {
@@ -3474,7 +3474,7 @@ code {
 .icon-button,
 .app-menu-row,
 .connect-form button,
-.input-box > button,
+.input-box>button,
 .host-local-button {
   transition:
     background-color 120ms ease,
@@ -3489,7 +3489,7 @@ code {
 .choice-button:hover:not(:disabled),
 .icon-button:hover:not(:disabled),
 .connect-form button:hover:not(:disabled),
-.input-box > button:hover:not(:disabled),
+.input-box>button:hover:not(:disabled),
 .host-local-button:hover:not(:disabled) {
   filter: brightness(1.12);
 }
@@ -3499,19 +3499,20 @@ code {
 .choice-button:active:not(:disabled),
 .icon-button:active:not(:disabled),
 .connect-form button:active:not(:disabled),
-.input-box > button:active:not(:disabled),
+.input-box>button:active:not(:disabled),
 .host-local-button:active:not(:disabled) {
   transform: translateY(1px);
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .primary-button,
   .ghost-button,
   .choice-button,
   .icon-button,
   .app-menu-row,
   .connect-form button,
-  .input-box > button,
+  .input-box>button,
   .host-local-button {
     transition: none;
   }
@@ -3666,7 +3667,7 @@ code {
     gap: var(--space-1);
   }
 
-  .room-info-grid dd + dt {
+  .room-info-grid dd+dt {
     margin-top: var(--space-2);
   }
 
@@ -3828,8 +3829,8 @@ code {
   }
 
   /* The inline wide-screen extras fold into the ⋯ popup on a phone. */
-  .session-head > .status-pill-wrap,
-  .session-head > .panel-menu {
+  .session-head>.status-pill-wrap,
+  .session-head>.panel-menu {
     display: none;
   }
 
@@ -3880,7 +3881,7 @@ code {
     gap: 10px;
   }
 
-  .session-more-section + .session-more-section {
+  .session-more-section+.session-more-section {
     border-top: 1px solid var(--border-soft);
     padding-top: 10px;
   }
@@ -3969,7 +3970,7 @@ code {
     font-size: 16px;
   }
 
-  .input-box > button {
+  .input-box>button {
     padding: 0 14px;
   }
 
@@ -4050,28 +4051,16 @@ code {
   }
 
   /* --- form fields: no iOS zoom, easier thumbs --- */
-  .field
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
+  .field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
   .field select,
   .field textarea,
-  .dialog-row
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
+  .dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
   .play-table select,
-  .play-table
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
+  .play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
   .var-set-input,
   .connect-form input,
   .connect-form textarea,
-  .host-local-home
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ) {
+  .host-local-home input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]) {
     font-size: 16px;
   }
 
@@ -4081,7 +4070,7 @@ code {
   .icon-button,
   .app-menu-row,
   .app-menu-toggle,
-  .input-box > button,
+  .input-box>button,
   .connect-form button {
     min-height: 44px;
   }
@@ -4202,7 +4191,28 @@ code {
 }
 
 /* Trackers: number-forward instrument rows, not label-forward lists. */
+.session .desk-pane .variables-card {
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.session .desk-pane .variables-card .desk-title {
+  letter-spacing: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
 .session .desk-pane .var-row {
+  font-size: 14px;
+  min-height: 30px;
+  padding: 5px 10px;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--bg-inset) 58%, transparent);
+}
+
+.session .desk-pane .variables-card .meter-label {
   font-size: 14px;
 }
 
@@ -4212,8 +4222,18 @@ code {
   font-variant-numeric: tabular-nums;
 }
 
+.session .desk-pane .var-value-enum {
+  font: 500 13px/1.4 var(--font-ui);
+  font-variant-numeric: normal;
+}
+
 .session .desk-pane .meter {
   grid-template-columns: auto minmax(48px, 1fr) auto;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--bg-inset) 58%, transparent);
 }
 
 .session .desk-pane .meter-value {
@@ -4472,6 +4492,7 @@ code {
 }
 
 @media (max-width: 380px) {
+
   .character-modal-detail-grid,
   .character-modal-detail-grid--attributes,
   .character-modal .play-character-equipment {

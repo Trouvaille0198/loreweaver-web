@@ -140,8 +140,33 @@ describe("StatePanel — module variables (v1.6)", () => {
     expect(screen.getByText("42")).toBeInTheDocument()
     expect(container.querySelector('[data-kind="bool"] .chip-on')).not.toBeNull()
     expect(container.querySelectorAll('[data-kind="bool"] .chip-off')).toHaveLength(1)
-    expect(screen.getByText("night")).toBeInTheDocument()
+    expect(screen.getByText("night")).toHaveClass("var-value-enum")
     expect(screen.getByText("trust no one")).toBeInTheDocument()
+  })
+
+  it("groups number trackers before boolean and text-like trackers", () => {
+    useSessionStore.getState().ingest({
+      type: "state",
+      party: [],
+      initiative: [],
+      online: 1,
+      variables: [
+        { id: "phase", label: "Phase", kind: "enum", value: "opening" },
+        { id: "evidence", label: "Evidence", kind: "number", value: 2, min: 0, max: 6 },
+        { id: "alerted", label: "Alerted", kind: "bool", value: true },
+        { id: "fear", label: "Fear", kind: "number", value: 1, min: 0, max: 10 },
+      ],
+    })
+
+    const { container } = render(<StatePanel />)
+    const groups = [...container.querySelectorAll(".var-group")]
+    expect(groups.map((group) => group.className)).toEqual([
+      "var-group var-group-number",
+      "var-group var-group-bool",
+      "var-group var-group-text",
+    ])
+    expect(groups[0]?.textContent).toContain("Evidence")
+    expect(groups[0]?.textContent).toContain("Fear")
   })
 
   it("dims and locks keeper-view hidden variables (v1.7 additive hidden:true)", () => {

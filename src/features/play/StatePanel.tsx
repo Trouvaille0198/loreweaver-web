@@ -123,6 +123,22 @@ function isHidden(variable: ModuleVariable): boolean {
   return variable.hidden === true
 }
 
+type VariableGroup = "number" | "bool" | "text"
+
+function variableGroup(variable: ModuleVariable): VariableGroup {
+  if (variable.kind === "number") return "number"
+  if (variable.kind === "bool") return "bool"
+  return "text"
+}
+
+function groupedVariables(variables: readonly ModuleVariable[]) {
+  const groups: Record<VariableGroup, ModuleVariable[]> = { number: [], bool: [], text: [] }
+  for (const variable of variables) groups[variableGroup(variable)].push(variable)
+  return (["number", "bool", "text"] as const).flatMap((kind) =>
+    groups[kind].length > 0 ? [{ kind, variables: groups[kind] }] : [],
+  )
+}
+
 /**
  * v1.6 module variables ("trackers"), rendered by kind in definition order:
  * bounded numbers become meters, unbounded numbers stat rows, bools badges,
@@ -157,7 +173,9 @@ export function VariableRow({ variable }: { variable: ModuleVariable }) {
   return (
     <div className="var-row" data-kind={variable.kind}>
       <span className="var-label">{label}</span>
-      <span className="var-value">{stripControlChars(String(variable.value))}</span>
+      <span className={`var-value ${variable.kind === "enum" ? "var-value-enum" : ""}`}>
+        {stripControlChars(String(variable.value))}
+      </span>
     </div>
   )
 }
@@ -260,7 +278,7 @@ export function VariablesCard({ game }: { game: StateFrame }) {
   const [editing, setEditing] = useState(false)
   if (!game.variables || game.variables.length === 0) return null
   return (
-    <section className="desk-card">
+    <section className="desk-card variables-card">
       <header className="desk-title">
         {t("session.trackers")}
         {isKeeper ? (
@@ -271,24 +289,28 @@ export function VariablesCard({ game }: { game: StateFrame }) {
       </header>
       {isKeeper && editing ? <p className="studio-hint">{t("session.varEditHint")}</p> : null}
       <div className="var-list">
-        {game.variables.map((variable) => {
-          const row = isHidden(variable) ? (
-            <div className="var-hidden-row" title={t("session.hiddenVar")}>
-              <span className="var-lock" aria-label={t("session.hiddenVar")}>
-                🔒
-              </span>
-              <VariableRow variable={variable} />
-            </div>
-          ) : (
-            <VariableRow variable={variable} />
-          )
-          return (
-            <div key={variable.id} className="var-entry">
-              {row}
-              {isKeeper && editing ? <VariableWrite variable={variable} /> : null}
-            </div>
-          )
-        })}
+        {groupedVariables(game.variables).map(({ kind, variables }) => (
+          <div key={kind} className={`var-group var-group-${kind}`}>
+            {variables.map((variable) => {
+              const row = isHidden(variable) ? (
+                <div className="var-hidden-row" title={t("session.hiddenVar")}>
+                  <span className="var-lock" aria-label={t("session.hiddenVar")}>
+                    🔒
+                  </span>
+                  <VariableRow variable={variable} />
+                </div>
+              ) : (
+                <VariableRow variable={variable} />
+              )
+              return (
+                <div key={variable.id} className="var-entry">
+                  {row}
+                  {isKeeper && editing ? <VariableWrite variable={variable} /> : null}
+                </div>
+              )
+            })}
+          </div>
+        ))}
       </div>
     </section>
   )
