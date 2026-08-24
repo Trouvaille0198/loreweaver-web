@@ -1,7 +1,10 @@
 # Loreweaver web — browser client + server in one container.
 #
-# The engine is mounted as the BuildKit context `engine` (the sibling
-# checkout), so the image always contains the local fork's `--web` mode.
+# The engine is mounted as the BuildKit context `engine` (default: the source
+# repo ~/repos/loreweaver), so the image always contains the repo's `--web`
+# mode. Override with ENGINE_CONTEXT if the repo lives elsewhere. The engine
+# code inside the image comes ONLY from the source repo — never from a
+# deploy-side checkout.
 #   docker compose up --build
 #
 # Point the model at a provider via environment variables (see the engine's
@@ -13,7 +16,9 @@ services:
     build:
       context: .
       additional_contexts:
-        engine: ../loreweaver
+        # Engine source: always the source repo, not a deploy-side checkout.
+        # Override with ENGINE_CONTEXT if the repo lives elsewhere.
+        engine: ${ENGINE_CONTEXT:-/home/melon/repos/loreweaver}
     image: loreweaver-web:local
     # Run as the host user (default 1001:1001 — melon on the deployment VPS),
     # NOT root: every file the server writes into the ./data bind mount is
