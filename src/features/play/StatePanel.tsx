@@ -597,8 +597,11 @@ export function PregenCard({ game }: { game: StateFrame }) {
           const claimedBy = pregen.claimed_by.trim()
           const mine = claimedBy !== "" && claimedBy === you
           return (
-            <li key={pregen.name} className={`party-row${claimedBy ? " is-offline" : ""}`}>
-              <span className="party-name">{stripControlChars(pregen.name)}</span>
+            <li key={pregen.name} className={`party-row pregen-row${claimedBy ? " is-offline" : ""}`}>
+              <div className="pregen-copy">
+                <span className="party-name">{stripControlChars(pregen.name)}</span>
+                {pregen.blurb ? <span className="pregen-blurb">{stripControlChars(pregen.blurb)}</span> : null}
+              </div>
               {claimedBy ? (
                 <span className="chip">
                   {mine

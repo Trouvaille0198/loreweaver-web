@@ -231,7 +231,7 @@ describe("PregenCard", () => {
       game: {
         ...BASE,
         pregens: [
-          { name: "林晚", claimed_by: "" },
+          { name: "林晚", claimed_by: "", blurb: "A careful observer." },
           { name: "陈九鲤", claimed_by: "Ash" },
           { name: "白榆生", claimed_by: "Nyx" },
         ],
@@ -240,6 +240,7 @@ describe("PregenCard", () => {
     render(<StatePanel />)
 
     expect(screen.getByText("林晚")).toBeInTheDocument()
+  expect(screen.getByText("A careful observer.")).toHaveClass("pregen-blurb")
     expect(screen.getByText("claimed by Ash")).toBeInTheDocument()
     // Your own claim reads as yours, not as somebody else's name.
     expect(screen.getByText("yours")).toBeInTheDocument()

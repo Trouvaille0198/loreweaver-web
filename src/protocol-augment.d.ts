@@ -8,6 +8,11 @@
 import "@loreweaver/protocol"
 
 declare module "@loreweaver/protocol" {
+  interface PregenEntry {
+    /** Public persona summary from a module's pre-generated character card. */
+    blurb?: string
+  }
+
   interface StateFrame {
     /** Player-visible noun lists for `.image` completions (NPC/clue names). */
     image_names?: { npcs?: string[]; clues?: string[] }
