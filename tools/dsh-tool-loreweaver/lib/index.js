@@ -40,7 +40,7 @@ const run = promisify(execFile)
 const APP_DIR = process.env.LORE_APP_DIR || join(homedir(), "repos", "loreweaver-web")
 const DATA_DIR = process.env.LORE_DATA_DIR || join(homedir(), "loreweaver-data")
 const CONTAINER = process.env.LORE_CONTAINER || "loreweaver-web"
-const ROOM = process.env.LORE_ROOM || "table"
+const ROOM = process.env.LORE_ROOM || "sheep"
 const WS_URL = process.env.LORE_WS_URL || "ws://127.0.0.1:8787"
 
 // -- helpers ---------------------------------------------------------------
@@ -252,15 +252,17 @@ function loreweaverMintKey() {
     {
       name: { type: "string", required: true, description: "Display name for the key holder." },
       role: { type: "string", enum: ["player", "keeper"], description: "player (default) or keeper." },
+      room: { type: "string", description: "Room to mint the key for (default sheep)." },
     },
     async (args) => {
       try {
         const role = args.role ?? "player"
+        const room = args.room?.trim() || ROOM
         const out = await engine(
-          ["--tui-key", "add", "--keys", "/data/keys.toml", "--room", ROOM, "--name", args.name.trim(), "--role", role],
+          ["--tui-key", "add", "--keys", "/data/keys.toml", "--room", room, "--name", args.name.trim(), "--role", role],
           { timeoutMs: 30_000 },
         )
-        return ok(`Minted ${role} key for "${args.name.trim()}" (room ${ROOM}):\n${out}`)
+        return ok(`Minted ${role} key for "${args.name.trim()}" (room ${room}):\n${out}`)
       } catch (e) {
         return fail(e)
       }
@@ -392,7 +394,7 @@ async function roomKey(room) {
   let best = null
   let bestRole = ""
   for (const entry of parseKeystore(raw)) {
-    if ((entry.room ?? "table") !== room) continue
+    if ((entry.room ?? ROOM) !== room) continue
     const role = entry.role ?? "player"
     if (best === null || (role === "player" && bestRole !== "player")) {
       best = entry.key
@@ -409,7 +411,7 @@ async function roomKey(room) {
 async function keeperKey(room) {
   if (process.env.LORE_KEY) return process.env.LORE_KEY
   const raw = await readFile(join(DATA_DIR, "keys.toml"), "utf8")
-  const entries = parseKeystore(raw).filter((e) => (e.room ?? "table") === room)
+  const entries = parseKeystore(raw).filter((e) => (e.room ?? ROOM) === room)
   if (entries.length === 0)
     throw new Error(`no access key for room "${room}" in the keystore — mint one first (loreweaver_mint_key)`)
   const keeper = entries.find((e) => e.role === "keeper")
@@ -660,6 +662,233 @@ function digest(frames, room) {
   return lines.join("\n")
 }
 
+/**
+ * Send ONE admin frame as the room's keeper over the WS protocol and return the
+ * first matching admin response (admin_room_op / admin_keys / admin_config /
+ * admin_models / admin_skills / admin_rules / error). Presence/audio/narrative
+ * broadcasts are skipped. The keeper key comes from the host keystore.
+ */
+function adminOp(room, frame, { timeoutMs = 120_000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(WS_URL)
+    let joined = false
+    const overall = setTimeout(() => finish({ type: "error", code: "timeout" }), timeoutMs)
+    function finish(f) {
+      clearTimeout(overall)
+      try {
+        ws.close()
+      } catch {
+        /* already closed */
+      }
+      resolve(f)
+    }
+    ws.onopen = async () => {
+      try {
+        const key = await keeperKey(room)
+        ws.send(JSON.stringify({ type: "join", key, name: "loreweaver-admin" }))
+      } catch (e) {
+        reject(e)
+      }
+    }
+    ws.onerror = () => reject(new Error("websocket error while running an admin op"))
+    ws.onclose = () => finish({ type: "error", code: "closed" })
+    ws.onmessage = (event) => {
+      if (typeof event.data !== "string") return // binary media frames: ignored
+      let f
+      try {
+        f = JSON.parse(event.data)
+      } catch {
+        return
+      }
+      if (f.type === "welcome") {
+        joined = true
+        ws.send(JSON.stringify(frame))
+      } else if (
+        joined &&
+        f.type &&
+        /^(admin_room_op|admin_keys|admin_config|admin_models|admin_skills|admin_rules|error)$/.test(f.type)
+      ) {
+        finish(f)
+      }
+    }
+  })
+}
+
+/** Turn an admin error frame into a readable message. */
+function adminError(resp) {
+  return `${resp.code ?? "error"}: ${resp.message ?? JSON.stringify(resp)}`
+}
+
+function loreweaverRoomExport() {
+  return tool(
+    "loreweaver_room_export",
+    "Export one room's campaign to a backup JSON server-side (under the data dir / room_backups/), as the room's keeper. The engine chooses the path unless you pass one.",
+    {
+      room: { type: "string", description: "Room name (default sheep)." },
+      path: { type: "string", description: "Optional server-side output path (e.g. /data/room_backups/backup.json)." },
+    },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const frame = { type: "admin_export_room", room }
+        if (args.path?.trim()) frame.path = args.path.trim()
+        const resp = await adminOp(room, frame, { timeoutMs: 180_000 })
+        if (resp.type === "error") return fail(new Error(adminError(resp)))
+        return ok(`Room "${room}" exported → ${resp.path || "(server-chosen path)"}`)
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverRoomImport() {
+  return tool(
+    "loreweaver_room_import",
+    "Restore a room backup JSON INTO the room the keeper key belongs to (the engine requires the file to be a backup of that same room). The file must already be on the server under the data dir, e.g. /data/room_backups/sheep_xxx.json.",
+    {
+      path: { type: "string", required: true, description: "Server-side backup file path, e.g. /data/room_backups/sheep_xxx.json." },
+      room: { type: "string", description: "Room whose keeper key to use (default sheep) — import always lands in the caller's room." },
+    },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const path = args.path.trim()
+        if (!path) return fail(new Error("path must not be empty"))
+        const resp = await adminOp(room, { type: "admin_import_room", path }, { timeoutMs: 240_000 })
+        if (resp.type === "error") return fail(new Error(adminError(resp)))
+        return ok(
+          `Imported ${resp.path || path} into room "${room}": keys: ${resp.keys}, documents: ${resp.documents}, room_state_rows: ${resp.room_state_rows}, store_rows: ${resp.store_rows}, vectors: ${resp.vector_points}, media: ${resp.media_files}`,
+        )
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverRoomReset() {
+  return tool(
+    "loreweaver_room_reset",
+    "Restart a room's campaign IN PLACE as its keeper: keys, bindings, connections and room settings survive; the campaign story (and optionally chars / everything) is wiped. Takes NO backup.",
+    {
+      room: { type: "string", description: "Room name (default sheep)." },
+      scope: { type: "string", enum: ["story", "chars", "all"], description: "How much to wipe (default story)." },
+    },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const scope = args.scope ?? "story"
+        const resp = await adminOp(room, { type: "admin_reset_room", room, scope }, { timeoutMs: 180_000 })
+        if (resp.type === "error") return fail(new Error(adminError(resp)))
+        return ok(
+          `Room "${room}" reset (scope=${scope}): keys: ${resp.keys}, documents: ${resp.documents}, room_state_rows: ${resp.room_state_rows}, store_rows: ${resp.store_rows}, vectors: ${resp.vector_points}, media: ${resp.media_files}`,
+        )
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverRoomDelete() {
+  return tool(
+    "loreweaver_room_delete",
+    "Delete a room ENTIRELY (campaign data, keys, media) as its keeper. The engine takes a backup first (room_backups/) and also rolls back if anything fails mid-way. Destructive and irreversible.",
+    { room: { type: "string", description: "Room name (default sheep)." } },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const resp = await adminOp(room, { type: "admin_delete_room_data", room, backup: true }, { timeoutMs: 240_000 })
+        if (resp.type === "error") return fail(new Error(adminError(resp)))
+        return ok(
+          `Room "${room}" deleted.${resp.path ? ` Backup written: ${resp.path}.` : ""} Removed: ${resp.keys} keys, ${resp.documents} documents, ${resp.room_state_rows} state rows, ${resp.store_rows} store rows, ${resp.vector_points} vectors, ${resp.media_files} media.`,
+        )
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverDeleteKey() {
+  return tool(
+    "loreweaver_delete_key",
+    "Delete ONE access key of a room, as the room's keeper. Find the id via loreweaver_list_keys (the masked key handle). The last keeper key cannot be deleted (anti-lockout).",
+    {
+      room: { type: "string", description: "Room name (default sheep)." },
+      id: { type: "string", required: true, description: "Key id (the masked handle from loreweaver_list_keys)." },
+    },
+    async (args) => {
+      try {
+        const room = args.room?.trim() || ROOM
+        const id = args.id.trim()
+        if (!id) return fail(new Error("id must not be empty"))
+        const resp = await adminOp(room, { type: "admin_delete_key", id }, { timeoutMs: 30_000 })
+        if (resp.type === "error") return fail(new Error(adminError(resp)))
+        const left = Array.isArray(resp.keys) ? resp.keys.length : "?"
+        return ok(`Key "${id}" deleted from room "${room}". ${left} key(s) remain.`)
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverListModels() {
+  return tool(
+    "loreweaver_list_models",
+    "List a provider's LIVE model catalog from the engine (admin_list_models), e.g. before setting a model. Falls back to an empty list when the provider is unreachable.",
+    {
+      provider: { type: "string", description: "Provider id, e.g. deepseek / openai / supergrok. Defaults to the current provider." },
+      kind: { type: "string", enum: ["chat", "embedding"], description: "Model kind to list (default chat)." },
+    },
+    async (args) => {
+      try {
+        const frame = { type: "admin_list_models" }
+        if (args.provider?.trim()) frame.provider = args.provider.trim().toLowerCase()
+        if (args.kind) frame.kind = args.kind
+        const resp = await adminOp(ROOM, frame, { timeoutMs: 60_000 })
+        if (resp.type === "error") return fail(new Error(adminError(resp)))
+        const models = Array.isArray(resp.models) ? resp.models : []
+        return ok(models.length > 0 ? models.join("\n") : "(no live model list — provider unreachable or unsupported)")
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
+function loreweaverSetModel() {
+  return tool(
+    "loreweaver_set_model",
+    "Switch the server's LLM configuration (provider / model / api key / base url) as the keeper, over the wire — the same action as the web model screen. Omit api_key/base_url to keep the current (or the provider's saved) credential.",
+    {
+      provider: { type: "string", required: true, description: "Provider id, e.g. deepseek / openai / supergrok." },
+      model: { type: "string", description: "Chat model id, e.g. deepseek-v4-pro." },
+      api_key: { type: "string", description: "Optional API key (never echoed back; shown masked)." },
+      base_url: { type: "string", description: "Optional custom endpoint URL." },
+    },
+    async (args) => {
+      try {
+        const frame = { type: "admin_set_model", provider: args.provider.trim().toLowerCase() }
+        if (args.model?.trim()) frame.model = args.model.trim()
+        if (args.api_key !== undefined) frame.api_key = args.api_key
+        if (args.base_url !== undefined) frame.base_url = args.base_url
+        const resp = await adminOp(ROOM, frame, { timeoutMs: 60_000 })
+        if (resp.type === "error") return fail(new Error(adminError(resp)))
+        const p = resp.provider ?? args.provider
+        const m = resp.chat_model ?? args.model ?? "?"
+        return ok(
+          `Model configured: provider=${p}, model=${m}${resp.base_url ? `, base_url=${resp.base_url}` : ""}${resp.api_key_masked ? `, api_key=${resp.api_key_masked}` : ""}`,
+        )
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
 function loreweaverRoomSnapshot() {
   return tool(
     "loreweaver_room_snapshot",
@@ -744,6 +973,13 @@ function apply(ctx) {
     loreweaverRoomSnapshot(),
     loreweaverWatchRoom(),
     loreweaverCommand(),
+    loreweaverRoomExport(),
+    loreweaverRoomImport(),
+    loreweaverRoomReset(),
+    loreweaverRoomDelete(),
+    loreweaverDeleteKey(),
+    loreweaverListModels(),
+    loreweaverSetModel(),
   ]
   const markers = []
   try {
