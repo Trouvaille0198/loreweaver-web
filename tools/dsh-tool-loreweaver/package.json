@@ -1,0 +1,12 @@
+{
+  "name": "dsh-tool-loreweaver",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "description": "DeepSeek Harness plugin: structured loreweaver operations (status, packs, modules, keys, backups) for the self-hosted AI TRPG engine.",
+  "dependencies": {}
+}
