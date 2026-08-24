@@ -10,6 +10,7 @@ vi.mock("../lib/transport", () => ({
 
 import i18n from "../i18n"
 import { useAdminStore } from "./admin"
+import { useConnectionStore } from "./connection"
 
 describe("admin model requests", () => {
   beforeEach(() => {
@@ -291,7 +292,7 @@ describe("admin model requests", () => {
       }),
     } as never)
     expect(useAdminStore.getState().moduleSources).toEqual([
-      { name: "scene.md", size: 12, modified: 100, current: true },
+      { name: "scene.md", title: "scene.md", size: 12, modified: 100, current: true, sourceKind: "text" },
     ])
 
     ingest({
@@ -335,5 +336,68 @@ describe("admin model requests", () => {
     } finally {
       await i18n.changeLanguage(previous === "zh" ? "zh" : "en")
     }
+  })
+
+  it("attaches checked media and companion options to module generation", async () => {
+    const previous = i18n.resolvedLanguage
+    await i18n.changeLanguage("en")
+    try {
+      useAdminStore.getState().generateModule("a fog-bound harbor town", {
+        media: ["cover", "npcs"],
+        companion: ["skills"],
+      })
+      expect(sent).toEqual([
+        {
+          type: "admin_generate",
+          kind: "module",
+          description: "a fog-bound harbor town",
+          locale: "en",
+          options: { media: ["cover", "npcs"], companion: ["skills"] },
+        },
+      ])
+    } finally {
+      await i18n.changeLanguage(previous === "zh" ? "zh" : "en")
+    }
+  })
+
+  it("omits the options field when nothing is checked", () => {
+    useAdminStore.getState().generateModule("a fog-bound harbor town")
+    expect(sent).toEqual([
+      {
+        type: "admin_generate",
+        kind: "module",
+        description: "a fog-bound harbor town",
+        locale: "en",
+      },
+    ])
+    expect(sent[0]).not.toHaveProperty("options")
+
+    sent.length = 0
+    useAdminStore.getState().generateModule("a fog-bound harbor town", { media: [], companion: [] })
+    expect(sent[0]).not.toHaveProperty("options")
+  })
+})
+
+describe("admin send join gating", () => {
+  it("defers admin frames until the join handshake completes", () => {
+    sent.length = 0
+    useConnectionStore.setState({ status: "connecting", attempt: 0, welcome: null, refused: false })
+
+    useAdminStore.getState().listModules()
+    expect(sent).toEqual([])
+
+    useConnectionStore.setState({
+      status: "online",
+      welcome: {
+        type: "welcome",
+        protocol: "2.5",
+        room: "table",
+        you: { id: "u1", name: "K", role: "keeper" },
+        locale: "en",
+        server: "loreweaver/1",
+      },
+    })
+    expect(sent).toEqual([{ type: "admin_generate", kind: "module_list", description: "{}" }])
+    useConnectionStore.setState({ status: "offline", welcome: null, refused: false })
   })
 })

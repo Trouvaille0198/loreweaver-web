@@ -659,6 +659,13 @@ body {
   margin-top: 6px;
 }
 
+.log-media-prompt {
+  font: 400 11px/1.4 var(--font-ui);
+  color: var(--ink-dim);
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
 .speaker-kp .entry-speaker {
   color: var(--lw-kp);
 }
@@ -2431,6 +2438,20 @@ body {
   color: var(--ink-dim);
 }
 
+.play-form-select {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+}
+.play-form-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .play-mint-row {
   display: flex;
   gap: 10px;
@@ -2511,6 +2532,30 @@ body {
 
 .module-source-list {
   width: 100%;
+}
+
+.module-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 10px;
+}
+
+.module-tab {
+  padding: 6px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-dim);
+  font: 600 13px/1.2 var(--font-ui);
+  cursor: pointer;
+}
+
+.module-tab.is-active {
+  border-color: var(--lw-accent);
+  color: var(--lw-accent);
+  background: color-mix(in srgb, var(--bg-raised) 80%, var(--lw-accent) 12%);
 }
 
 .module-source-row {
@@ -2716,23 +2761,12 @@ body {
   margin-top: 8px;
   color: var(--ink-faint);
 }
-.module-knowledge {
+.module-pool-item {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
-.module-knowledge h4,
-.module-knowledge h5 {
-  margin: 0;
-}
-
-.module-knowledge-block {
-  border-top: 1px solid var(--border-soft);
-  padding-top: 8px;
-}
-
-.module-knowledge-block pre,
 .module-source-preview {
   max-height: 360px;
   margin: 6px 0 0;
@@ -4448,4 +4482,26 @@ code {
 .session .desk-pane .panel-card .desk-title,
 .session .desk-pane .desk-card:not(.character-card) .desk-title {
   letter-spacing: 0.06em;
+}
+
+.module-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.module-media-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.module-media-item img {
+  width: 100%;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
 }

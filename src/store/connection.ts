@@ -182,6 +182,18 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       set({ welcome: frame })
       return
     }
+    // A join refusal (bad/expired key, join deadline) is terminal — retrying the same
+    // credentials can never succeed, but the transport's redial would otherwise loop into
+    // the same wall forever, appending the refusal to the log once per attempt. Refuse
+    // instead: offline, auto-rejoin latched off, and the server's reason lands on the
+    // connect form. These two codes only ever come from a join attempt, so this never
+    // swallows a mid-session error (those belong in the chronicle below). `bad_frame` is
+    // deliberately NOT terminal: it also answers a frame that merely raced ahead of the
+    // join, and the redial recovers from that on the next attempt.
+    if (frame.type === "error" && (frame.code === "bad_key" || frame.code === "join_timeout")) {
+      refuse(set, get, frame.message || frame.code)
+      return
+    }
     // Keeper-admin replies feed the admin store; they never reach the chronicle.
     if (useAdminStore.getState().ingest(frame)) return
     // The media family keeps its own index beside the log (the deck), and the

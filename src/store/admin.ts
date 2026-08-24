@@ -8,6 +8,8 @@ import { create } from "zustand"
 import type {
   AdminConfigFrame,
   AdminGeneratedFrame,
+  AdminGenerateProgressFrame,
+  AdminGenerateStartedFrame,
   AdminKeyInfo,
   AdminKeyPurpose,
   AdminResetScope,
@@ -24,13 +26,40 @@ import type {
 import { transportSend } from "../lib/transport"
 import i18n from "../i18n"
 import type { ClientFrame } from "@loreweaver/protocol"
+import { useConnectionStore } from "./connection"
 
 export interface ModuleSource {
   name: string
+  title?: string
   size: number
   modified: number
   current: boolean
   importing?: boolean
+  /** `"text"` for a Markdown source file, `"pack"` for an installed .lwpack content pack. */
+  sourceKind: "text" | "pack"
+  /** Pack: number of lore entries. */
+  entryCount?: number
+  /** Pack: number of claimable pregen cards. */
+  pregenCount?: number
+}
+
+/** Per-generation opt-ins for `generateModule`: media ids ride the imagegen
+ * lane, companion ids the structured generators. Empty groups are dropped
+ * before the frame goes out. */
+export interface GenerateModuleOptions {
+  media?: string[]
+  companion?: string[]
+}
+
+export interface ModuleMediaRecord {
+  name: string
+  hash: string
+  mime: string
+  size: number
+  /** Illustration kind (cover/scenes/npcs/items/asset) from the provenance name. */
+  kind?: string
+  /** Inline base64 payload when the media is a pack asset not reachable via the room channel. */
+  data?: string
 }
 
 export interface ModuleDetail {
@@ -43,10 +72,21 @@ export interface ModuleDetail {
   status: string
   importStatus?: string
   importing?: boolean
+  /** `"text"` for a Markdown source, `"pack"` for an installed .lwpack content pack. */
+  sourceKind?: "text" | "pack"
+  /** A pack's worldbook entries (its lore). */
+  worldbookEntries?: { title: string; content: string; secret: boolean }[]
+  /** A pack's claimable pregen cast. */
+  pregens?: { name: string; concept?: string }[]
+  /** A pack's bundled rule systems. */
+  rulepacks?: { name: string; title: string; content: string }[]
+  /** A pack's bundled KP skills. */
+  skills?: { name: string; content: string }[]
   pool: {
     keeper?: Record<string, unknown>
     player?: Record<string, unknown>
   } | null
+  media: ModuleMediaRecord[]
 }
 export interface WorldbookSource {
   name: string
@@ -125,7 +165,14 @@ function isModuleSource(value: unknown): value is ModuleSource {
 
 function parseModuleSources(value: unknown): ModuleSource[] {
   if (!Array.isArray(value)) return []
-  return value.filter(isModuleSource).map((item) => (item.importing ? { ...item, importing: true } : item))
+  return value.filter(isModuleSource).map((item) => ({
+    ...item,
+    title: typeof item.title === "string" && item.title ? item.title : item.name,
+    sourceKind: item.sourceKind === "pack" ? "pack" : "text",
+    entryCount: typeof item.entryCount === "number" ? item.entryCount : undefined,
+    pregenCount: typeof item.pregenCount === "number" ? item.pregenCount : undefined,
+    ...(item.importing ? { importing: true } : {}),
+  }))
 }
 
 function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | null {
@@ -165,7 +212,54 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
     status: typeof value.status === "string" ? value.status : "",
     importStatus: typeof value.import_status === "string" ? value.import_status : "",
     importing: value.importing === true,
+    sourceKind: value.source_kind === "pack" ? "pack" : value.source_kind === "text" ? "text" : undefined,
+    worldbookEntries: Array.isArray(value.worldbook_entries)
+      ? value.worldbook_entries.filter(
+          (item): item is { title: string; content: string; secret: boolean } =>
+            typeof item === "object" && item !== null && "title" in item && "content" in item,
+        )
+      : undefined,
+    pregens: Array.isArray(value.pregens)
+      ? value.pregens
+          .filter((item): item is { name: string; concept?: string } => typeof item === "object" && item !== null)
+          .map((item) => ({
+            name: String((item as { name?: unknown }).name ?? ""),
+            concept: typeof (item as { concept?: unknown }).concept === "string" ? String((item as { concept?: unknown }).concept) : undefined,
+          }))
+      : undefined,
+    rulepacks: Array.isArray(value.rulepacks)
+      ? value.rulepacks.filter(
+          (item): item is { name: string; title: string; content: string } =>
+            typeof item === "object" && item !== null && "name" in item,
+        )
+      : undefined,
+    skills: Array.isArray(value.skills)
+      ? value.skills.filter(
+          (item): item is { name: string; content: string } =>
+            typeof item === "object" && item !== null && "name" in item,
+        )
+      : undefined,
     pool,
+    media: Array.isArray(value.media)
+      ? value.media
+          .filter(
+            (item): item is ModuleMediaRecord =>
+              typeof item === "object" &&
+              item !== null &&
+              typeof (item as ModuleMediaRecord).name === "string" &&
+              typeof (item as ModuleMediaRecord).hash === "string" &&
+              typeof (item as ModuleMediaRecord).mime === "string" &&
+              typeof (item as ModuleMediaRecord).size === "number",
+          )
+          .map((item) => ({
+            name: item.name,
+            hash: item.hash,
+            mime: item.mime,
+            size: item.size,
+            kind: typeof (item as { kind?: unknown }).kind === "string" ? String((item as { kind?: unknown }).kind) : undefined,
+            data: typeof (item as { data?: unknown }).data === "string" ? String((item as { data?: unknown }).data) : undefined,
+          }))
+      : [],
   }
 }
 
@@ -256,6 +350,8 @@ interface AdminState {
   skills: AdminSkillInfo[]
   rules: AdminRuleInfo[]
   generated: AdminGeneratedFrame | null
+  generationStage: string | null
+  generationDetail: string
   moduleSources: ModuleSource[]
   moduleDetail: ModuleDetail | null
   moduleOperation: ModuleOperation | null
@@ -273,7 +369,7 @@ interface AdminState {
   /** Last admin_error, cleared by the next successful reply or request. */
   lastError: string | null
   busy: boolean
-  ingest: (frame: ServerFrame | AdminRoomConfigFrame) => boolean
+  ingest: (frame: ServerFrame | AdminRoomConfigFrame | AdminGenerateStartedFrame | AdminGenerateProgressFrame) => boolean
   refreshConfig: () => void
   setEmbedding: (profileId: string, dimension?: number) => void
   setModel: (provider: string, chatModel?: string, apiKey?: string, baseUrl?: string) => void
@@ -324,7 +420,8 @@ interface AdminState {
   listSkills: (locale?: string) => void
   enableSkill: (id: string, on: boolean, locale?: string) => void
   listRules: () => void
-  generateModule: (description: string) => void
+  generateModule: (description: string, options?: GenerateModuleOptions) => void
+  generatePackModule: (description: string, media?: string[], companion?: string[], extendsBase?: string, system?: string) => void
   listModules: () => void
   getModuleDetail: (name: string) => void
   uploadModule: (name: string, content: string) => void
@@ -365,8 +462,25 @@ interface AdminState {
 
 function send(frame: ClientFrame, set: (patch: Partial<AdminState>) => void): void {
   set({ busy: true, lastError: null })
-  transportSend(frame).catch((cause) => {
-    set({ busy: false, lastError: cause instanceof Error ? cause.message : String(cause) })
+  const deliver = () =>
+    transportSend(frame).catch((cause) => {
+      set({ busy: false, lastError: cause instanceof Error ? cause.message : String(cause) })
+    })
+  // Admin frames must never precede the join handshake — the server answers any pre-join
+  // frame with bad_frame and closes the socket. A deep link (e.g. straight into a module
+  // detail page) mounts the screen while a connection attempt is in flight but not yet
+  // welcomed, so the send defers until the first welcome arrives instead of poisoning the
+  // connection. Plain offline keeps the old fail-fast behavior (transportSend rejects and
+  // the caller's error surface shows it).
+  const { status, welcome } = useConnectionStore.getState()
+  if (welcome !== null || status === "offline") {
+    void deliver()
+    return
+  }
+  const unsubscribe = useConnectionStore.subscribe((state) => {
+    if (state.welcome === null && state.status !== "offline") return
+    unsubscribe()
+    void deliver()
   })
 }
 
@@ -396,6 +510,8 @@ const EMPTY = {
   skills: [],
   rules: [],
   generated: null,
+  generationStage: null,
+  generationDetail: "",
   moduleSources: [],
   moduleDetail: null,
   moduleOperation: null,
@@ -436,6 +552,12 @@ export const useAdminStore = create<AdminState>((set) => ({
         return true
       case "admin_rules":
         set({ rules: frame.systems, busy: false, lastError: null })
+        return true
+      case "admin_generate_started":
+        set({ busy: true, generated: null, lastError: null })
+        return true
+      case "admin_generate_progress":
+        set({ generationStage: frame.stage, generationDetail: frame.detail, busy: true })
         return true
       case "admin_generated": {
         const kind = String(frame.kind)
@@ -501,7 +623,7 @@ export const useAdminStore = create<AdminState>((set) => ({
           }
           return true
         }
-        set({ generated: frame, busy: false })
+        set({ generated: frame, busy: false, generationStage: null, generationDetail: "" })
         return true
       }
       case "admin_room_op":
@@ -617,9 +739,28 @@ export const useAdminStore = create<AdminState>((set) => ({
   enableSkill: (id, on, locale) =>
     send({ type: "admin_enable_skill", id, on, ...(locale ? { locale } : {}) }, set),
   listRules: () => send({ type: "admin_list_rules" }, set),
-  generateModule: (description) => {
+  generateModule: (description, options) => {
     const locale = i18n.resolvedLanguage === "zh" ? "zh" : "en"
-    send({ type: "admin_generate", kind: "module", description, locale }, set)
+    const frame: Record<string, unknown> = { type: "admin_generate", kind: "module", description, locale }
+    const media = options?.media?.length ? options.media : null
+    const companion = options?.companion?.length ? options.companion : null
+    if (media || companion) frame.options = { ...(media ? { media } : {}), ...(companion ? { companion } : {}) }
+    send(frame as unknown as ClientFrame, set)
+  },
+  generatePackModule: (description, media, companion, extendsBase, system) => {
+    const locale = i18n.resolvedLanguage === "zh" ? "zh" : "en"
+    const frame: Record<string, unknown> = { type: "admin_generate", kind: "pack", description, locale }
+    const m = media?.length ? media : null
+    const c = companion?.length ? companion : null
+    const e = extendsBase?.trim() || null
+    const s = system?.trim() || null
+    if (m || c || e || s) frame.options = {
+      ...(m ? { media: m } : {}),
+      ...(c ? { companion: c } : {}),
+      ...(e ? { extends: e } : {}),
+      ...(s ? { system: s } : {}),
+    }
+    send(frame as unknown as ClientFrame, set)
   },
   listModules: () => moduleAction("module_list", {}, set),
   getModuleDetail: (name) => moduleAction("module_detail", { name }, set),

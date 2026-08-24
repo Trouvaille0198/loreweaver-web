@@ -1,9 +1,153 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Button, Notice } from "../../../components/ui"
-import { useAdminStore } from "../../../store/admin"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { Button, Notice, SectionHeader, Surface } from "../../../components/ui"
+import { useAdminStore, type ModuleDetail, type ModuleMediaRecord } from "../../../store/admin"
+import { assetFetch, assetReadBase64 } from "../panels/assets"
 import ScreenShell from "./ScreenShell"
 import { KnowledgePool } from "./ModuleScreen"
+
+/** One illustration. Renders the inline base64 payload when present (a pack asset not reachable
+ * via the room media channel); otherwise pulls through the content-addressed asset channel. */
+function ModuleMediaImage({ record }: { record: ModuleMediaRecord }) {
+  const [src, setSrc] = useState<string | null>(null)
+
+  useEffect(() => {
+    let live = true
+    if (record.data) {
+      setSrc(`data:${record.mime};base64,${record.data}`)
+      return () => {
+        live = false
+      }
+    }
+    void assetFetch(record.hash)
+      .then(() => assetReadBase64(record.hash))
+      .then((base64) => {
+        if (live) setSrc(`data:${record.mime};base64,${base64}`)
+      })
+      .catch(() => {
+        /* a blob that cannot load simply leaves its name as the caption */
+      })
+    return () => {
+      live = false
+    }
+  }, [record.hash, record.mime, record.data])
+
+  return (
+    <figure className="module-media-item">
+      {src !== null ? <img src={src} alt={record.name} /> : null}
+      <figcaption className="studio-hint">{record.name}</figcaption>
+    </figure>
+  )
+}
+
+const MEDIA_GROUP_ORDER = ["cover", "scenes", "npcs", "items", "asset"] as const
+
+/** The complete view of an installed .lwpack module: its lore, claimable cast, typed variables,
+ * illustrations (grouped by kind), rule systems, and KP skills. */
+function PackDetailView({ detail }: { detail: ModuleDetail }) {
+  const { t } = useTranslation()
+  const mediaGroups = new Map<string, ModuleMediaRecord[]>()
+  for (const record of detail.media) {
+    const kind = record.kind ?? "asset"
+    if (!mediaGroups.has(kind)) mediaGroups.set(kind, [])
+    mediaGroups.get(kind)!.push(record)
+  }
+  const groupIds = MEDIA_GROUP_ORDER.filter((g) => (mediaGroups.get(g)?.length ?? 0) > 0)
+
+  return (
+    <div className="module-detail-page">
+      <section className="play-form module-detail-card">
+        <div className="module-detail-head">
+          <div>
+            <h3 className="play-form-title">{detail.title || detail.name}</h3>
+            <p className="studio-hint">
+              <span className="chip chip-warn">{t("play.module.kindPack")}</span>{" "}
+              {detail.size} {t("play.module.bytes")}
+              {detail.worldbookEntries ? ` · ${detail.worldbookEntries.length} ${t("play.module.entries")}` : ""}
+              {detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}
+            </p>
+          </div>
+        </div>
+        {detail.content ? <p className="studio-hint">{detail.content}</p> : null}
+      </section>
+
+      {detail.media.length > 0 ? (
+        <section className="play-form module-detail-card">
+          <h3 className="play-form-title">{t("play.module.packMedia")}</h3>
+          {groupIds.map((kind) => (
+            <div key={kind}>
+              <h4 className="play-form-title">{t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })}</h4>
+              <ul className="module-media-grid">
+                {(mediaGroups.get(kind) ?? []).map((record) => (
+                  <li key={record.hash}>
+                    <ModuleMediaImage record={record} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {detail.worldbookEntries && detail.worldbookEntries.length > 0 ? (
+        <section className="play-form module-detail-card">
+          <h3 className="play-form-title">{t("play.module.packWorldbook")}</h3>
+          <div className="worldbook-entry-list">
+            {detail.worldbookEntries.map((entry, index) => (
+              <article className="worldbook-entry" key={`${entry.title}-${index}`}>
+                <strong>{entry.title}</strong>
+                {entry.secret ? <span className="chip">{t("play.worldbook.secret")}</span> : null}
+                <p>{entry.content}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {detail.pregens && detail.pregens.length > 0 ? (
+        <section className="play-form module-detail-card">
+          <h3 className="play-form-title">{t("play.module.packPregens")}</h3>
+          <ul className="play-list module-source-list">
+            {detail.pregens.map((pregen) => (
+              <li className="module-source-row" key={pregen.name}>
+                <div className="module-source-select">
+                  <strong>{pregen.name}</strong>
+                  {pregen.concept ? <span className="studio-hint">{pregen.concept}</span> : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {detail.rulepacks && detail.rulepacks.length > 0 ? (
+        <section className="play-form module-detail-card">
+          <h3 className="play-form-title">{t("play.module.packRulepacks")}</h3>
+          {detail.rulepacks.map((rp) => (
+            <div className="worldbook-entry" key={rp.name}>
+              <strong>{rp.title || rp.name}</strong>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{rp.content}</ReactMarkdown>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {detail.skills && detail.skills.length > 0 ? (
+        <section className="play-form module-detail-card">
+          <h3 className="play-form-title">{t("play.module.packSkills")}</h3>
+          {detail.skills.map((skill) => (
+            <div className="worldbook-entry" key={skill.name}>
+              <strong>{skill.name}</strong>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{skill.content}</ReactMarkdown>
+            </div>
+          ))}
+        </section>
+      ) : null}
+    </div>
+  )
+}
 
 export default function ModuleDetailScreen({
   moduleName,
@@ -76,6 +220,9 @@ export default function ModuleDetailScreen({
     <ScreenShell title={t("play.module.detailTitle")} onBack={onBack} showAdminError>
       <div className="module-detail-page">
         {detailReady ? (
+          detailReady.sourceKind === "pack" ? (
+            <PackDetailView detail={detailReady} />
+          ) : (
           <>
             <header className="module-detail-hero">
               <div>
@@ -135,9 +282,25 @@ export default function ModuleDetailScreen({
                 {t("play.module.importing")}
               </Notice>
             ) : detailReady.current ? (
-              <KnowledgePool detail={detailReady} label={t("play.module.knowledgePool")} />
+              <p className="ui-eyebrow">{t("play.module.zoneRoom")}</p>
             ) : null}
+            {importing || !detailReady.current ? null : (
+              <KnowledgePool detail={detailReady} label={t("play.module.knowledgePool")} />
+            )}
 
+            <p className="ui-eyebrow">{t("play.module.zoneSource")}</p>
+            {detailReady.media.length > 0 && detailReady.current ? (
+              <Surface labelledBy="module-media-heading">
+                <SectionHeader titleId="module-media-heading" title={t("play.module.poolGroups.media")} />
+                <ul className="module-media-grid">
+                  {detailReady.media.map((record) => (
+                    <li key={record.hash}>
+                      <ModuleMediaImage record={record} />
+                    </li>
+                  ))}
+                </ul>
+              </Surface>
+            ) : null}
             <section className="module-detail-source-card" aria-label={t("play.module.sourceText")}>
               <div className="module-detail-source-head">
                 <div>
@@ -181,6 +344,7 @@ export default function ModuleDetailScreen({
               )}
             </section>
           </>
+          )
         ) : (
           <p className="studio-hint" role="status">
             {busy ? t("play.busy") : lastError || t("play.module.detailLoading")}

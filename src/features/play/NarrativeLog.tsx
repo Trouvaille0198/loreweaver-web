@@ -92,13 +92,19 @@ function MediaEntry({ frame }: { frame: MediaFrame }) {
     <article className="log-entry log-media">
       <header className="entry-speaker">{frame.from || t("log.media")}</header>
       {src !== null ? (
-        <img className="log-media-img" src={src} alt={frame.name ?? ""} />
+        <img
+          className="log-media-img"
+          src={src}
+          alt={frame.name ?? ""}
+          title={frame.prompt ? t("log.mediaPromptTitle", { prompt: frame.prompt }) : frame.name ?? ""}
+        />
       ) : (
         <span className="log-media-empty" aria-hidden="true">
           {failed ? t("log.mediaFailed") : "…"}
         </span>
       )}
       {frame.name ? <div className="log-media-name">{frame.name}</div> : null}
+      {frame.prompt ? <div className="log-media-prompt">{t("log.mediaPrompt")}</div> : null}
     </article>
   )
 }

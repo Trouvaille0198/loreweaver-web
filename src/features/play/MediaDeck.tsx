@@ -49,7 +49,12 @@ function Thumb({ item }: { item: MediaFrame }) {
   return (
     <li className="media-item">
       {src !== null ? (
-        <img className="media-thumb" src={src} alt={item.name ?? ""} />
+        <img
+          className="media-thumb"
+          src={src}
+          alt={item.name ?? ""}
+          title={item.prompt ? t("play.media.promptTitle", { prompt: item.prompt }) : item.name ?? ""}
+        />
       ) : (
         <span className="media-thumb media-thumb-empty" aria-hidden="true">
           {failed ? "!" : "…"}

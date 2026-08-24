@@ -165,7 +165,9 @@
     "system": "System",
     "player": "Player",
     "media": "Image",
-    "mediaFailed": "Image could not be loaded."
+    "mediaFailed": "Image could not be loaded.",
+    "mediaPrompt": "Hover the image to see the prompt",
+    "mediaPromptTitle": "Prompt: {{prompt}}"
   },
   "play": {
     "back": "← Back to the table",
@@ -294,13 +296,99 @@
       "sent": "Sent — the result lands as a system line in the game log.",
       "describe": "Or describe a module for the forge to write",
       "describePlaceholder": "A one-night CoC scenario in a fog-bound lighthouse…",
+      "mode": "Module format",
+      "modeText": "Text module (.md)",
+      "modeTextHint": "A Markdown scenario analysed into a knowledge pool.",
+      "modePack": "Complete module pack (.lwpack)",
+      "modePackHint": "A native world card with lorebook, trackers, cast and bundled assets.",
       "generate": "Generate & install",
+      "generatePack": "Generate complete pack & install",
+      "stages": {
+        "authoring": "Authoring the module core…",
+        "world_card": "Assembling the world card…",
+        "analyzing": "Analyzing the module text…",
+        "media": "Generating illustrations…",
+        "skill": "Generating KP skill…",
+        "rulepack": "Generating rule system…",
+        "building": "Building the .lwpack…",
+        "installing": "Installing the pack…",
+        "importing": "Importing into this room…"
+      },
       "generateOk": "{{name}} — {{detail}}",
+      "options": {
+        "mediaTitle": "Media",
+        "companionTitle": "Companion content",
+        "comingSoon": "Coming soon",
+        "costHint": "Checked options call the LLM/image provider (API cost) and slow down generation.",
+        "media": {
+          "cover": "Cover",
+          "scenes": "Scenes",
+          "npcs": "NPC portraits",
+          "items": "Items & clues"
+        },
+        "mediaHints": {
+          "cover": "One opening image for the module.",
+          "scenes": "One atmospheric image per key scene.",
+          "npcs": "One portrait per key NPC.",
+          "items": "One image per key item or clue."
+        },
+        "mediaCaps": {
+          "cover": "1",
+          "scenes": "up to 6",
+          "npcs": "up to 6",
+          "items": "up to 6"
+        },
+        "extendsTitle": "Rule system",
+        "extendsNone": "Follow room system (default)",
+        "useGroup": "Directly use a built-in system",
+        "patchGroup": "Generate a patch on a base system",
+        "extendsHint": "Choose how the module runs its rules. \"Directly use\" pins the module to a built-in system (no rulepack generated, cheapest). \"Generate a patch\" authors a rulepack that extends a base system, adding only the module's own mechanics (extra LLM call).",
+        "use": {
+          "coc7": "Call of Cthulhu (coc7)",
+          "dnd5e": "Dungeons & Dragons (dnd5e)",
+          "wod": "World of Darkness (wod)"
+        },
+        "patch": {
+          "coc7": "CoC patch (coc7)",
+          "dnd5e": "D&D patch (dnd5e)",
+          "wod": "WOD patch (wod)"
+        },
+        "companion": {
+          "skills": "Skills",
+          "rulepacks": "Rule system",
+          "cards": "Character cards",
+          "worldbook": "Worldbook",
+          "presets": "Presets",
+          "presentation": "Presentation kit",
+          "panels": "Panels"
+        },
+        "companionHints": {
+          "skills": "A KP skill bundle for the scenario.",
+          "rulepacks": "A rulepack for the scenario.",
+          "cards": "Pre-generated investigator cards.",
+          "worldbook": "Background lore entries.",
+          "presets": "Completion presets.",
+          "presentation": "Subject reference images and a Director brief.",
+          "panels": "Table UI panels."
+        }
+      },
       "library": "Module source library",
+      "tabsLabel": "Module workspace",
+      "tabs": {
+        "library": "Module library",
+        "room": "Room content",
+        "forge": "AI creation"
+      },
+      "kindText": "Text",
+      "kindPack": "Pack",
       "libraryHint": "Sources live on this server. Upload one here, inspect its text, or import it into this room.",
       "addSource": "Add source file",
       "noSources": "No Markdown or text module sources are available.",
       "current": "Current room module",
+      "loadedPacks": "Complete module packs loaded in this room",
+      "loadedPacksHint": "A .lwpack module (native world card) contributes its lore as an attached worldbook. Select one to inspect its entries.",
+      "loadedPacksEmpty": "No complete module packs are loaded in this room yet.",
+      "refresh": "Refresh",
       "ready": "ready",
       "importing": "Importing: analyzing the knowledge pool…",
       "bytes": "bytes",
@@ -310,6 +398,8 @@
       "deleteConfirm": "Delete this source file?",
       "deleteUnavailable": "This module is active in the room. Import another module before deleting it.",
       "sourceText": "Source text",
+      "zoneRoom": "Generated for this room",
+      "zoneSource": "Module content",
       "knowledgePool": "Analyzed module knowledge (Keeper view)",
       "detailTitle": "Module details",
       "detailEyebrow": "Module knowledge",
@@ -318,6 +408,20 @@
       "save": "Save source",
       "cancelEdit": "Cancel",
       "detailLoading": "Loading module details…",
+      "entries": "entries",
+      "packWorldbook": "Pack lore",
+      "packPregens": "Claimable investigators",
+      "packRulepacks": "Rule systems",
+      "packSkills": "KP skills",
+      "packMedia": "Illustrations",
+      "packMediaGroups": {
+        "cover": "Cover",
+        "scenes": "Scenes",
+        "npcs": "NPC portraits",
+        "items": "Items & clues",
+        "asset": "Assets"
+      },
+      "packNotImported": "This pack has no lore entries.",
       "imported": "Imported into this room.",
       "saved": "Saved",
       "saveApplyHint": "Import it again to apply the edited source to this room.",
@@ -354,6 +458,15 @@
         "san_loss": "Sanity loss",
         "special_abilities": "Special abilities",
         "revealed_by": "Revealed by"
+      },
+      "poolGroups": {
+        "overview": "Overview",
+        "scenes": "Scenes",
+        "npcs": "NPCs",
+        "clues": "Clues",
+        "timeline": "Timeline",
+        "truthsThreats": "Truths & threats",
+        "media": "Illustrations"
       }
     },
     "worldbook": {
@@ -364,6 +477,8 @@
       "current": "Used by this room",
       "attached": "Attached source",
       "librarySource": "Library source",
+      "secret": "secret",
+      "noEntries": "This worldbook has no entries.",
       "selected": "Selected",
       "useRoom": "Use in this room",
       "disable": "Disable worldbook",
@@ -452,7 +567,8 @@
     "keeperSettings": {
       "roomGroup": "Room",
       "contentGroup": "Content",
-      "systemGroup": "Rules & models"
+      "systemGroup": "Rules & models",
+      "currentModule": "Current scenario"
     },
     "rooms": {
       "title": "Room lifecycle",
@@ -560,6 +676,7 @@
       "allowUploads": "Players may upload",
       "uploadsOff": "The keeper has turned player uploads off for this room.",
       "useAsAvatar": "Use as avatar",
+      "promptTitle": "Prompt: {{prompt}}",
       "dismiss": "Dismiss",
       "uploadFailed": "{{name}} could not be shared: {{detail}}",
       "err": {
@@ -617,8 +734,9 @@
     "imageArgs": {
       "scene": "Current scene",
       "portrait": "Current character's portrait",
-      "item": "An item",
-      "combat": "Current combat scene"
+      "clue": "A clue/item in play",
+      "combat": "Current combat scene",
+      "last": "From the Keeper's latest narration"
     },
     "commands": {
       "amb": "Ambience (alias)",
@@ -647,6 +765,10 @@
       "hidden_roll": "Hidden roll (full name)",
       "hroll": "Hidden roll (alias)",
       "image": "Generate an image to the room",
+      "image.scene": "Generate the current scene image",
+      "image.portrait": "Generate the current character portrait",
+      "image.item": "Generate an item image",
+      "image.combat": "Generate the current combat image",
       "import": "Import a card",
       "init": "Initiative",
       "initiative": "Initiative (full name)",

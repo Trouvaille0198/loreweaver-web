@@ -8,6 +8,11 @@
 import "@loreweaver/protocol"
 
 declare module "@loreweaver/protocol" {
+  interface StateFrame {
+    /** Player-visible noun lists for `.image` completions (NPC/clue names). */
+    image_names?: { npcs?: string[]; clues?: string[] }
+  }
+
   interface CharacterState {
     /** v2.4 wire: trained skills, name → current value. Absent pre-2.4. */
     skills?: Record<string, unknown>
@@ -175,5 +180,22 @@ declare module "@loreweaver/protocol" {
     type: "admin_set_embedding"
     profile_id: string
     embedding_dim?: number
+  }
+
+  interface MediaFrame {
+    /** The image-generation prompt that produced this picture (generated handouts only). */
+    prompt?: string
+  }
+
+  interface AdminGenerateStartedFrame {
+    type: "admin_generate_started"
+    kind: "module" | "pack"
+  }
+
+  interface AdminGenerateProgressFrame {
+    type: "admin_generate_progress"
+    kind: "module" | "pack"
+    stage: string
+    detail: string
   }
 }

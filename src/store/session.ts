@@ -301,6 +301,22 @@ export const useSessionStore = create<SessionState>((set) => ({
         set((s) => ({ entries: ingestMedia(s.entries, frame) }))
         return
       case "system":
+        // A spinner line is retired by a later frame with the SAME text and
+        // `spinner: false` (image/avatar generation): replace in place instead
+        // of stacking a permanently spinning entry.
+        if (frame.spinner === false) {
+          const entries = useSessionStore.getState().entries
+          const idx = [...entries].reverse().findIndex(
+            (e) => e.kind === "system" && e.frame.text === frame.text && e.frame.spinner === true,
+          )
+          if (idx !== -1) {
+            const i = entries.length - 1 - idx
+            const next = [...entries]
+            next[i] = { seq: next[i].seq, kind: "system", frame }
+            set({ entries: next })
+            return
+          }
+        }
         set((s) => ({ entries: pushEntry(s.entries, { kind: "system", frame }) }))
         return
       case "error":

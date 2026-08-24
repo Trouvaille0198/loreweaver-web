@@ -98,8 +98,7 @@ describe("WorldbookScreen", () => {
     expect(screen.getByText("The tide never freezes.")).toBeInTheDocument()
   })
 
-  it("shows and selects a worldbook attached by an imported module", async () => {
-    const user = userEvent.setup()
+  it("hides module-attached worldbooks (they live under Room content)", () => {
     useAdminStore.setState({
       worldbookSources: [
         {
@@ -118,12 +117,8 @@ describe("WorldbookScreen", () => {
     render(<WorldbookScreen onBack={() => {}} />)
     act(() => useAdminStore.setState({ busy: false }))
 
-    expect(screen.getByText(/Attached source/)).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Use in this room" }))
-    expect(sent).toContainEqual({
-      type: "admin_generate",
-      kind: "worldbook_select",
-      description: JSON.stringify({ name: "marsh-card.png", source_kind: "attached" }),
-    })
+    // The standalone worldbook page shows only library .json sources; module-attached
+    // worldbooks are surfaced under the module workspace's Room content view.
+    expect(screen.queryByText("marsh-card.png")).not.toBeInTheDocument()
   })
 })

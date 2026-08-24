@@ -165,7 +165,9 @@
     "system": "系统",
     "player": "玩家",
     "media": "图片",
-    "mediaFailed": "图片加载失败。"
+    "mediaFailed": "图片加载失败。",
+    "mediaPrompt": "悬停图片可查看生成提示词",
+    "mediaPromptTitle": "提示词：{{prompt}}"
   },
   "play": {
     "back": "← 返回牌桌",
@@ -294,13 +296,99 @@
       "sent": "已提交——结果会以系统消息出现在游戏日志里。",
       "describe": "或者描述一个模组，让锻造炉来写",
       "describePlaceholder": "一夜完结的 CoC 灯塔迷雾本…",
+      "mode": "模组形态",
+      "modeText": "文本模组（.md）",
+      "modeTextHint": "一份会被分析成知识库的 Markdown 剧本。",
+      "modePack": "完整模组包（.lwpack）",
+      "modePackHint": "原生世界卡：设定库、状态量、可认领演员表与随包素材。",
       "generate": "生成并安装",
+      "generatePack": "生成完整包并安装",
+      "stages": {
+        "authoring": "正在创作模组核心…",
+        "world_card": "正在组装世界卡…",
+        "analyzing": "正在分析模组文本…",
+        "media": "正在生成配图…",
+        "skill": "正在生成 KP 技能…",
+        "rulepack": "正在生成规则体系…",
+        "building": "正在打包 .lwpack…",
+        "installing": "正在安装包…",
+        "importing": "正在导入本房间…"
+      },
       "generateOk": "{{name}}——{{detail}}",
+      "options": {
+        "mediaTitle": "媒体配图",
+        "companionTitle": "配套内容",
+        "comingSoon": "即将支持",
+        "costHint": "勾选内容会调用模型/图像服务并产生 API 费用，生成也会变慢。",
+        "media": {
+          "cover": "封面/海报",
+          "scenes": "场景图",
+          "npcs": "NPC 立绘",
+          "items": "物品/线索图"
+        },
+        "mediaHints": {
+          "cover": "为剧本生成一张开场封面图。",
+          "scenes": "为每个关键场景生成一张气氛图。",
+          "npcs": "为主要 NPC 各生成一张肖像（每人一张）。",
+          "items": "为关键物品/线索各生成一张图。"
+        },
+        "mediaCaps": {
+          "cover": "1 张",
+          "scenes": "最多 6 张",
+          "npcs": "最多 6 张",
+          "items": "最多 6 张"
+        },
+        "extendsTitle": "规则系统",
+        "extendsNone": "跟随房间系统（默认）",
+        "useGroup": "直接用内置系统",
+        "patchGroup": "在基础系统上生成补丁",
+        "extendsHint": "选择模组如何运行规则。「直接用内置系统」把模组绑定到某个内置体系（不生成规则包，最省）。「生成补丁」会写一个扩展该基础体系的规则包，只叠加模组自身机制（多一次 LLM 调用）。",
+        "use": {
+          "coc7": "克苏鲁的呼唤 (coc7)",
+          "dnd5e": "龙与地下城 (dnd5e)",
+          "wod": "黑暗世界 (wod)"
+        },
+        "patch": {
+          "coc7": "CoC 补丁 (coc7)",
+          "dnd5e": "D&D 补丁 (dnd5e)",
+          "wod": "WOD 补丁 (wod)"
+        },
+        "companion": {
+          "skills": "技能",
+          "rulepacks": "规则包",
+          "cards": "角色卡",
+          "worldbook": "世界书",
+          "presets": "提示词预设",
+          "presentation": "演出资料包",
+          "panels": "面板"
+        },
+        "companionHints": {
+          "skills": "为该玩法生成一个 KP 技能。",
+          "rulepacks": "为剧本生成一套规则体系。",
+          "cards": "生成可用的预建调查员卡。",
+          "worldbook": "生成背景设定条目。",
+          "presets": "生成提示词预设。",
+          "presentation": "自动配定妆图与 presentation.yaml。",
+          "panels": "生成桌面 UI 面板。"
+        }
+      },
       "library": "模组源文件库",
+      "tabsLabel": "模组工作区",
+      "tabs": {
+        "library": "模组库",
+        "room": "房间内容",
+        "forge": "AI 创作"
+      },
+      "kindText": "文本",
+      "kindPack": "完整包",
       "libraryHint": "源文件保存在服务器上。你可以上传、查看文本，或将其导入当前房间。",
       "addSource": "添加源文件",
       "noSources": "没有可用的 Markdown 或文本模组源文件。",
       "current": "当前房间模组",
+      "loadedPacks": "本房间已加载的完整模组包",
+      "loadedPacksHint": ".lwpack 模组（原生世界卡）会把它设定的内容作为附加世界书引入。选中即可查看其条目。",
+      "loadedPacksEmpty": "本房间还没有加载完整模组包。",
+      "refresh": "刷新",
       "ready": "就绪",
       "importing": "导入中：正在分析知识库，请稍候",
       "bytes": "字节",
@@ -310,6 +398,8 @@
       "deleteConfirm": "确定删除这个源文件吗？",
       "deleteUnavailable": "当前房间正在使用这个模组，无法删除；请先导入其他模组。",
       "sourceText": "源文件内容",
+      "zoneRoom": "绑定本房间后生成",
+      "zoneSource": "模组内容",
       "knowledgePool": "已分析的模组知识库（守秘人视角）",
       "detailTitle": "模组详情",
       "detailEyebrow": "模组知识",
@@ -318,6 +408,20 @@
       "save": "保存源文件",
       "cancelEdit": "取消编辑",
       "detailLoading": "正在加载模组详情…",
+      "entries": "条设定",
+      "packWorldbook": "包内设定",
+      "packPregens": "可认领调查员",
+      "packRulepacks": "规则体系",
+      "packSkills": "KP 技能",
+      "packMedia": "配图",
+      "packMediaGroups": {
+        "cover": "封面",
+        "scenes": "场景图",
+        "npcs": "NPC 立绘",
+        "items": "物品/线索图",
+        "asset": "素材"
+      },
+      "packNotImported": "这个包没有设定条目。",
       "imported": "已导入当前房间。",
       "saved": "已保存",
       "saveApplyHint": "请再次点击“导入当前房间”，让修改后的剧本生效。",
@@ -354,6 +458,15 @@
         "san_loss": "理智损失",
         "special_abilities": "特殊能力",
         "revealed_by": "揭示方式"
+      },
+      "poolGroups": {
+        "overview": "模组概述",
+        "scenes": "场景",
+        "npcs": "NPC",
+        "clues": "线索",
+        "timeline": "时间线",
+        "truthsThreats": "真相与威胁",
+        "media": "配图"
       }
     },
     "worldbook": {
@@ -364,6 +477,8 @@
       "current": "本房间正在使用",
       "attached": "附加来源",
       "librarySource": "世界书库来源",
+      "secret": "秘密",
+      "noEntries": "这个世界书没有条目。",
       "selected": "已选择",
       "useRoom": "用于当前房间",
       "disable": "停用世界书",
@@ -452,7 +567,8 @@
     "keeperSettings": {
       "roomGroup": "房间",
       "contentGroup": "内容",
-      "systemGroup": "规则与模型"
+      "systemGroup": "规则与模型",
+      "currentModule": "当前剧本"
     },
     "rooms": {
       "title": "房间生命周期",
@@ -560,6 +676,7 @@
       "allowUploads": "允许玩家上传",
       "uploadsOff": "keeper 已关闭本房间的玩家上传。",
       "useAsAvatar": "设为头像",
+      "promptTitle": "提示词：{{prompt}}",
       "dismiss": "关闭",
       "uploadFailed": "{{name}} 分享失败：{{detail}}",
       "err": {
@@ -617,8 +734,9 @@
     "imageArgs": {
       "scene": "生成当前场景图",
       "portrait": "生成当前角色肖像图",
-      "item": "生成物品图",
-      "combat": "生成当前战斗图"
+      "clue": "生成线索/物品图",
+      "combat": "生成当前战斗图",
+      "last": "根据守秘人最近的叙述生成"
     },
     "commands": {
       "amb": "环境音（别名）",

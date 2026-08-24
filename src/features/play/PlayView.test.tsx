@@ -392,6 +392,7 @@ describe("PlayView", () => {
         current: false,
         status: "ready",
         pool: null,
+        media: [],
       },
     })
     window.history.replaceState(null, "", "#/module-detail/scene.md")
@@ -415,6 +416,7 @@ describe("PlayView", () => {
         current: true,
         status: "ready",
         pool: null,
+        media: [],
       },
     })
     window.history.replaceState(null, "", "#/module-detail/scene.md")

@@ -52,6 +52,16 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     settings = Settings()
+    # Point the user discovery dirs at the data dir (mirroring `app._app_services`): generated /
+    # installed skills, rulepacks and modules land under `data_dir/{skills,rulepacks,modules}`, and
+    # discovery must scan there or installed content is invisible at runtime.
+    from core import rulepacks as core_rulepacks
+    from core import skills as core_skills
+    import agent.forge as agent_forge
+
+    core_skills._USER_SKILL_DIR = Path(settings.data_dir) / "skills"
+    core_rulepacks._USER_RULEPACK_DIR = Path(settings.data_dir) / "rulepacks"
+    agent_forge._USER_MODULE_DIR = Path(settings.data_dir) / "modules"
     i18n = get_i18n(settings.locale)
     keystore = Keystore.load(args.keys)
     _bootstrap_keystore(keystore, i18n, args.keys)

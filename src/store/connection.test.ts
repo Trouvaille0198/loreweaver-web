@@ -144,6 +144,35 @@ describe("connection store", () => {
     expect(useConnectionStore.getState().refused).toBe(false)
   })
 
+  it("refuses a terminal join error instead of redialing into it", () => {
+    // Live incident: a stale saved key met a rebuilt server keystore; the redial loop
+    // re-joined forever, appending "服务器拒绝了这一条" to the log once per attempt.
+    // bad_key/bad_frame/join_timeout are terminal — the refusal must latch instead.
+    const handle = useConnectionStore.getState().handleEvent
+    handle({ kind: "status", status: "reconnecting", attempt: 3 })
+    handle({ kind: "frame", frame: { type: "error", code: "bad_key", message: "Unrecognized key." } })
+
+    const state = useConnectionStore.getState()
+    expect(state.status).toBe("offline")
+    expect(state.refused).toBe(true)
+    expect(state.lastError).toContain("Unrecognized key")
+    expect(hasManualDisconnect()).toBe(true)
+
+    // The latch outranks any further status events from the dying redial loop.
+    handle({ kind: "status", status: "connecting", attempt: 4 })
+    expect(useConnectionStore.getState().status).toBe("offline")
+  })
+
+  it("lets mid-session error frames reach the session log untouched", () => {
+    const handle = useConnectionStore.getState().handleEvent
+    handle({ kind: "frame", frame: WELCOME })
+    handle({ kind: "status", status: "online", attempt: 0 })
+    handle({ kind: "frame", frame: { type: "error", code: "rate_limited", message: "slow down" } })
+
+    expect(useConnectionStore.getState().refused).toBe(false)
+    expect(useConnectionStore.getState().status).toBe("online")
+  })
+
   it("marks a deliberate disconnect so the tab-return rejoin stands down", async () => {
     // Before any disconnect the flag is clear — the auto-rejoin may act.
     expect(hasManualDisconnect()).toBe(false)

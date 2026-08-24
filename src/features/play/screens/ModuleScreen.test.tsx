@@ -109,7 +109,7 @@ describe("ModuleScreen — community packs", () => {
   it("opens a source only after clicking it and deletes from its detail view", async () => {
     const user = userEvent.setup()
     useAdminStore.setState({
-      moduleSources: [{ name: "scene.md", size: 42, modified: 1, current: false }],
+      moduleSources: [{ name: "scene.md", size: 42, modified: 1, current: false, sourceKind: "text" }],
       moduleDetail: null,
     })
     render(<ModuleScreen onBack={() => {}} />)
@@ -135,6 +135,7 @@ describe("ModuleScreen — community packs", () => {
           current: false,
           status: "ready",
           pool: null,
+        media: [],
         },
       })
     })
@@ -146,6 +147,116 @@ describe("ModuleScreen — community packs", () => {
       type: "admin_generate",
       kind: "module_delete",
       description: JSON.stringify({ name: "scene.md" }),
+    })
+  })
+
+  it("renders both generation option groups unchecked, with coming-soon boxes disabled", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    expect(screen.getByText("Media")).toBeInTheDocument()
+    expect(screen.getByText("Companion content")).toBeInTheDocument()
+
+    const boxes = screen.getAllByRole("checkbox")
+    expect(boxes).toHaveLength(11)
+    for (const box of boxes) expect(box).not.toBeChecked()
+
+    const disabled = boxes.filter((box) => (box as HTMLInputElement).disabled)
+    expect(disabled).toHaveLength(4)
+    expect(screen.getAllByText("Coming soon")).toHaveLength(4)
+    expect(screen.getByText(/API cost/)).toBeInTheDocument()
+  })
+
+  it("sends only the checked options with module generation", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    // The mount-time listModules() leaves the store busy until a reply lands;
+    // no server answers here, so clear it the way an ingested reply would.
+    act(() => useAdminStore.setState({ busy: false }))
+    await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a fog-bound harbor town")
+    await user.click(screen.getByRole("checkbox", { name: /Cover/ }))
+    await user.click(screen.getByRole("checkbox", { name: /Skills/ }))
+    await user.click(screen.getByRole("button", { name: "Generate & install" }))
+    expect(sent.at(-1)).toEqual({
+      type: "admin_generate",
+      kind: "module",
+      description: "a fog-bound harbor town",
+      locale: "en",
+      options: { media: ["cover"], companion: ["skills"] },
+    })
+  })
+
+  it("pack mode keeps companion options and sends kind:pack with media+companion", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    act(() => useAdminStore.setState({ busy: false }))
+    await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a fog-bound harbor town")
+    // The .lwpack format is the engine's canonical full-module shape.
+    await user.click(screen.getByRole("radio", { name: /\.lwpack/ }))
+    expect(screen.getByText("Companion content")).toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox", { name: /Cover/ }))
+    await user.click(screen.getByRole("checkbox", { name: /Skills/ }))
+    await user.click(screen.getByRole("button", { name: "Generate complete pack & install" }))
+    expect(sent.at(-1)).toEqual({
+      type: "admin_generate",
+      kind: "pack",
+      description: "a fog-bound harbor town",
+      locale: "en",
+      options: { media: ["cover"], companion: ["skills"] },
+    })
+  })
+
+  it("pack mode with no options sends no options field", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    act(() => useAdminStore.setState({ busy: false }))
+    await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a quiet wood")
+    await user.click(screen.getByRole("radio", { name: /\.lwpack/ }))
+    await user.click(screen.getByRole("button", { name: "Generate complete pack & install" }))
+    expect(sent.at(-1)).toEqual({
+      type: "admin_generate",
+      kind: "pack",
+      description: "a quiet wood",
+      locale: "en",
+    })
+  })
+
+  it("directly using a built-in system sends system and no rulepack companion", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    act(() => useAdminStore.setState({ busy: false }))
+    await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a dungeon crawl")
+    await user.click(screen.getByRole("radio", { name: /\.lwpack/ }))
+    await user.selectOptions(screen.getByRole("combobox"), "use:dnd5e")
+    await user.click(screen.getByRole("button", { name: "Generate complete pack & install" }))
+    expect(sent.at(-1)).toEqual({
+      type: "admin_generate",
+      kind: "pack",
+      description: "a dungeon crawl",
+      locale: "en",
+      options: { system: "dnd5e" },
+    })
+  })
+
+  it("generating a patch on a base system auto-enables the rulepack companion and sends extends", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    act(() => useAdminStore.setState({ busy: false }))
+    await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a coastal horror")
+    await user.click(screen.getByRole("radio", { name: /\.lwpack/ }))
+    await user.selectOptions(screen.getByRole("combobox"), "patch:coc7")
+    await user.click(screen.getByRole("button", { name: "Generate complete pack & install" }))
+    expect(sent.at(-1)).toEqual({
+      type: "admin_generate",
+      kind: "pack",
+      description: "a coastal horror",
+      locale: "en",
+      options: { companion: ["rulepacks"], extends: "coc7" },
     })
   })
 })

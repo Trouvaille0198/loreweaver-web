@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { useAdminStore } from "../../../store/admin"
 import KeysScreen from "./KeysScreen"
 import ModelScreen from "./ModelScreen"
 import ModuleScreen from "./ModuleScreen"
@@ -33,6 +34,14 @@ function readInitialSection(): KeeperSection {
 export default function KeeperSettingsScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
   const [section, setSection] = useState<KeeperSection>(readInitialSection)
+  const worldbookSources = useAdminStore((s) => s.worldbookSources)
+  const listWorldbooks = useAdminStore((s) => s.listWorldbooks)
+
+  useEffect(() => {
+    listWorldbooks()
+  }, [listWorldbooks])
+
+  const currentModule = worldbookSources.find((source) => source.current)
 
   const selectSection = (next: KeeperSection) => {
     setSection(next)
@@ -96,6 +105,22 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
 
   return (
     <ScreenShell title={t("play.menu.keeperSettings")} onBack={onBack} showAdminError wide>
+      {currentModule ? (
+        <section className="play-form module-detail-card keeper-current-module">
+          <div className="module-detail-head">
+            <div>
+              <h3 className="play-form-title">{t("play.keeperSettings.currentModule")}</h3>
+              <p className="studio-hint">
+                <strong>{currentModule.name}</strong>
+                {currentModule.entryCount ? ` · ${currentModule.entryCount} ${t("play.module.entries")}` : ""}
+              </p>
+            </div>
+            <div className="module-detail-actions">
+              <span className="chip chip-on">{t("play.worldbook.current")}</span>
+            </div>
+          </div>
+        </section>
+      ) : null}
       <SettingsWorkspace
         ariaLabel={t("play.menu.keeperSettings")}
         active={section}

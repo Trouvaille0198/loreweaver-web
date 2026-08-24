@@ -252,12 +252,13 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   companion: { tokens: ["list", "delete"] },
   avatar: { tokens: ["gen", "generate", "clear"] },
   image: {
-    tokens: ["scene", "portrait", "item", "combat"],
+    tokens: ["scene", "portrait", "clue", "combat", "last"],
     hints: {
       scene: "play.imageArgs.scene",
       portrait: "play.imageArgs.portrait",
-      item: "play.imageArgs.item",
+      clue: "play.imageArgs.clue",
       combat: "play.imageArgs.combat",
+      last: "play.imageArgs.last",
     },
   },
   // World & records (world.py's word sets)
@@ -328,12 +329,28 @@ export function sanitySuggestions(token: string): ArgSuggestion[] {
 }
 
 /** Inline completions for the token being typed after `.word `. */
-export function suggestArgs(word: string, token: string): ArgSuggestion[] {
+export function suggestArgs(
+  word: string,
+  token: string,
+  dynamic?: { npcs?: string[]; clues?: string[] },
+): ArgSuggestion[] {
   const spec = ARG_SPECS[word]
   if (!spec) return []
   if (spec.dice) return diceSuggestions(token)
   if (spec.sanity) return sanitySuggestions(token)
   const p = token.trim().toLowerCase()
+  const filter = (list: readonly string[]) =>
+    list.filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p)).slice(0, 8)
+  // `.image portrait <NPC名>` / `.image clue <线索名>` — the room's dynamic
+  // knowledge-pool nouns complete the argument alongside the static kind words.
+  if (word === "image" && dynamic && p) {
+    const candidates: string[] = []
+    const staticTokens = spec.tokens ?? []
+    candidates.push(...staticTokens.filter((c) => c.toLowerCase().startsWith(p)))
+    const nouns = filter([...(dynamic.npcs ?? []), ...(dynamic.clues ?? [])])
+    candidates.push(...nouns.map((n) => n))
+    return candidates.slice(0, 8).map((text) => ({ text, mode: "replace" as const }))
+  }
   return (spec.tokens ?? [])
     .filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p))
     .slice(0, 8)

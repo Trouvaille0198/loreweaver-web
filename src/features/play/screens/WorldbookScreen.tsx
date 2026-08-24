@@ -159,39 +159,42 @@ export default function WorldbookScreen({
             {t("play.worldbook.disable")}
           </Button>
         </div>
-        {sources.length === 0 ? <EmptyState title={t("play.worldbook.noSources")} /> : null}
+        {sources.filter((source) => source.sourceKind === "file").length === 0 ? (
+          <EmptyState title={t("play.worldbook.noSources")} />
+        ) : null}
         <ul className="play-list module-source-list">
-          {sources.map((source: WorldbookSource) => (
-            <li
-              className={`module-source-row${source.name === selectedName ? " is-selected" : ""}`}
-              key={source.name}
-            >
-              <Button
-                type="button"
-                variant="quiet"
-                className="module-source-select"
-                aria-pressed={source.name === selectedName}
-                onClick={() => setSelectedName(source.name)}
+          {sources
+            .filter((source) => source.sourceKind === "file")
+            .map((source: WorldbookSource) => (
+              <li
+                className={`module-source-row${source.name === selectedName ? " is-selected" : ""}`}
+                key={source.name}
               >
-                <strong>{source.name}</strong>
-                <span className="studio-hint">
-                  {source.size} bytes ·{" "}
-                  {source.attached ? t("play.worldbook.attached") : t("play.worldbook.librarySource")}
-                </span>
-                {source.current ? <span className="chip chip-on">{t("play.worldbook.current")}</span> : null}
-              </Button>
-              <div className="module-source-actions">
                 <Button
                   type="button"
-                  size="sm"
-                  disabled={source.current || busy}
-                  onClick={() => selectWorldbook(source.name, source.sourceKind)}
+                  variant="quiet"
+                  className="module-source-select"
+                  aria-pressed={source.name === selectedName}
+                  onClick={() => setSelectedName(source.name)}
                 >
-                  {source.current ? t("play.worldbook.selected") : t("play.worldbook.useRoom")}
+                  <strong>{source.name}</strong>
+                  <span className="studio-hint">
+                    {source.size} bytes · {t("play.worldbook.librarySource")}
+                  </span>
+                  {source.current ? <span className="chip chip-on">{t("play.worldbook.current")}</span> : null}
                 </Button>
-              </div>
-            </li>
-          ))}
+                <div className="module-source-actions">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={source.current || busy}
+                    onClick={() => selectWorldbook(source.name, source.sourceKind)}
+                  >
+                    {source.current ? t("play.worldbook.selected") : t("play.worldbook.useRoom")}
+                  </Button>
+                </div>
+              </li>
+            ))}
         </ul>
         <OperationNotice
           operation={operation}

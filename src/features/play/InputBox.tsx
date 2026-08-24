@@ -28,6 +28,7 @@ export default function InputBox() {
   const seat = useConnectionStore((s) => s.welcome?.you.name ?? "")
   const echoLocalInput = useSessionStore((s) => s.echoLocalInput)
   const failEcho = useSessionStore((s) => s.failEcho)
+  const imageNames = useSessionStore((s) => s.game?.image_names)
   const [text, setText] = useState("")
   const [history, setHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
@@ -65,13 +66,13 @@ export default function InputBox() {
     const tokenStart = typed.lastIndexOf(" ") + 1
     const token = typed.slice(tokenStart)
     const before = text.slice(0, text.length - token.length)
-    return suggestArgs(word, token).map((arg: ArgSuggestion, index) => ({
+    return suggestArgs(word, token, imageNames).map((arg: ArgSuggestion, index) => ({
       key: `a-${word}-${arg.text}-${index}`,
       display: arg.text,
       hint: arg.hintKey ? t(arg.hintKey) : t(`play.commands.${word}`),
       next: arg.mode === "append" ? before + token + arg.text : `${before}${arg.text} `,
     }))
-  }, [text, t])
+  }, [text, t, imageNames])
 
   // The highlight resets whenever the list changes; typing never keeps one.
   const activeHint = hintIndex >= 0 && hintIndex < hints.length ? hints[hintIndex] : null

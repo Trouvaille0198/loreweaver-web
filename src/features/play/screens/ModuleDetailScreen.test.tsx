@@ -34,6 +34,7 @@ describe("ModuleDetailScreen", () => {
         current: false,
         status: "",
         pool: null,
+        media: [],
       },
     })
   })
@@ -69,5 +70,153 @@ describe("ModuleDetailScreen", () => {
 
     expect(screen.queryByRole("textbox", { name: "Source text" })).toBeNull()
     expect(screen.getByText("# Foggy scene")).toBeInTheDocument()
+  })
+
+  it("renders the analyzed pool as structured sections, never as raw JSON", async () => {
+    useAdminStore.setState({
+      moduleDetail: {
+        name: "scene.md",
+        title: "The Salt Marsh Vanishing",
+        size: 12,
+        modified: 1,
+        content: "# The Salt Marsh Vanishing",
+        current: true,
+        status: "ready",
+        pool: {
+          keeper: {
+            summary: "Investigators uncover the truth behind the marsh disappearances.",
+            scenes: [
+              {
+                name: "The ferry crossing",
+                focus: "explore",
+                description: "A rotting jetty over black water.",
+                keeper_notes: "The ferryman rows only after midnight.",
+                clues: [{ name: "A wet ledger", description: "Names crossed out in salt.", discovery_method: "Lift the bench" }],
+              },
+            ],
+            npcs: [
+              { name: "The Ferryman", role: "antagonist", description: "A quiet old man.", secret: "He is bound to the old pact." },
+            ],
+            clues: [{ name: "Salt on the sill", location: "Boathouse", leads_to: "The ferryman" }],
+            timeline: [{ time: "23:00", event: "The bell rings from the water." }],
+          },
+        },
+        media: [{ name: "module-scene-cover-1.jpg", hash: "ab12cd34", mime: "image/jpeg", size: 100 }],
+      },
+    })
+
+    render(<ModuleDetailScreen moduleName="scene.md" onBack={() => {}} />)
+
+    // The two zones are explicitly separated: room-generated analysis vs. the module's own
+    // content (its illustrations live with the module, the knowledge pool with the room).
+    expect(screen.getByText("Generated for this room")).toBeInTheDocument()
+    expect(screen.getByText("Module content")).toBeInTheDocument()
+    // The media deck surface lists the room's generated illustrations by name.
+    expect(screen.getByRole("heading", { name: "Illustrations" })).toBeInTheDocument()
+    expect(screen.getByText("module-scene-cover-1.jpg")).toBeInTheDocument()
+
+    // Group and category structure is visible…
+    expect(screen.getByText("Overview")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Scenes" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "NPCs" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Clues" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Timeline" })).toBeInTheDocument()
+    // …with the actual analyzed content rendered as readable text…
+    expect(screen.getByText("Investigators uncover the truth behind the marsh disappearances.")).toBeInTheDocument()
+    expect(screen.getByText("The ferry crossing")).toBeInTheDocument()
+    expect(screen.getByText("A rotting jetty over black water.")).toBeInTheDocument()
+    expect(screen.getByText("The ferryman rows only after midnight.")).toBeInTheDocument()
+    expect(screen.getByText("The Ferryman")).toBeInTheDocument()
+    expect(screen.getByText("antagonist")).toBeInTheDocument()
+    expect(screen.getByText(/He is bound to the old pact/)).toBeInTheDocument()
+    expect(screen.getByText(/Salt on the sill/)).toBeInTheDocument()
+    expect(screen.getByText("The bell rings from the water.")).toBeInTheDocument()
+    // …and field labels come from the poolFields vocabulary…
+    expect(screen.getAllByText(/Secret/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Discovery method/).length).toBeGreaterThan(0)
+    // …never as a raw JSON dump.
+    expect(screen.queryByText(/\{"name"/)).toBeNull()
+    expect(screen.queryByText(/"description":/)).toBeNull()
+  })
+
+  it("renders a complete .lwpack module detail: lore, cast, rulepacks, skills, media", async () => {
+    useAdminStore.setState({
+      moduleDetail: {
+        name: "1930npc",
+        title: "恒昌照相馆的幽灵影",
+        size: 2643724,
+        modified: 1,
+        content: "1930年代上海法租界的老照相馆之谜。",
+        current: false,
+        status: "ready",
+        sourceKind: "pack",
+        worldbookEntries: [
+          { title: "老照相馆", content: "法租界的老照相馆，夜晚打烊后仍有光。", secret: false },
+          { title: "失踪摄影师", content: "摄影师失踪前留下了一卷未冲洗的胶卷。", secret: true },
+        ],
+        pregens: [
+          { name: "沈默之", concept: "报社记者" },
+          { name: "艾莉丝·陈", concept: "混血侦探" },
+        ],
+        rulepacks: [{ name: "photo-mystery", title: "Photo Mystery", content: "names: [photo-mystery]" }],
+        skills: [{ name: "skill-ec9d46fb", content: "旧照魅影技能" }],
+        media: [{ name: "module-1930npc-cover-1.jpg", hash: "a".repeat(64), mime: "image/jpeg", size: 123 }],
+        pool: null,
+      },
+    })
+    render(<ModuleDetailScreen moduleName="1930npc" onBack={() => {}} />)
+    act(() => useAdminStore.setState({ busy: false }))
+
+    // The pack badge + title.
+    expect(screen.getByRole("heading", { name: "恒昌照相馆的幽灵影" })).toBeInTheDocument()
+    expect(screen.getByText("Pack")).toBeInTheDocument()
+    // Lore entries (both secret and public).
+    expect(screen.getByText("老照相馆")).toBeInTheDocument()
+    expect(screen.getByText("失踪摄影师")).toBeInTheDocument()
+    expect(screen.getAllByText(/法租界的老照相馆/).length).toBeGreaterThan(0)
+    // Claimable cast.
+    expect(screen.getByText("沈默之")).toBeInTheDocument()
+    expect(screen.getByText("艾莉丝·陈")).toBeInTheDocument()
+    // Rulepack + skill content.
+    expect(screen.getByText("Photo Mystery")).toBeInTheDocument()
+    expect(screen.getByText(/names: \[photo-mystery\]/)).toBeInTheDocument()
+    expect(screen.getByText("旧照魅影技能")).toBeInTheDocument()
+    // Media grid renders the image hash entry.
+    expect(screen.getByText(/module-1930npc-cover-1/)).toBeInTheDocument()
+  })
+
+  it("renders a complete Markdown module detail: source text and knowledge pool", async () => {
+    useAdminStore.setState({
+      moduleDetail: {
+        name: "shanghai-lost-voice-1920.md",
+        title: "安福弄12号：消失的歌声",
+        size: 25935,
+        modified: 1,
+        content: "# 安福弄12号\n\n1920年代上海弄堂里的歌女失踪案。",
+        current: true,
+        status: "ready",
+        sourceKind: "text",
+        pool: {
+          keeper: {
+            scenes: [{ name: "旧唱片行", description: "一家旧唱片行，柜台后堆满黑胶。" }],
+            npcs: [{ name: "歌女", role: "失踪者", description: "深夜独自离去后再未归来。" }],
+            truths: [{ name: "真相", description: "唱片里藏着一个秘密。" }],
+            summary: "弄堂里的歌女失踪了。",
+          },
+          player: {},
+        },
+        media: [],
+      },
+    })
+    render(<ModuleDetailScreen moduleName="shanghai-lost-voice-1920.md" onBack={() => {}} />)
+    act(() => useAdminStore.setState({ busy: false }))
+
+    // Source text is shown.
+    expect(screen.getByText(/1920年代上海弄堂里的歌女失踪案/)).toBeInTheDocument()
+    // Knowledge pool sections render.
+    expect(screen.getByText("旧唱片行")).toBeInTheDocument()
+    expect(screen.getByText("歌女")).toBeInTheDocument()
+    expect(screen.getByText("真相")).toBeInTheDocument()
+    expect(screen.getByText("弄堂里的歌女失踪了。")).toBeInTheDocument()
   })
 })
