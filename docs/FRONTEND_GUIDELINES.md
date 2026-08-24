@@ -334,15 +334,14 @@ const groups: readonly SettingsNavGroup<Section>[] = [
 
 ### 11.3 提交前
 
-执行：
+按改动范围执行必要检查，不要求每次改动都跑完整检查链：
 
-```bash
-bun run typecheck
-bun run lint
-bun run i18n:lint
-bun run test
-bun run build
-```
+- 仅文档或配置说明改动：不要求跑测试。
+- TypeScript / React 改动：优先跑受影响的 typecheck、lint、i18n 检查或聚焦测试。
+- 不默认运行完整测试套件，也不因为 web 改动自动运行引擎 repo 的测试。
+- 只有用户明确要求全量验证，或跨 repo、协议、数据迁移等高风险改动确实需要时，才运行完整检查链，并说明原因。
+
+完整的 `typecheck`、`lint`、`i18n:lint`、`test`、`build` 仍由 CI 负责统一门禁。
 
 浏览器验收至少覆盖：
 
