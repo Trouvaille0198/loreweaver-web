@@ -88,6 +88,41 @@ describe("ModuleScreen — community packs", () => {
     expect(field).toHaveValue("gh:1A7432/antu@v1.0.0")
   })
 
+  it("sends the reference as a .pack fetch command that imports nothing", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    const field = screen.getByLabelText("Pack reference")
+    const button = screen.getByRole("button", { name: "Fetch only (.pack fetch)" })
+    // Nothing to fetch yet.
+    expect(button).toBeDisabled()
+
+    await user.type(field, "  gh:1A7432/antu@v1.0.0  ")
+    await user.click(button)
+    expect(sent.at(-1)).toEqual({ type: "input", text: ".pack fetch gh:1A7432/antu@v1.0.0" })
+    expect(field).toHaveValue("")
+  })
+
+  it("says the fetch went out once the send has resolved", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.type(screen.getByLabelText("Pack reference"), "gh:1A7432/antu@v1.0.0")
+    await user.click(screen.getByRole("button", { name: "Fetch only (.pack fetch)" }))
+    await waitFor(() => expect(screen.getByText(/lands on the server only/)).toBeInTheDocument())
+  })
+
+  it("says so when the fetch fails, and keeps the reference typed", async () => {
+    const user = userEvent.setup()
+    transportSend.mockResolvedValueOnce(undefined)
+    transportSend.mockRejectedValueOnce(new Error("offline"))
+    render(<ModuleScreen onBack={() => {}} />)
+    const field = screen.getByLabelText("Pack reference")
+    await user.type(field, "gh:1A7432/antu@v1.0.0")
+    await user.click(screen.getByRole("button", { name: "Fetch only (.pack fetch)" }))
+    await waitFor(() => expect(screen.getByText(/Nothing was sent/)).toBeInTheDocument())
+    expect(screen.queryByText(/lands on the server only/)).toBeNull()
+    expect(field).toHaveValue("gh:1A7432/antu@v1.0.0")
+  })
+
   it("says so when the module path send fails, and keeps the path typed", async () => {
     const user = userEvent.setup()
     transportSend.mockResolvedValueOnce(undefined)

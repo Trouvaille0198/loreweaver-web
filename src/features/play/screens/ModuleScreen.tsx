@@ -368,6 +368,7 @@ export default function ModuleScreen({
   const [packRef, setPackRef] = useState("")
   const [pathStatus, setPathStatus] = useState<SendStatus>("idle")
   const [packStatus, setPackStatus] = useState<SendStatus>("idle")
+  const [packFetchStatus, setPackFetchStatus] = useState<SendStatus>("idle")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const bundleInputRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => {
@@ -419,6 +420,12 @@ export default function ModuleScreen({
     const value = packRef.trim()
     if (!value) return
     void send(`.pack install ${value}`, setPackStatus, () => setPackRef(""))
+  }
+
+  const fetchPack = () => {
+    const value = packRef.trim()
+    if (!value) return
+    void send(`.pack fetch ${value}`, setPackFetchStatus, () => setPackRef(""))
   }
 
   const chooseFile = async (file: File) => {
@@ -652,9 +659,18 @@ export default function ModuleScreen({
             <Button type="button" variant="primary" disabled={!packRef.trim()} onClick={installPack}>
               {t("play.pack.install")}
             </Button>
+            <Button type="button" variant="quiet" disabled={!packRef.trim()} onClick={fetchPack}>
+              {t("play.pack.fetch")}
+            </Button>
           </div>
           {packStatus === "sent" ? <p className="studio-hint">{t("play.pack.sent")}</p> : null}
           {packStatus === "failed" ? (
+            <Notice tone="danger" role="alert">
+              {t("play.sendFailed")}
+            </Notice>
+          ) : null}
+          {packFetchStatus === "sent" ? <p className="studio-hint">{t("play.pack.fetchSent")}</p> : null}
+          {packFetchStatus === "failed" ? (
             <Notice tone="danger" role="alert">
               {t("play.sendFailed")}
             </Notice>
