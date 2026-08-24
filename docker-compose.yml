@@ -35,11 +35,12 @@ services:
               "--static-dir", "/srv/web-dist", "--keys", "/data/keys.toml"]
     volumes:
       # BIND MOUNT, not a named volume: every record — keys.toml, the campaign
-      # SQLite DB, media, packs, backups — lives at ./data on the HOST and is
-      # visible inside the container at /data. Operations then happen on the
-      # host directly (scp a module into ./data/, back up ./data, read keys)
-      # with no `docker exec` needed.
-      - ./data:/data
+      # SQLite DB, media, packs, backups — lives in a DEDICATED host directory
+      # (default ~/loreweaver-data, override with LORE_DATA_DIR) and is visible
+      # inside the container at /data. Operations then happen on the host
+      # directly (scp a module in, back up the dir, read keys) with no
+      # `docker exec` needed. Data is deliberately NOT in the repo checkout.
+      - ${LORE_DATA_DIR:-/home/melon/loreweaver-data}:/data
       # The combined WS+p2p runner, read-only (it must track the engine's API,
       # so keep it next to the compose file on the host).
       - ./serve_both.py:/srv/serve_both.py:ro
