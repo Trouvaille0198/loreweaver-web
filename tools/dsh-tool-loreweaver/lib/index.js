@@ -1001,6 +1001,57 @@ function loreweaverSetModel() {
   )
 }
 
+const PY_RECON = `
+import sqlite3, tomllib
+from pathlib import Path
+
+DATA = Path.home() / "loreweaver-data"
+rooms: dict[str, list[dict]] = {}
+try:
+    with open(DATA / "keys.toml", "rb") as fh:
+        for key, entry in tomllib.load(fh).items():
+            rooms.setdefault(str(entry.get("room") or "?"), []).append(entry)
+except FileNotFoundError:
+    pass
+
+con = sqlite3.connect(DATA / "loreweaver.db")
+
+def cnt(table: str, ck: str = "") -> int:
+    try:
+        return int(con.execute(f"SELECT COUNT(*) FROM {table} WHERE room = ?", (ck,)).fetchone()[0])
+    except Exception:
+        return -1
+
+for room in sorted(rooms):
+    entries = rooms[room]
+    ck = f"tui:group:{room}"
+    keepers = [str(e.get("name") or "?") for e in entries if e.get("role") == "keeper"]
+    players = [str(e.get("name") or "?") for e in entries if e.get("role") != "keeper"]
+    vals = {k: v for k, v in con.execute("SELECT key, value FROM room_state WHERE room = ?", (ck,)).fetchall()}
+    print(f"[{room}]")
+    print(f"  keys: {len(entries)} ({len(keepers)} keeper: {', '.join(keepers) or '-'}; {len(players)} player: {', '.join(players) or '-'})")
+    print(f"  campaign: module={vals.get('module_source') or '-'}, system={vals.get('room_system') or '-'}, status={vals.get('module_init_status') or '-'}, worldbook={vals.get('worldbook') or '-'}")
+    print(f"  data: {cnt('chat_history', ck)} chat, {cnt('documents', ck)} documents, {cnt('media_index', ck)} media, {cnt('room_snapshots', ck)} snapshots, {cnt('room_state', ck)} state rows")
+if not rooms:
+    print("(no rooms in the keystore)")
+`
+
+function loreweaverRoomsInfo() {
+  return tool(
+    "loreweaver_rooms_info",
+    "Show ALL rooms and their details at a glance: per-room key/member lists (keeper/player), campaign info (current module, rule system, import status, worldbook) from room_state, and data row counts (chat, documents, media, snapshots). Reads the host keystore + campaign DB directly.",
+    {},
+    async () => {
+      try {
+        const { stdout } = await run("python3", ["-c", PY_RECON], { timeout: 15_000 })
+        return ok(stdout.trim() || "(no rooms)")
+      } catch (e) {
+        return fail(e)
+      }
+    },
+  )
+}
+
 function loreweaverRoomSnapshot() {
   return tool(
     "loreweaver_room_snapshot",
@@ -1081,6 +1132,7 @@ function apply(ctx) {
     loreweaverBackup(),
     loreweaverRestart(),
     loreweaverRooms(),
+    loreweaverRoomsInfo(),
     loreweaverDisk(),
     loreweaverRoomSnapshot(),
     loreweaverWatchRoom(),
