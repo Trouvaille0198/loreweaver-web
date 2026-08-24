@@ -1551,11 +1551,57 @@ body {
   font-size: 13px;
 }
 
+.party-member-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  min-height: 24px;
+}
+
+.party-member-copy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .party-name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.party-card .party-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.party-card .party-name {
+  flex: none;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.party-controller {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  min-width: 0;
+  color: var(--ink-faint);
+  font: 11px/1.25 var(--font-ui);
+}
+
+.party-controller-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-dim);
+  font-weight: 600;
 }
 
 .party-row.is-offline .party-name {
@@ -1568,6 +1614,7 @@ body {
 }
 
 .pregen-row {
+  position: relative;
   align-items: flex-start;
 }
 
@@ -1585,13 +1632,101 @@ body {
 }
 
 .pregen-blurb {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  width: min(320px, calc(100vw - 48px));
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-raised);
+  color: var(--ink-dim);
+  font: 12px/1.5 var(--font-ui);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.pregen-row:hover .pregen-blurb,
+.pregen-row:focus .pregen-blurb,
+.pregen-row:focus-within .pregen-blurb {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* The pregen row's context menu (switching between claimed characters) — the
+   same raised surface as the app's other popovers, positioned at the pointer
+   (fixed: the desk pane scrolls, the menu must not ride along). */
+.pregen-menu-pop {
+  position: fixed;
+  z-index: 40;
+  min-width: 140px;
+  max-width: 232px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.4);
+}
+
+.pregen-menu-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px;
+}
+
+.pregen-menu-warn {
+  margin: 0;
   color: var(--ink-dim);
   font: 12px/1.5 var(--font-ui);
 }
 
+.pregen-menu-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .party-stat {
-  font: 11px/1 var(--font-mono);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-soft);
+  font: 11px/1.2 var(--font-mono);
   color: var(--ink-dim);
+}
+
+.party-resources {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.party-stat-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-faint);
+  font: 10px/1.2 var(--font-ui);
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.party-stat-value {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font: 600 12px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .presence-dot {
@@ -3818,9 +3953,17 @@ code {
   }
 
   .input-dock .desk-toggle {
-    flex: 0 0 auto;
-    min-width: 48px;
-    padding: 0 12px;
+    flex: 0 0 44px;
+    width: 44px;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  .input-dock .desk-toggle::before {
+    content: "☷";
+    font-size: 18px;
+    line-height: 1;
   }
 
   /* Command hints are positioned against the input wrapper; inside the dock
@@ -3859,7 +4002,11 @@ code {
   /* --- header: chat-style on a phone — one row, the rest folds into "⋯" --- */
   .session-head {
     gap: 8px;
-    padding: 8px 12px;
+    padding: 4px 12px;
+  }
+
+  .session-room {
+    font-size: 11px;
   }
 
   .session-more {
@@ -3956,22 +4103,21 @@ code {
   }
 
   .vitals-strip {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: center;
-    gap: 6px 14px;
+    gap: 6px 10px;
     padding: 6px 12px;
     border-bottom: 1px solid var(--border-soft);
     flex-shrink: 0;
   }
 
   .vitals-strip .meter {
-    grid-template-columns: auto minmax(40px, 90px) auto;
-    gap: 6px;
-    font-size: 11px;
-    flex: 1;
-    min-width: 90px;
-    max-width: 150px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 4px;
+    font-size: 10px;
+    min-width: 0;
+    max-width: none;
   }
 
   .vitals-strip .meter-track {
@@ -4012,6 +4158,14 @@ code {
      text gets the room instead of the desktop left rail. */
   .log-entry {
     padding: 12px 14px;
+  }
+
+  /* On a phone, the story bubble is the only surface needed. */
+  .log-entry:not(.log-media) {
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
   }
 
   .entry-speaker {
@@ -4234,6 +4388,24 @@ code {
   background: color-mix(in srgb, var(--bg-inset) 58%, transparent);
 }
 
+.party-stat-value.is-low {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 48%, var(--border-soft));
+  background: color-mix(in srgb, var(--danger) 10%, var(--bg-inset));
+}
+
+.party-stat-value.is-medium {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 48%, var(--border-soft));
+  background: color-mix(in srgb, var(--warn) 10%, var(--bg-inset));
+}
+
+.party-stat-value.is-high {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 48%, var(--border-soft));
+  background: color-mix(in srgb, var(--ok) 10%, var(--bg-inset));
+}
+
 .session .desk-pane .variables-card .meter-label {
   font-size: 14px;
 }
@@ -4270,32 +4442,30 @@ code {
 }
 
 /* Party and module cards: quiet, compact. */
-.session .desk-pane .party-row {
+.session .desk-pane .party-card .party-row {
   font-size: 14px;
-  gap: 10px;
+  gap: 7px;
+  padding: 8px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-inset) 30%, transparent);
 }
 
-.session .desk-pane .party-stat {
+.session .desk-pane .party-card .party-stat {
   font-size: 12px;
-}
-
-.party-hint {
-  margin-left: auto;
-  font: 11px/1.3 var(--font-ui);
-  letter-spacing: normal;
-  text-transform: none;
-  color: var(--ink-faint);
 }
 
 .party-row {
   cursor: pointer;
-  border-radius: 5px;
-  padding: 3px 4px;
-  margin: -3px -4px;
 }
 
 .party-row:hover {
   background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.party-card .party-row.is-active {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border-soft));
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-inset));
 }
 
 .party-row:focus-visible {

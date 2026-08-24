@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react"
 import { useTranslation } from "react-i18next"
 import {
   stripControlChars,
@@ -29,6 +29,14 @@ import { asCharacterDetails } from "./characterDetails"
 function resourceTone(id: string): MeterTone {
   if (id === "hp" || id === "mp" || id === "san") return id
   return "accent"
+}
+
+function resourceLevel(resource: ResourceState): "low" | "medium" | "high" | "neutral" {
+  if (typeof resource.max !== "number" || resource.max <= 0) return "neutral"
+  const ratio = Math.max(0, Math.min(1, resource.value / resource.max))
+  if (ratio <= 1 / 3) return "low"
+  if (ratio <= 2 / 3) return "medium"
+  return "high"
 }
 
 /**
@@ -403,10 +411,12 @@ function PartyDetailGrid({
 function PartyCharacterModal({
   member,
   ownCharacter,
+  blurb,
   onClose,
 }: {
   member: PartyCharacterInfo
   ownCharacter: CharacterState | null
+  blurb?: string
   onClose: () => void
 }) {
   const { t } = useTranslation()
@@ -444,6 +454,11 @@ function PartyCharacterModal({
             ×
           </button>
         </header>
+        {blurb ? (
+          <p className="character-modal-blurb" id="character-modal-blurb">
+            {stripControlChars(blurb)}
+          </p>
+        ) : null}
         {(info.resources ?? []).length > 0 ? (
           <div className="character-modal-resources">
             {(info.resources ?? []).map((resource) => (
@@ -506,7 +521,7 @@ function PartyCharacterModal({
             <p className="play-character-prose">{stripControlChars(info.notes)}</p>
           </section>
         ) : null}
-        {!hasExtra && !info.background && !(ownCharacter && info.notes) ? (
+        {!hasExtra && !info.background && !(ownCharacter && info.notes) && !blurb ? (
           <p className="studio-hint">{t("play.character.noDetails")}</p>
         ) : null}
       </section>
@@ -528,13 +543,20 @@ export function PartyCard({ game }: { game: StateFrame }) {
   if (game.party.length === 0) return null
   const selected = game.party.find((member) => member.name === selectedName) as PartyCharacterInfo | undefined
   const ownCharacter = selected && game.character?.name === selected.name ? game.character : null
+  const selectedPregen = selected ? game.pregens?.find((pregen) => pregen.name === selected.name) : undefined
+  const partyControllers = new Map(
+    game.party.map((member) => {
+      const pregen = game.pregens?.find((entry) => entry.name === member.name)
+      return [
+        member.name,
+        pregen?.claimed_by?.trim() || (member.ai ? "AI" : t("session.partyControllerUnknown")),
+      ]
+    }),
+  )
   return (
     <>
-      <section className="desk-card">
-        <header className="desk-title">
-          {t("session.party")}
-          <span className="party-hint">{t("session.partyHint")}</span>
-        </header>
+      <section className="desk-card party-card">
+        <header className="desk-title">{t("session.party")}</header>
         <ul className="party-list">
           {game.party.map((member) => (
             <li
@@ -551,16 +573,38 @@ export function PartyCard({ game }: { game: StateFrame }) {
                 }
               }}
             >
-              <span className={`presence-dot ${member.online ? "online" : "offline"}`} aria-hidden="true" />
-              <Avatar ref={member.avatar} name={member.name} />
-              <span className="party-name">{stripControlChars(member.name)}</span>
-              {member.ai ? <span className="chip chip-ai">AI</span> : null}
-              {(member.resources ?? []).map((resource) => (
-                <span key={resource.id} className="party-stat">
-                  {stripControlChars(resource.label)} {resource.value}
-                  {typeof resource.max === "number" && resource.max > 0 ? `/${resource.max}` : ""}
-                </span>
-              ))}
+              <div className="party-member-head">
+                <span
+                  className={`presence-dot ${member.online ? "online" : "offline"}`}
+                  aria-hidden="true"
+                  title={member.online ? t("connect.status.online") : t("connect.status.offline")}
+                />
+                <Avatar ref={member.avatar} name={member.name} />
+                <div className="party-member-copy">
+                  <span className="party-name">{stripControlChars(member.name)}</span>
+                  <span className="party-controller">
+                    <strong className="party-controller-name">
+                      {stripControlChars(
+                        partyControllers.get(member.name) ?? t("session.partyControllerUnknown"),
+                      )}
+                    </strong>
+                  </span>
+                </div>
+                {member.ai ? <span className="chip chip-ai">AI</span> : null}
+              </div>
+              {(member.resources ?? []).length > 0 ? (
+                <div className="party-resources" role="group" aria-label={t("session.partyStats")}>
+                  {(member.resources ?? []).map((resource) => (
+                    <span key={resource.id} className="party-stat">
+                      <span className="party-stat-label">{stripControlChars(resource.label)}</span>
+                      <strong className={`party-stat-value is-${resourceLevel(resource)}`}>
+                        {resource.value}
+                        {typeof resource.max === "number" && resource.max > 0 ? `/${resource.max}` : ""}
+                      </strong>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -569,6 +613,7 @@ export function PartyCard({ game }: { game: StateFrame }) {
         <PartyCharacterModal
           member={selected}
           ownCharacter={ownCharacter}
+          blurb={selectedPregen?.blurb}
           onClose={() => setSelectedName(null)}
         />
       ) : null}
@@ -581,52 +626,234 @@ export function PartyCard({ game }: { game: StateFrame }) {
  * player on the studio could not see — let alone claim — the characters the
  * module ships. Claiming goes through the ordinary command path (`.pc claim
  * <name>`, `gateway/commands.py::cmd_pc`), which is a PLAYER action: claiming
- * is the whole point of a pregen roster. */
+ * is the whole point of a pregen roster. Re-claiming a pregen you already hold
+ * is the switch — the engine's `yours` branch re-points the active-character
+ * slot with progress untouched — so the same `.pc claim` path serves both the
+ * first claim and switching between characters you hold. The row's context
+ * menu (right-click; long-press on touch) carries everything past the first
+ * claim — switching, viewing the sheet, releasing your claim, and the
+ * keeper's force-release — so the row itself stays a read-only roster entry. */
 export function PregenCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   const you = useConnectionStore((s) => s.welcome?.you.name ?? "")
+  const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
   const online = useConnectionStore((s) => s.status === "online")
   const pregens = game.pregens ?? []
+  const [menu, setMenu] = useState<{ name: string; x: number; y: number } | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const [viewName, setViewName] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  // Close on outside tap / Escape, like every other popover in the app.
+  useEffect(() => {
+    if (!menu) return
+    const onPointer = (event: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenu(null)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenu(null)
+    }
+    window.addEventListener("pointerdown", onPointer)
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("pointerdown", onPointer)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [menu])
+
+  useEffect(() => {
+    if (!viewName) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setViewName(null)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [viewName])
+
   if (pregens.length === 0) return null
+  const activeName = game.character?.name ?? ""
+  const partyByName = new Map(game.party.map((member) => [member.name, member]))
+
+  const send = (text: string) => {
+    void transportSend({ type: "input", text }).catch(() => {
+      // The transport surfaces failures through status events.
+    })
+  }
+
+  // What the menu may offer for one roster entry, recomputed against live
+  // state at render time — a release can resolve while the menu is open.
+  const menuActions = (name: string) => {
+    const pregen = pregens.find((entry) => entry.name === name)
+    if (!pregen) return null
+    const claimedBy = pregen.claimed_by.trim()
+    const mine = claimedBy !== "" && claimedBy === you
+    const active = mine && pregen.name === activeName
+    return {
+      mine,
+      view: claimedBy !== "" && partyByName.has(name),
+      switchTo: mine && !active && online,
+      release: mine && online,
+      forceRelease: !mine && claimedBy !== "" && isKeeper && online,
+    }
+  }
+
+  const openMenu = (event: ReactMouseEvent<HTMLLIElement>, name: string) => {
+    const actions = menuActions(name)
+    if (!actions || (!actions.view && !actions.switchTo && !actions.release && !actions.forceRelease)) return
+    event.preventDefault()
+    // A keyboard-triggered context menu (Shift+F10 on the focused row)
+    // reports no pointer coordinates; anchor to the row itself then.
+    const rect = event.currentTarget.getBoundingClientRect()
+    setConfirming(false)
+    setMenu({ name, x: event.clientX || rect.left, y: event.clientY || rect.bottom })
+  }
+
+  const actions = menu ? menuActions(menu.name) : null
+  const viewMember = viewName ? (partyByName.get(viewName) as PartyCharacterInfo | undefined) : undefined
+  const viewPregen = viewName ? pregens.find((pregen) => pregen.name === viewName) : undefined
 
   return (
     <section className="desk-card">
       <header className="desk-title">{t("session.pregens")}</header>
       <ul className="party-list">
-        {pregens.map((pregen) => {
+        {pregens.map((pregen, index) => {
           const claimedBy = pregen.claimed_by.trim()
           const mine = claimedBy !== "" && claimedBy === you
+          const active = mine && activeName !== "" && pregen.name === activeName
           return (
-            <li key={pregen.name} className={`party-row pregen-row${claimedBy ? " is-offline" : ""}`}>
+            <li
+              key={pregen.name}
+              className={`party-row pregen-row${claimedBy ? " is-offline" : ""}${active ? " is-active" : ""}`}
+              tabIndex={pregen.blurb ? 0 : undefined}
+              aria-describedby={pregen.blurb ? `pregen-blurb-${index}` : undefined}
+              onContextMenu={(event) => openMenu(event, pregen.name)}
+            >
               <div className="pregen-copy">
                 <span className="party-name">{stripControlChars(pregen.name)}</span>
-                {pregen.blurb ? <span className="pregen-blurb">{stripControlChars(pregen.blurb)}</span> : null}
+                {pregen.blurb ? (
+                  <span className="pregen-blurb" id={`pregen-blurb-${index}`} role="tooltip">
+                    {stripControlChars(pregen.blurb)}
+                  </span>
+                ) : null}
               </div>
-              {claimedBy ? (
-                <span className="chip">
-                  {mine
-                    ? t("session.pregenYours")
-                    : t("session.pregenClaimed", { name: stripControlChars(claimedBy) })}
-                </span>
-              ) : (
+              {!claimedBy ? (
                 <Button
                   type="button"
                   size="sm"
                   variant="quiet"
                   disabled={!online}
-                  onClick={() => {
-                    void transportSend({ type: "input", text: `.pc claim ${pregen.name}` }).catch(() => {
-                      // The transport surfaces failures through status events.
-                    })
-                  }}
+                  onClick={() => send(`.pc claim ${pregen.name}`)}
                 >
                   {t("session.pregenClaim")}
                 </Button>
+              ) : (
+                <span className="chip">
+                  {mine
+                    ? active
+                      ? t("session.pregenActive")
+                      : t("session.pregenYours")
+                    : t("session.pregenClaimed", { name: stripControlChars(claimedBy) })}
+                </span>
               )}
             </li>
           )
         })}
       </ul>
+      {menu && actions ? (
+        <div
+          ref={menuRef}
+          className="pregen-menu-pop"
+          role={confirming ? "group" : "menu"}
+          aria-label={t("session.pregenMenu", { name: menu.name })}
+          style={{
+            left: Math.max(8, Math.min(menu.x, window.innerWidth - 240)),
+            top: Math.max(8, Math.min(menu.y, window.innerHeight - 160)),
+          }}
+        >
+          {confirming ? (
+            // Releasing deletes the claimer's sheet copy (progress included)
+            // while the pristine card returns to the roster — destructive, so
+            // it sits behind an in-menu confirmation instead of one tap.
+            <div className="pregen-menu-confirm">
+              <p className="pregen-menu-warn">
+                {t(actions.mine ? "session.pregenReleaseWarn" : "session.pregenForceReleaseWarn", {
+                  name: menu.name,
+                })}
+              </p>
+              <div className="pregen-menu-confirm-actions">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="danger"
+                  autoFocus
+                  onClick={() => {
+                    send(`.pc release ${menu.name}`)
+                    setMenu(null)
+                  }}
+                >
+                  {t(actions.mine ? "session.pregenReleaseConfirm" : "session.pregenForceConfirm")}
+                </Button>
+                <Button type="button" size="sm" variant="quiet" onClick={() => setConfirming(false)}>
+                  {t("session.pregenCancel")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            (
+              [
+                actions.view && {
+                  key: "view",
+                  label: t("session.pregenView"),
+                  run: () => {
+                    setViewName(menu.name)
+                    setMenu(null)
+                  },
+                },
+                actions.switchTo && {
+                  key: "switch",
+                  label: t("session.pregenSwitch"),
+                  run: () => {
+                    send(`.pc claim ${menu.name}`)
+                    setMenu(null)
+                  },
+                },
+                actions.release && {
+                  key: "release",
+                  label: t("session.pregenRelease"),
+                  run: () => setConfirming(true),
+                },
+                actions.forceRelease && {
+                  key: "force",
+                  label: t("session.pregenForceRelease"),
+                  run: () => setConfirming(true),
+                },
+              ] as const
+            )
+              .filter((item): item is { key: string; label: string; run: () => void } => Boolean(item))
+              .map((item, itemIndex) => (
+                <Button
+                  key={item.key}
+                  type="button"
+                  role="menuitem"
+                  variant="quiet"
+                  className="app-menu-row"
+                  autoFocus={itemIndex === 0}
+                  onClick={item.run}
+                >
+                  {item.label}
+                </Button>
+              ))
+          )}
+        </div>
+      ) : null}
+      {viewMember ? (
+        <PartyCharacterModal
+          member={viewMember}
+          ownCharacter={game.character?.name === viewMember.name ? game.character : null}
+          blurb={viewPregen?.blurb}
+          onClose={() => setViewName(null)}
+        />
+      ) : null}
     </section>
   )
 }

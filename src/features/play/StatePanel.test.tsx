@@ -63,7 +63,10 @@ describe("StatePanel", () => {
     expect(screen.getByText("9/12")).toBeInTheDocument()
     expect(screen.getByText("44/60")).toBeInTheDocument()
     expect(screen.getByText("bleeding")).toBeInTheDocument()
-    expect(screen.getByText("AI")).toBeInTheDocument()
+    expect(screen.getByText("AI", { selector: ".chip-ai" })).toBeInTheDocument()
+    expect(screen.getByText("Not recorded", { selector: ".party-controller-name" })).toBeInTheDocument()
+    expect(screen.queryByText("Played by")).not.toBeInTheDocument()
+    expect(screen.queryByText("Double-click a member for details")).not.toBeInTheDocument()
     expect(screen.getByText(/5\/10/)).toBeInTheDocument()
     expect(screen.getByText(/Old Pier/)).toBeInTheDocument()
     expect(screen.getByText(/23:40/)).toBeInTheDocument()
@@ -84,6 +87,7 @@ describe("StatePanel", () => {
         status_effects: [],
         notes: "Private clue",
       },
+      pregens: [{ name: "Bo", claimed_by: "Ash", blurb: "A careful observer." }],
       party: [
         {
           name: "Bo",
@@ -100,10 +104,14 @@ describe("StatePanel", () => {
     })
 
     render(<StatePanel />)
-    fireEvent.doubleClick(screen.getByText("Bo", { selector: ".party-name" }))
+    expect(screen.getByText("Ash", { selector: ".party-controller-name" })).toBeInTheDocument()
+    fireEvent.doubleClick(screen.getAllByText("Bo", { selector: ".party-name" })[0])
 
     expect(screen.getByRole("dialog")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Bo" })).toBeInTheDocument()
+    expect(
+      screen.getByText("A careful observer.", { selector: ".character-modal-blurb" }),
+    ).toBeInTheDocument()
     expect(screen.getByText("A quiet scout.")).toBeInTheDocument()
     expect(screen.getByText("Stealth")).toBeInTheDocument()
     expect(screen.queryByText("Private clue")).not.toBeInTheDocument()
@@ -240,7 +248,7 @@ describe("PregenCard", () => {
     render(<StatePanel />)
 
     expect(screen.getByText("林晚")).toBeInTheDocument()
-  expect(screen.getByText("A careful observer.")).toHaveClass("pregen-blurb")
+    expect(screen.getByText("A careful observer.")).toHaveClass("pregen-blurb")
     expect(screen.getByText("claimed by Ash")).toBeInTheDocument()
     // Your own claim reads as yours, not as somebody else's name.
     expect(screen.getByText("yours")).toBeInTheDocument()
@@ -254,6 +262,119 @@ describe("PregenCard", () => {
     useSessionStore.setState({ game: { ...BASE, pregens: [] } })
     render(<StatePanel />)
     expect(screen.queryByText("Pre-generated cast")).not.toBeInTheDocument()
+  })
+
+  it("marks the pregen you are playing and offers switching via the row's context menu", async () => {
+    useSessionStore.setState({
+      game: {
+        ...BASE,
+        character: { name: "白榆生", system: "coc7", resources: [], attributes: {}, status_effects: [] },
+        pregens: [
+          { name: "白榆生", claimed_by: "Nyx" },
+          { name: "陈九鲤", claimed_by: "Nyx" },
+        ],
+      },
+    })
+    render(<StatePanel />)
+
+    // The played pregen is marked active (row style + chip); rows stay free of
+    // inline buttons once claimed — switching lives in the context menu.
+    expect(screen.getByText("白榆生", { selector: ".party-name" }).closest(".party-row")).toHaveClass(
+      "is-active",
+    )
+    expect(screen.getByText("playing")).toBeInTheDocument()
+    expect(screen.getByText("yours")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Switch" })).not.toBeInTheDocument()
+
+    // The active row has nothing to switch to — its menu offers Release only.
+    fireEvent.contextMenu(screen.getByText("白榆生", { selector: ".party-name" }))
+    expect(screen.queryByRole("menuitem", { name: "Switch" })).not.toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Release" })).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+
+    // Right-clicking another pregen you hold offers the switch; choosing it
+    // re-claims down the same command path — the engine's `yours` branch
+    // re-activates it with progress untouched — and the menu closes.
+    fireEvent.contextMenu(screen.getByText("陈九鲤", { selector: ".party-name" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Switch" }))
+    expect(sent).toContainEqual({ type: "input", text: ".pc claim 陈九鲤" })
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+  })
+
+  it("releases your own claim only behind an in-menu confirmation", async () => {
+    useSessionStore.setState({
+      game: {
+        ...BASE,
+        character: { name: "白榆生", system: "coc7", resources: [], attributes: {}, status_effects: [] },
+        pregens: [
+          { name: "白榆生", claimed_by: "Nyx" },
+          { name: "陈九鲤", claimed_by: "Nyx" },
+        ],
+      },
+    })
+    render(<StatePanel />)
+
+    fireEvent.contextMenu(screen.getByText("陈九鲤", { selector: ".party-name" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Release" }))
+    // One tap never releases: the confirm stage names the character and the
+    // consequence (your copy, progress included, is deleted) before sending.
+    expect(sent).toHaveLength(0)
+    expect(screen.getByText(/陈九鲤.*progress included/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Release it" }))
+    expect(sent).toContainEqual({ type: "input", text: ".pc release 陈九鲤" })
+    expect(screen.queryByRole("group")).not.toBeInTheDocument()
+  })
+
+  it("offers the keeper a force-release on somebody else's claim", async () => {
+    useConnectionStore.setState({
+      status: "online",
+      welcome: {
+        type: "welcome",
+        protocol: "2.1",
+        room: "table",
+        you: { id: "u0", name: "KP", role: "keeper" },
+        locale: "en",
+        server: "loreweaver/1",
+      },
+    })
+    useSessionStore.setState({
+      game: { ...BASE, pregens: [{ name: "白榆生", claimed_by: "Nyx" }] },
+    })
+    render(<StatePanel />)
+
+    fireEvent.contextMenu(screen.getByText("白榆生", { selector: ".party-name" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Force release" }))
+    expect(screen.getByText(/claimer's sheet copy is deleted/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Release it" }))
+    // The same `.pc release` command path — the server applies the keeper gate.
+    expect(sent).toContainEqual({ type: "input", text: ".pc release 白榆生" })
+  })
+
+  it("opens a claimed pregen's sheet from the menu", async () => {
+    useSessionStore.setState({
+      game: {
+        ...BASE,
+        party: [
+          { name: "白榆生", online: true, active: true },
+          { name: "陈九鲤", online: true, active: false },
+        ],
+        character: { name: "白榆生", system: "coc7", resources: [], attributes: {}, status_effects: [] },
+        pregens: [
+          { name: "白榆生", claimed_by: "Nyx" },
+          { name: "陈九鲤", claimed_by: "Nyx", blurb: "A careful observer." },
+        ],
+      },
+    })
+    render(<StatePanel />)
+
+    const card = screen.getByText("Pre-generated cast").closest("section") as HTMLElement
+    fireEvent.contextMenu(within(card).getByText("陈九鲤", { selector: ".party-name" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "View sheet" }))
+    expect(screen.getByRole("dialog")).toHaveTextContent("陈九鲤")
+    expect(screen.getByRole("dialog")).toHaveTextContent("A careful observer.")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
   })
 })
 
