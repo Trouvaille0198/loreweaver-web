@@ -140,6 +140,7 @@ describe("ModuleDetailScreen", () => {
   })
 
   it("renders a complete .lwpack module detail: lore, cast, rulepacks, skills, media", async () => {
+    const user = userEvent.setup()
     useAdminStore.setState({
       moduleDetail: {
         name: "1930npc",
@@ -160,7 +161,15 @@ describe("ModuleDetailScreen", () => {
         ],
         rulepacks: [{ name: "photo-mystery", title: "Photo Mystery", content: "names: [photo-mystery]" }],
         skills: [{ name: "skill-ec9d46fb", content: "旧照魅影技能" }],
-        media: [{ name: "module-1930npc-cover-1.jpg", hash: "a".repeat(64), mime: "image/jpeg", size: 123 }],
+        media: [
+          {
+            name: "module-1930npc-cover-1.jpg",
+            hash: "a".repeat(64),
+            mime: "image/jpeg",
+            size: 123,
+            data: "aGVsbG8=",
+          },
+        ],
         pool: null,
       },
     })
@@ -183,6 +192,11 @@ describe("ModuleDetailScreen", () => {
     expect(screen.getByText("旧照魅影技能")).toBeInTheDocument()
     // Media grid renders the image hash entry.
     expect(screen.getByText(/module-1930npc-cover-1/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Enlarge module-1930npc-cover-1.jpg" }))
+    expect(screen.getByRole("dialog", { name: "Image preview for module-1930npc-cover-1.jpg" })).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("dialog", { name: "Image preview for module-1930npc-cover-1.jpg" })).toBeNull()
   })
 
   it("renders a complete Markdown module detail: source text and knowledge pool", async () => {

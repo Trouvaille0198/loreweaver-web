@@ -19,7 +19,7 @@
 import { useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { stripControlChars, type CharacterState, type RuleSystemEntry } from "@loreweaver/protocol"
-import { Button } from "../../../components/ui"
+import { Button, Field, Notice, SectionHeader, Surface } from "../../../components/ui"
 import { transportSend } from "../../../lib/transport"
 import { useConnectionStore } from "../../../store/connection"
 import { useSessionStore } from "../../../store/session"
@@ -113,7 +113,12 @@ function CreateCharacter() {
         : Boolean(path.trim())
 
   return (
-    <div className="play-form">
+    <Surface className="character-create-card" labelledBy="character-create-title">
+      <SectionHeader
+        titleId="character-create-title"
+        title={t("play.character.create")}
+        description={t(`play.character.mode.${mode}.hint`)}
+      />
       <div className="chip-row" role="group" aria-label={t("play.character.createMode")}>
         {(["roll", "describe", "import"] as CreateMode[]).map((value) => (
           <Button
@@ -128,57 +133,69 @@ function CreateCharacter() {
           </Button>
         ))}
       </div>
-      <p className="studio-hint">{t(`play.character.mode.${mode}.hint`)}</p>
-
-      <label className="field">
-        {t("play.character.system")}
-        <select value={chosen} onChange={(e) => setSystem(e.target.value)}>
-          {offered.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {stripControlChars(entry.id)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <Field label={t("play.character.system")}>
+        {({ id }) => (
+          <select id={id} value={chosen} onChange={(e) => setSystem(e.target.value)}>
+            {offered.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {stripControlChars(entry.id)}
+              </option>
+            ))}
+          </select>
+        )}
+      </Field>
 
       {mode === "import" ? (
-        <label className="field">
-          {t("play.character.cardPath")}
-          <input
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-            placeholder={t("play.character.cardPathPlaceholder")}
-            spellCheck={false}
-          />
-        </label>
+        <Field label={t("play.character.cardPath")} hint={t("play.character.cardPathPlaceholder")}>
+          {({ id, describedBy }) => (
+            <input
+              id={id}
+              value={path}
+              onChange={(e) => setPath(e.target.value)}
+              placeholder={t("play.character.cardPathPlaceholder")}
+              aria-describedby={describedBy}
+              spellCheck={false}
+            />
+          )}
+        </Field>
       ) : (
-        <label className="field">
-          {t("play.character.name")}
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t("play.character.namePlaceholder")}
-          />
-        </label>
+        <Field label={t("play.character.name")} hint={t("play.character.namePlaceholder")}>
+          {({ id, describedBy }) => (
+            <input
+              id={id}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("play.character.namePlaceholder")}
+              aria-describedby={describedBy}
+            />
+          )}
+        </Field>
       )}
 
       {mode === "describe" ? (
-        <label className="field">
-          {t("play.character.description")}
-          <textarea
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={t("play.character.descriptionPlaceholder")}
-          />
-        </label>
+        <Field label={t("play.character.description")} hint={t("play.character.descriptionPlaceholder")}>
+          {({ id, describedBy }) => (
+            <textarea
+              id={id}
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t("play.character.descriptionPlaceholder")}
+              aria-describedby={describedBy}
+            />
+          )}
+        </Field>
       ) : null}
 
       <Button type="button" variant="primary" disabled={!online || !ready} onClick={submit}>
         {t("play.character.create")}
       </Button>
-      {sent ? <p className="studio-hint">{t("play.character.sent", { command: sent })}</p> : null}
-    </div>
+      {sent ? (
+        <Notice tone="success" role="status">
+          {t("play.character.sent", { command: sent })}
+        </Notice>
+      ) : null}
+    </Surface>
   )
 }
 

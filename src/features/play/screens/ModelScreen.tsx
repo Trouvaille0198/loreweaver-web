@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react"
 import type { ModelKind, ProviderMetadata } from "@loreweaver/protocol"
 import { useTranslation } from "react-i18next"
-import { Button, SectionHeader, Surface } from "../../../components/ui"
+import { Button, Field, Notice, SectionHeader, Surface } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
@@ -175,24 +175,29 @@ function UsageAssignment({
           </label>
         ) : null}
       </div>
-      <div className="field play-model-assignment-control">
-        <select
-          id={selectId}
-          name={selectId}
-          className="play-model-assignment-select"
-          aria-labelledby={titleId}
-          value={value}
-          disabled={isDisabled || locked}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          <option value="">{t("play.model.followDefault", { model: defaultLabel })}</option>
-          {profiles.map((profile) => (
-            <option key={profile.id} value={profile.id}>
-              {profile.provider} · {profile.chat_model || t("play.model.noModel")}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Field
+        label={<span className="visually-hidden">{label}</span>}
+        className="play-model-assignment-control"
+      >
+        {({ id }) => (
+          <select
+            id={id}
+            name={selectId}
+            className="play-model-assignment-select"
+            aria-labelledby={titleId}
+            value={value}
+            disabled={isDisabled || locked}
+            onChange={(event) => onChange(event.target.value)}
+          >
+            <option value="">{t("play.model.followDefault", { model: defaultLabel })}</option>
+            {profiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.provider} · {profile.chat_model || t("play.model.noModel")}
+              </option>
+            ))}
+          </select>
+        )}
+      </Field>
     </Surface>
   )
 }
@@ -207,15 +212,7 @@ export default function ModelScreen({
   const globalTitleId = useId()
   const embeddingTitleId = useId()
   const usageTitleId = useId()
-  const providerFieldId = useId()
-  const modelKindFieldId = useId()
-  const profileEmbeddingDimFieldId = useId()
-  const chatModelFieldId = useId()
-  const baseUrlFieldId = useId()
-  const apiKeyFieldId = useId()
   const modelListId = useId()
-  const embeddingModelFieldId = useId()
-  const embeddingDimFieldId = useId()
   const embeddingApplyHintId = useId()
   const config = useAdminStore((state) => state.config)
   const roomConfig = useAdminStore((state) => state.roomConfig)
@@ -510,7 +507,11 @@ export default function ModelScreen({
 
   return (
     <ScreenShell title={t("play.menu.model")} onBack={onBack} showAdminError embedded={embedded}>
-      {config?.using_demo === true ? <p className="studio-notice">{t("play.model.demoActive")}</p> : null}
+      {config?.using_demo === true ? (
+        <Notice tone="warning" role="status">
+          {t("play.model.demoActive")}
+        </Notice>
+      ) : null}
 
       <Surface className="play-model-card play-model-global" labelledBy={globalTitleId}>
         <SectionHeader
@@ -518,12 +519,7 @@ export default function ModelScreen({
           title={t("play.model.globalSection")}
           description={t("play.model.globalHint")}
           actions={
-            <Button
-              type="button"
-              variant="quiet"
-              disabled={profileAction !== null}
-              onClick={startNewProfile}
-            >
+            <Button type="button" variant="quiet" disabled={profileAction !== null} onClick={startNewProfile}>
               {t("play.model.newLlm")}
             </Button>
           }
@@ -583,109 +579,115 @@ export default function ModelScreen({
               <span>{selectedProvider || t("play.model.globalStatus")}</span>
               <h4>{selectedProfile?.chat_model || t("play.model.newLlm")}</h4>
             </div>
-            <div className="play-form play-model-fields">
-              <label className="field" htmlFor={providerFieldId}>
-                {t("play.model.provider")}
-                <select
-                  id={providerFieldId}
-                  name="llm-provider"
-                  value={selectedProvider}
-                  disabled={profileAction !== null || selectedProfile !== undefined}
-                  onChange={(event) => selectProvider(event.target.value)}
-                >
-                  <option value="">{t("play.model.newLlm")}</option>
-                  {providerCatalog.map((provider) => (
-                    <option key={provider.id} value={provider.id}>
-                      {provider.id}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field" htmlFor={modelKindFieldId}>
-                {t("play.model.modelKind")}
-                <select
-                  id={modelKindFieldId}
-                  name="llm-model-kind"
-                  value={modelKind}
-                  disabled={profileAction !== null || selectedProfile !== undefined}
-                  onChange={(event) => {
-                    const kind = event.target.value as ModelKind
-                    setModelKind(kind)
-                    setProfileEmbeddingDim("")
-                  }}
-                >
-                  {availableKinds.map((kind) => (
-                    <option key={kind} value={kind}>
-                      {t(`play.model.kind.${kind}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field" htmlFor={chatModelFieldId}>
-                {t("play.model.modelName")}
-                <input
-                  id={chatModelFieldId}
-                  name="llm-chat-model"
-                  value={chatModel}
-                  list={
-                    modelsProvider === selectedProvider && modelsKind === modelKind
-                      ? modelListId
-                      : undefined
-                  }
-                  disabled={profileAction !== null || selectedProfile !== undefined}
-                  onChange={(event) => setChatModel(event.target.value)}
-                  spellCheck={false}
-                />
-                <datalist id={modelListId}>
-                  {models.map((model) => (
-                    <option key={model} value={model} />
-                  ))}
-                </datalist>
-              </label>
-              {modelKind === "embedding" ? (
-                <label className="field" htmlFor={profileEmbeddingDimFieldId}>
-                  {t("play.model.embeddingDim")}
-                  <input
-                    id={profileEmbeddingDimFieldId}
-                    name="llm-embedding-dimensions"
-                    type="number"
-                    min="1"
-                    step="1"
-                    inputMode="numeric"
-                    value={profileEmbeddingDim}
+            <div className="play-model-fields">
+              <Field label={t("play.model.provider")}>
+                {({ id }) => (
+                  <select
+                    id={id}
+                    name="llm-provider"
+                    value={selectedProvider}
                     disabled={profileAction !== null || selectedProfile !== undefined}
-                    onChange={(event) => setProfileEmbeddingDim(event.target.value)}
-                  />
-                </label>
-              ) : null}
-              <label className="field" htmlFor={baseUrlFieldId}>
-                {t("play.model.baseUrl")}
-                <input
-                  id={baseUrlFieldId}
-                  name="llm-base-url"
-                  value={baseUrl}
-                  disabled={profileAction !== null}
-                  onChange={(event) => setBaseUrl(event.target.value)}
-                  spellCheck={false}
-                />
-              </label>
-              <label className="field" htmlFor={apiKeyFieldId}>
-                {t("play.model.apiKey")}
-                <input
-                  id={apiKeyFieldId}
-                  name="llm-api-key"
-                  type="password"
-                  value={apiKey}
-                  disabled={profileAction !== null || !providerUsesApiKey}
-                  onChange={(event) => setApiKey(event.target.value)}
-                  placeholder={selectedProfile?.api_key_masked ?? ""}
-                />
-                <small>
-                  {t(
-                    `play.model.auth.${selectedProviderMetadata?.auth_type ?? "api_key"}`,
+                    onChange={(event) => selectProvider(event.target.value)}
+                  >
+                    <option value="">{t("play.model.newLlm")}</option>
+                    {providerCatalog.map((provider) => (
+                      <option key={provider.id} value={provider.id}>
+                        {provider.id}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+              <Field label={t("play.model.modelKind")}>
+                {({ id }) => (
+                  <select
+                    id={id}
+                    name="llm-model-kind"
+                    value={modelKind}
+                    disabled={profileAction !== null || selectedProfile !== undefined}
+                    onChange={(event) => {
+                      const kind = event.target.value as ModelKind
+                      setModelKind(kind)
+                      setProfileEmbeddingDim("")
+                    }}
+                  >
+                    {availableKinds.map((kind) => (
+                      <option key={kind} value={kind}>
+                        {t(`play.model.kind.${kind}`)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+              <Field label={t("play.model.modelName")}>
+                {({ id }) => (
+                  <>
+                    <input
+                      id={id}
+                      name="llm-chat-model"
+                      value={chatModel}
+                      list={
+                        modelsProvider === selectedProvider && modelsKind === modelKind
+                          ? modelListId
+                          : undefined
+                      }
+                      disabled={profileAction !== null || selectedProfile !== undefined}
+                      onChange={(event) => setChatModel(event.target.value)}
+                      spellCheck={false}
+                    />
+                    <datalist id={modelListId}>
+                      {models.map((model) => (
+                        <option key={model} value={model} />
+                      ))}
+                    </datalist>
+                  </>
+                )}
+              </Field>
+              {modelKind === "embedding" ? (
+                <Field label={t("play.model.embeddingDim")}>
+                  {({ id }) => (
+                    <input
+                      id={id}
+                      name="llm-embedding-dimensions"
+                      type="number"
+                      min="1"
+                      step="1"
+                      inputMode="numeric"
+                      value={profileEmbeddingDim}
+                      disabled={profileAction !== null || selectedProfile !== undefined}
+                      onChange={(event) => setProfileEmbeddingDim(event.target.value)}
+                    />
                   )}
-                </small>
-              </label>
+                </Field>
+              ) : null}
+              <Field label={t("play.model.baseUrl")}>
+                {({ id }) => (
+                  <input
+                    id={id}
+                    name="llm-base-url"
+                    value={baseUrl}
+                    disabled={profileAction !== null}
+                    onChange={(event) => setBaseUrl(event.target.value)}
+                    spellCheck={false}
+                  />
+                )}
+              </Field>
+              <Field
+                label={t("play.model.apiKey")}
+                hint={t(`play.model.auth.${selectedProviderMetadata?.auth_type ?? "api_key"}`)}
+              >
+                {({ id }) => (
+                  <input
+                    id={id}
+                    name="llm-api-key"
+                    type="password"
+                    value={apiKey}
+                    disabled={profileAction !== null || !providerUsesApiKey}
+                    onChange={(event) => setApiKey(event.target.value)}
+                    placeholder={selectedProfile?.api_key_masked ?? ""}
+                  />
+                )}
+              </Field>
             </div>
             <div className="play-model-editor-actions">
               <Button
@@ -698,12 +700,7 @@ export default function ModelScreen({
                   selectedProviderMetadata?.auth_type === "oauth"
                 }
                 onClick={() =>
-                  listModels(
-                    selectedProvider,
-                    apiKey.trim() || undefined,
-                    baseUrl.trim(),
-                    modelKind,
-                  )
+                  listModels(selectedProvider, apiKey.trim() || undefined, baseUrl.trim(), modelKind)
                 }
               >
                 {t("play.model.listModels")}
@@ -728,42 +725,44 @@ export default function ModelScreen({
           description={t("play.model.embeddingHint")}
         />
         <div className="play-embedding-editor">
-          <div className="play-form play-embedding-fields">
-            <label className="field" htmlFor={embeddingModelFieldId}>
-              {t("play.model.embeddingModel")}
-              <select
-                id={embeddingModelFieldId}
-                name="embedding-model"
-                value={embeddingProfileId}
-                disabled={embeddingSaving || embeddingProfiles.length === 0}
-                onChange={(event) => {
-                  const profile = embeddingProfiles.find((item) => item.id === event.target.value)
-                  setEmbeddingProfileId(event.target.value)
-                  setEmbeddingDim(profile?.embedding_dim ? String(profile.embedding_dim) : "")
-                }}
-              >
-                <option value="">{t("play.model.embeddingChooseLlm")}</option>
-                {embeddingProfiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.provider} · {profile.chat_model}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field" htmlFor={embeddingDimFieldId}>
-              {t("play.model.embeddingDim")}
-              <input
-                id={embeddingDimFieldId}
-                name="embedding-dimensions"
-                type="number"
-                min="1"
-                step="1"
-                inputMode="numeric"
-                value={embeddingDim}
-                disabled={embeddingSaving}
-                onChange={(event) => setEmbeddingDim(event.target.value)}
-              />
-            </label>
+          <div className="play-embedding-fields">
+            <Field label={t("play.model.embeddingModel")}>
+              {({ id }) => (
+                <select
+                  id={id}
+                  name="embedding-model"
+                  value={embeddingProfileId}
+                  disabled={embeddingSaving || embeddingProfiles.length === 0}
+                  onChange={(event) => {
+                    const profile = embeddingProfiles.find((item) => item.id === event.target.value)
+                    setEmbeddingProfileId(event.target.value)
+                    setEmbeddingDim(profile?.embedding_dim ? String(profile.embedding_dim) : "")
+                  }}
+                >
+                  <option value="">{t("play.model.embeddingChooseLlm")}</option>
+                  {embeddingProfiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.provider} · {profile.chat_model}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Field>
+            <Field label={t("play.model.embeddingDim")}>
+              {({ id }) => (
+                <input
+                  id={id}
+                  name="embedding-dimensions"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  value={embeddingDim}
+                  disabled={embeddingSaving}
+                  onChange={(event) => setEmbeddingDim(event.target.value)}
+                />
+              )}
+            </Field>
           </div>
           <div className="play-embedding-actions">
             <p id={embeddingApplyHintId} className="studio-hint">

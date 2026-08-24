@@ -1,0 +1,20 @@
+{
+  "repositories": {
+    "web": "/home/melon/pros/loreweaver-web",
+    "engine": "/home/melon/pros/loreweaver"
+  },
+  "runtime": {
+    "docker_port": 8787,
+    "desktop_viewport": [1440, 900],
+    "mobile_viewport": [390, 844],
+    "keeper_login_available": false
+  },
+  "_help": {
+    "repositories.web": "Loreweaver Web 仓库绝对路径；从实际工作区 pwd 获取，格式为绝对路径字符串",
+    "repositories.engine": "Loreweaver 引擎仓库绝对路径；仅在前端问题涉及协议或后端合同时使用，格式为绝对路径字符串",
+    "runtime.docker_port": "Docker Web 服务端口；从 docker-compose.yml 的 ports 映射确认，必须是整数。Loreweaver 默认使用 8787",
+    "runtime.desktop_viewport": "桌面浏览器验收视口 [宽度, 高度]，必须是两个正整数",
+    "runtime.mobile_viewport": "移动端浏览器验收视口 [宽度, 高度]，宽度建议不超过 390，必须是两个正整数",
+    "runtime.keeper_login_available": "是否有 keeper 登录凭据可用于权限场景测试，布尔值；没有凭据时填 false，不要把密码或 token 写入配置"
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { SectionHeader, Surface } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import KeysScreen from "./KeysScreen"
 import ModelScreen from "./ModelScreen"
@@ -106,20 +107,19 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
   return (
     <ScreenShell title={t("play.menu.keeperSettings")} onBack={onBack} showAdminError wide>
       {currentModule ? (
-        <section className="play-form module-detail-card keeper-current-module">
-          <div className="module-detail-head">
-            <div>
-              <h3 className="play-form-title">{t("play.keeperSettings.currentModule")}</h3>
-              <p className="studio-hint">
-                <strong>{currentModule.name}</strong>
-                {currentModule.entryCount ? ` · ${currentModule.entryCount} ${t("play.module.entries")}` : ""}
-              </p>
-            </div>
-            <div className="module-detail-actions">
-              <span className="chip chip-on">{t("play.worldbook.current")}</span>
-            </div>
-          </div>
-        </section>
+        <Surface
+          className="module-detail-card keeper-current-module"
+          labelledBy="keeper-current-module-title"
+        >
+          <SectionHeader
+            titleId="keeper-current-module-title"
+            title={t("play.keeperSettings.currentModule")}
+            description={`${currentModule.name}${
+              currentModule.entryCount ? ` · ${currentModule.entryCount} ${t("play.module.entries")}` : ""
+            }`}
+            actions={<span className="chip chip-on">{t("play.worldbook.current")}</span>}
+          />
+        </Surface>
       ) : null}
       <SettingsWorkspace
         ariaLabel={t("play.menu.keeperSettings")}

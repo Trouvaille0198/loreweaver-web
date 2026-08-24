@@ -18,3 +18,6 @@ data/
 
 # compose 环境覆盖（本机 uid 映射——data/ 属主是 1000，VPS 是 1001）
 .env
+
+# Skill 本机配置（模板 config_example.json 可提交）
+.agents/skills/*/config.json

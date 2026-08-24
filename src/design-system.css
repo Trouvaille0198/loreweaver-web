@@ -114,7 +114,7 @@ select {
   color: var(--lw-bg);
   background: var(--lw-accent);
   border-color: var(--lw-accent);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--lw-accent) 18%, transparent);
+  box-shadow: none;
 }
 
 .ui-button--primary:hover:not(:disabled) {
@@ -807,7 +807,7 @@ select {
   color: var(--lw-bg);
   background: var(--lw-accent);
   border-color: var(--lw-accent);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--lw-accent) 18%, transparent);
+  box-shadow: none;
 }
 
 .primary-button:hover:not(:disabled) {
@@ -909,6 +909,359 @@ select {
   max-width: 1200px;
 }
 
+/* Module workspace */
+
+.module-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.module-tab {
+  min-height: var(--control-sm);
+  padding-inline: var(--space-4);
+  color: var(--text-secondary);
+  border-color: var(--line-subtle);
+  border-radius: var(--radius-md);
+}
+
+.module-tab:hover:not(:disabled),
+.module-tab.is-active {
+  color: var(--text-accent);
+  background: color-mix(in srgb, var(--lw-accent) 9%, var(--surface-1));
+  border-color: var(--line-default);
+}
+
+.module-toolbar,
+.module-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.module-action-row {
+  justify-content: flex-end;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line-subtle);
+}
+
+.module-surface {
+  width: 100%;
+}
+
+.module-surface > .ui-section-header {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.module-forge-surface > .play-list {
+  gap: var(--space-2);
+}
+
+.module-subsection-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.module-extends-select {
+  width: 100%;
+}
+
+/* Module detail pages are reading surfaces: establish hierarchy between the
+   summary, media, and long-form pack content instead of stacking identical
+   cards with competing scroll containers. */
+
+.module-detail-page {
+  gap: clamp(var(--space-4), 2.4vw, var(--space-6));
+}
+
+.module-detail-page > .module-detail-card {
+  min-width: 0;
+  padding: clamp(var(--space-4), 2.2vw, var(--space-6));
+}
+
+.module-detail-summary-card > .studio-hint {
+  max-width: 78ch;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.module-detail-media-card {
+  gap: var(--space-5);
+}
+
+.module-media-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.module-detail-subsection {
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+}
+
+.module-detail-subsection--cover {
+  grid-row: span 2;
+}
+
+.module-detail-subsection > .ui-section-header {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.module-detail-subsection .ui-section-title {
+  font-size: 15px;
+}
+
+.module-detail-media-card .module-media-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.module-detail-media-card .module-media-item img {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.module-media-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: zoom-in;
+  text-align: left;
+}
+
+.module-media-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.module-media-trigger img {
+  display: block;
+}
+
+.module-image-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: clamp(var(--space-4), 5vw, var(--space-10));
+  background: rgb(8 7 5 / 88%);
+}
+
+.module-image-lightbox {
+  position: relative;
+  display: flex;
+  max-width: min(1120px, 100%);
+  max-height: calc(100vh - 2 * var(--space-6));
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-1);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-lg);
+}
+
+.module-image-lightbox-image {
+  display: block;
+  width: auto;
+  max-width: min(1040px, calc(100vw - 2 * var(--space-10)));
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.module-image-lightbox-caption {
+  max-width: 100%;
+  margin: 0;
+  color: var(--text-secondary);
+  font: 12px/1.4 var(--font-mono);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.module-image-lightbox-close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+  display: grid;
+  width: var(--control-md);
+  height: var(--control-md);
+  place-items: center;
+  padding: 0;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.module-image-lightbox-close:hover {
+  color: var(--text-accent);
+  background: var(--surface-hover);
+}
+
+.module-image-lightbox-close:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.module-detail-media-card .module-detail-subsection--cover .module-media-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.module-detail-content-card .worldbook-entry-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  max-height: min(62vh, 680px);
+  overflow-y: auto;
+  padding-right: var(--space-2);
+  scrollbar-color: var(--line-strong) var(--surface-canvas);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.module-detail-content-card .worldbook-entry {
+  min-width: 0;
+  padding: var(--space-4);
+}
+
+.module-detail-pregens-card .module-source-select {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.module-detail-pregens-card .module-source-select > strong {
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.module-detail-pregens-card .module-source-select > .studio-hint {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.55;
+}
+
+.module-detail-pregens-card .module-source-list {
+  gap: var(--space-4);
+}
+
+.module-rich-entry-list {
+  display: flex;
+  max-height: min(62vh, 680px);
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow-y: auto;
+  padding-right: var(--space-2);
+  scrollbar-color: var(--line-strong) var(--surface-canvas);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.module-rich-entry-list .module-rich-entry {
+  flex: 0 0 auto;
+}
+
+.module-detail-content-card .worldbook-entry-list::-webkit-scrollbar,
+.module-rich-entry-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.module-detail-content-card .worldbook-entry-list::-webkit-scrollbar-track,
+.module-rich-entry-list::-webkit-scrollbar-track {
+  background: var(--surface-canvas);
+}
+
+.module-detail-content-card .worldbook-entry-list::-webkit-scrollbar-thumb,
+.module-rich-entry-list::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 2px solid var(--surface-canvas);
+  border-radius: var(--radius-pill);
+}
+
+.module-rich-entry > strong {
+  display: block;
+  margin: 0 0 var(--space-3);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.module-rich-entry h1,
+.module-rich-entry h2,
+.module-rich-entry h3 {
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--text-primary);
+  font-family: var(--font-story);
+  line-height: 1.3;
+}
+
+.module-rich-entry h1 {
+  font-size: clamp(20px, 2.6vw, 28px);
+}
+
+.module-rich-entry h2 {
+  font-size: clamp(17px, 2vw, 21px);
+}
+
+.module-rich-entry h3 {
+  font-size: 16px;
+}
+
+.module-rich-entry > hr + h2 {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  color: var(--text-tertiary);
+  background: var(--surface-canvas);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-sm);
+  font: 600 12px/1.65 var(--font-mono);
+  white-space: pre-wrap;
+}
+
+.module-rich-entry h1:first-child,
+.module-rich-entry h2:first-child,
+.module-rich-entry h3:first-child {
+  margin-top: 0;
+}
+
+.module-rich-entry p,
+.module-rich-entry li {
+  line-height: 1.75;
+}
+
+.module-rich-entry ul,
+.module-rich-entry ol {
+  padding-left: 1.35em;
+}
+
 .play-screen-body > .play-form,
 .keeper-settings-detail > .play-form,
 .keeper-settings-detail > .module-detail-card {
@@ -983,7 +1336,6 @@ select {
 }
 
 .settings-nav-item {
-  position: relative;
   width: 100%;
   min-height: 44px;
   padding: 0 var(--space-3);
@@ -998,17 +1350,6 @@ select {
     border-color var(--motion-fast) ease;
 }
 
-.settings-nav-item::after {
-  content: "";
-  position: absolute;
-  top: 11px;
-  bottom: 11px;
-  left: 0;
-  width: 3px;
-  background: transparent;
-  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
-}
-
 .settings-nav-item:hover {
   color: var(--text-primary);
   background: var(--surface-hover);
@@ -1017,11 +1358,7 @@ select {
 .settings-nav-item.is-selected {
   color: var(--text-accent);
   background: color-mix(in srgb, var(--lw-accent) 10%, var(--surface-1));
-  border-color: color-mix(in srgb, var(--lw-accent) 32%, var(--line-subtle));
-}
-
-.settings-nav-item.is-selected::after {
-  background: var(--lw-accent);
+  border-color: transparent;
 }
 
 .settings-nav-icon {
@@ -1207,7 +1544,7 @@ select {
 .play-llm-profile.is-selected {
   background: color-mix(in srgb, var(--lw-accent) 8%, var(--surface-1));
   border-color: color-mix(in srgb, var(--lw-accent) 52%, var(--line-default));
-  box-shadow: inset 3px 0 0 var(--lw-accent);
+  box-shadow: none;
 }
 
 .play-llm-profile-main.ui-button {
@@ -1692,6 +2029,14 @@ select {
   border-bottom: 0;
 }
 
+.play-keys-table td:last-child {
+  white-space: nowrap;
+}
+
+.play-keys-table .play-minted-key {
+  overflow-wrap: anywhere;
+}
+
 .play-table thead th {
   color: var(--text-tertiary);
   background: var(--surface-inset);
@@ -1974,7 +2319,7 @@ select {
 
 .settings-language-option.is-selected {
   background: color-mix(in srgb, var(--lw-accent) 8%, var(--surface-inset));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lw-accent) 28%, transparent);
+  box-shadow: none;
 }
 
 .settings-language-mark {
@@ -2038,6 +2383,25 @@ select {
 }
 
 @media (max-width: 760px) {
+  /* Long module documents must participate in the document scroll on phones.
+     The app shell keeps ordinary management screens in a viewport scroller, but
+     that would clip a detail document inside a fixed-height root. */
+  .app:has(.module-detail-page) {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .app-main:has(.module-detail-page) {
+    flex: none;
+    min-height: 0;
+  }
+
+  .play-screen:has(.module-detail-page) {
+    flex: none;
+    height: auto;
+    overflow: visible;
+  }
+
   .play-screen {
     padding: var(--space-4);
     gap: var(--space-4);
@@ -2052,9 +2416,49 @@ select {
     display: none;
   }
   .play-screen-back {
-    width: 40px;
+    width: 44px;
+    min-width: 44px;
     padding: 0;
     margin-left: 0;
+  }
+
+  .module-detail-page > .module-detail-card {
+    padding: var(--space-4);
+  }
+
+  .module-media-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .module-detail-subsection--cover {
+    grid-row: auto;
+  }
+
+  .module-detail-media-card .module-media-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .module-detail-media-card .module-detail-subsection--cover .module-media-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .module-image-lightbox {
+    width: 100%;
+    max-height: calc(100vh - 2 * var(--space-4));
+  }
+
+  .module-image-lightbox-image {
+    max-width: calc(100vw - 2 * var(--space-6));
+    max-height: calc(100vh - 112px);
+  }
+
+  .module-detail-content-card .worldbook-entry-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .module-detail-pregens-card .module-source-select {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
   }
 
   .settings-workspace {
@@ -2085,7 +2489,9 @@ select {
     flex-direction: row;
     gap: var(--space-2);
     overflow-x: auto;
-    padding-bottom: 2px;
+    padding: 0 var(--space-5) 2px 0;
+    scroll-padding-inline: var(--space-4);
+    overscroll-behavior-x: contain;
     scrollbar-width: none;
   }
 
@@ -2110,19 +2516,57 @@ select {
 
   .settings-nav-item {
     width: auto;
-    min-height: 40px;
+    min-height: 44px;
     padding-inline: var(--space-3);
     white-space: nowrap;
   }
 
-  .settings-nav-item::after {
-    top: auto;
-    right: 12px;
-    bottom: -1px;
-    left: 12px;
-    width: auto;
-    height: 2px;
-    border-radius: var(--radius-pill) var(--radius-pill) 0 0;
+  /* Keep the management workspace usable with a thumb. The desktop compact
+     variants remain compact, but no interactive control is smaller than the
+     touch target on a phone. */
+  .play-screen .ui-button--sm {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .play-screen .ui-button--icon {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .module-tab,
+  .module-source-select {
+    min-height: 44px;
+  }
+
+  /* Text controls at 16px prevent browser focus zoom and keep labels readable
+     in the shared settings fields. Checkboxes, radios and range sliders are
+     intentionally excluded because their font size does not render text. */
+  .ui-field
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
+  .ui-field select,
+  .ui-field textarea,
+  .settings-workspace
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
+  .settings-workspace select,
+  .settings-workspace textarea {
+    font-size: 16px;
+  }
+
+  .settings-workspace-nav::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(90deg, transparent, var(--surface-1));
+    content: "";
+    pointer-events: none;
   }
 
   .settings-section-card {
@@ -2230,6 +2674,82 @@ select {
 
   .play-skill-desc {
     grid-column: 2 / -1;
+  }
+
+  .ui-table-scroll--wide:has(.play-keys-table) {
+    overflow: visible;
+  }
+
+  .ui-table-scroll--wide > .play-table.play-keys-table,
+  .play-keys-table tbody {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .play-keys-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .play-keys-table thead {
+    display: none;
+  }
+
+  .play-keys-table tr {
+    display: block;
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: color-mix(in srgb, var(--surface-inset) 68%, transparent);
+    border: 1px solid var(--line-subtle);
+    border-radius: var(--radius-md);
+  }
+
+  .play-keys-table tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .play-keys-table td {
+    display: grid;
+    grid-template-columns: minmax(52px, 0.34fr) minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: center;
+    min-width: 0;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--line-subtle);
+    white-space: normal;
+  }
+
+  .play-keys-table td::before {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .play-keys-table td[data-label]::before {
+    content: attr(data-label);
+  }
+
+  .play-keys-table td:last-child {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: var(--space-3);
+    border-bottom: 0;
+  }
+
+  .play-keys-table td:last-child::before {
+    display: none;
+  }
+
+  .play-keys-table td select,
+  .play-keys-table td .ui-button {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .play-keys-table td code {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, type KeyboardEvent, type ReactNode } from "react"
+import { useEffect, useMemo, type KeyboardEvent, type ReactNode } from "react"
 import { Button } from "../../../components/ui"
 
 export type SettingsNavItem<Key extends string> = {
@@ -90,6 +90,29 @@ export default function SettingsWorkspace<Key extends string>({
   children: ReactNode
 }) {
   const items = useMemo(() => groups.flatMap((group) => group.items), [groups])
+
+  useEffect(() => {
+    const alignActiveTab = () => {
+      const tab = document.getElementById(`${idPrefix}-tab-${active}`)
+      const tabList = tab?.closest('[role="tablist"]')
+      if (!(tab instanceof HTMLElement) || !(tabList instanceof HTMLElement)) return
+      const tabRect = tab.getBoundingClientRect()
+      const listRect = tabList.getBoundingClientRect()
+      const left = tabRect.left - listRect.left + tabList.scrollLeft
+      const right = left + tabRect.width
+      const visibleLeft = tabList.scrollLeft
+      const visibleRight = visibleLeft + tabList.clientWidth
+      if (left < visibleLeft) tabList.scrollLeft = left
+      else if (right > visibleRight) tabList.scrollLeft = right - tabList.clientWidth
+    }
+
+    const frame = requestAnimationFrame(alignActiveTab)
+    window.addEventListener("resize", alignActiveTab)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener("resize", alignActiveTab)
+    }
+  }, [active, idPrefix])
 
   const moveFocus = (event: KeyboardEvent<HTMLButtonElement>, current: Key) => {
     const currentIndex = items.findIndex((item) => item.key === current)

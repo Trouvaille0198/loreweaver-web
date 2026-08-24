@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Button, EmptyState, Notice } from "../../../components/ui"
+import { Button, EmptyState, Notice, SectionHeader, Surface } from "../../../components/ui"
 import {
   useAdminStore,
   type WorldbookDetail,
@@ -26,31 +26,30 @@ function WorldbookDetailPanel({
   entriesLabel: string
   attachedLabel: string
 }) {
+  const { t } = useTranslation()
   return (
-    <section className="play-form module-detail-card">
-      <div className="module-detail-head">
-        <div>
-          <h3 className="play-form-title">{detail.name}</h3>
-          <p className="studio-hint">
-            {detail.entryCount} · {detail.size} bytes
-            {detail.attached ? ` · ${attachedLabel}` : ""}
-          </p>
-        </div>
-        <div className="module-detail-actions">
-          {detail.current ? <span className="chip chip-on">{currentLabel}</span> : null}
-          {!detail.current ? (
-            <Button type="button" size="sm" onClick={onSelect}>
-              {selectLabel}
-            </Button>
-          ) : null}
-        </div>
-      </div>
-      <h4>{entriesLabel}</h4>
+    <Surface className="module-detail-card" labelledBy="worldbook-detail-title">
+      <SectionHeader
+        titleId="worldbook-detail-title"
+        title={detail.name}
+        description={`${detail.entryCount} · ${detail.size} bytes${detail.attached ? ` · ${attachedLabel}` : ""}`}
+        actions={
+          <div className="module-detail-actions">
+            {detail.current ? <span className="chip chip-on">{currentLabel}</span> : null}
+            {!detail.current ? (
+              <Button type="button" size="sm" onClick={onSelect}>
+                {selectLabel}
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
+      <SectionHeader title={entriesLabel} />
       <div className="worldbook-entry-list">
         {detail.entries.map((entry, index) => (
           <article className="worldbook-entry" key={`${entry.title}-${index}`}>
             <strong>{entry.title}</strong>
-            {entry.secret ? <span className="chip">secret</span> : null}
+            {entry.secret ? <span className="chip">{t("play.worldbook.secret")}</span> : null}
             <p>{entry.content}</p>
             {Array.isArray(entry.keys) && entry.keys.length > 0 ? (
               <small>{entry.keys.join(", ")}</small>
@@ -64,7 +63,7 @@ function WorldbookDetailPanel({
           <pre className="module-source-preview">{detail.content}</pre>
         </details>
       ) : null}
-    </section>
+    </Surface>
   )
 }
 
@@ -137,9 +136,22 @@ export default function WorldbookScreen({
 
   return (
     <ScreenShell title={t("play.menu.worldbook")} onBack={onBack} showAdminError embedded={embedded}>
-      <section className="play-form">
-        <h3 className="play-form-title">{t("play.worldbook.library")}</h3>
-        <p className="studio-hint">{t("play.worldbook.libraryHint")}</p>
+      <Surface className="module-surface" labelledBy="worldbook-library-title">
+        <SectionHeader
+          titleId="worldbook-library-title"
+          title={t("play.worldbook.library")}
+          description={t("play.worldbook.libraryHint")}
+          actions={
+            <div className="module-toolbar">
+              <Button type="button" variant="primary" onClick={() => fileInputRef.current?.click()}>
+                {t("play.worldbook.addSource")}
+              </Button>
+              <Button type="button" variant="quiet" disabled={busy} onClick={disableWorldbook}>
+                {t("play.worldbook.disable")}
+              </Button>
+            </div>
+          }
+        />
         <input
           ref={fileInputRef}
           type="file"
@@ -151,14 +163,6 @@ export default function WorldbookScreen({
             if (file) void chooseFile(file)
           }}
         />
-        <div className="module-detail-actions">
-          <Button type="button" variant="primary" onClick={() => fileInputRef.current?.click()}>
-            {t("play.worldbook.addSource")}
-          </Button>
-          <Button type="button" disabled={busy} onClick={disableWorldbook}>
-            {t("play.worldbook.disable")}
-          </Button>
-        </div>
         {sources.filter((source) => source.sourceKind === "file").length === 0 ? (
           <EmptyState title={t("play.worldbook.noSources")} />
         ) : null}
@@ -181,7 +185,9 @@ export default function WorldbookScreen({
                   <span className="studio-hint">
                     {source.size} bytes · {t("play.worldbook.librarySource")}
                   </span>
-                  {source.current ? <span className="chip chip-on">{t("play.worldbook.current")}</span> : null}
+                  {source.current ? (
+                    <span className="chip chip-on">{t("play.worldbook.current")}</span>
+                  ) : null}
                 </Button>
                 <div className="module-source-actions">
                   <Button
@@ -202,7 +208,7 @@ export default function WorldbookScreen({
           selectedLabel={t("play.worldbook.selectedNotice")}
           uploadedLabel={t("play.worldbook.uploaded")}
         />
-      </section>
+      </Surface>
       {detail ? (
         <WorldbookDetailPanel
           detail={detail}

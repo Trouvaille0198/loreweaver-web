@@ -170,7 +170,7 @@
     "mediaPromptTitle": "提示词：{{prompt}}"
   },
   "play": {
-    "back": "← 返回牌桌",
+    "back": "返回牌桌",
     "busy": "处理中…",
     "sendFailed": "没能发出去——应用连不上房间。检查连接后重试。",
     "menuButton": "菜单",
@@ -205,6 +205,7 @@
       "copy": "复制",
       "copied": "已复制 ✓",
       "delete": "删除",
+      "actions": "操作",
       "empty": "还没有密钥——在上方签发一个邀请。"
     },
     "model": {
@@ -376,19 +377,14 @@
       "tabsLabel": "模组工作区",
       "tabs": {
         "library": "模组库",
-        "room": "房间内容",
         "forge": "AI 创作"
       },
       "kindText": "文本",
       "kindPack": "完整包",
-      "libraryHint": "源文件保存在服务器上。你可以上传、查看文本，或将其导入当前房间。",
+      "libraryHint": "模组源文件位于服务器上。可在此上传、查看内容，或导入到当前房间。",
       "addSource": "添加源文件",
-      "noSources": "没有可用的 Markdown 或文本模组源文件。",
+      "noSources": "暂无 Markdown 或文本模组源。",
       "current": "当前房间模组",
-      "loadedPacks": "本房间已加载的完整模组包",
-      "loadedPacksHint": ".lwpack 模组（原生世界卡）会把它设定的内容作为附加世界书引入。选中即可查看其条目。",
-      "loadedPacksEmpty": "本房间还没有加载完整模组包。",
-      "refresh": "刷新",
       "ready": "就绪",
       "importing": "导入中：正在分析知识库，请稍候",
       "bytes": "字节",
@@ -421,6 +417,9 @@
         "items": "物品/线索图",
         "asset": "素材"
       },
+      "mediaOpen": "放大查看{{name}}",
+      "mediaPreview": "{{name}}图片预览",
+      "mediaClose": "关闭图片预览",
       "packNotImported": "这个包没有设定条目。",
       "imported": "已导入当前房间。",
       "saved": "已保存",
@@ -477,9 +476,8 @@
       "current": "本房间正在使用",
       "attached": "附加来源",
       "librarySource": "世界书库来源",
-      "secret": "秘密",
-      "noEntries": "这个世界书没有条目。",
-      "selected": "已选择",
+      "secret": "机密",
+      "selected": "已选中",
       "useRoom": "用于当前房间",
       "disable": "停用世界书",
       "entries": "条目",

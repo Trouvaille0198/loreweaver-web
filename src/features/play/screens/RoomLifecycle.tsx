@@ -24,10 +24,10 @@
 // modal with an OK button: the thing being destroyed has a name, and typing it
 // is the cheapest way to be sure the right one is in front of you.
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import type { AdminResetScope } from "@loreweaver/protocol"
-import { Button, Surface } from "../../../components/ui"
+import { Button, Field, Notice, Surface } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
 
@@ -47,7 +47,7 @@ function DangerAction({
   hint: string
   confirmLabel: string
   onConfirm: () => void
-  children?: React.ReactNode
+  children?: ReactNode
 }) {
   const { t } = useTranslation()
   const [typed, setTyped] = useState("")
@@ -59,15 +59,17 @@ function DangerAction({
       <p className="studio-hint">{hint}</p>
       {children}
       <div className="dialog-row">
-        <label className="field">
-          {t("play.rooms.typeName", { room })}
-          <input
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            placeholder={room}
-            spellCheck={false}
-          />
-        </label>
+        <Field label={t("play.rooms.typeName", { room })}>
+          {({ id }) => (
+            <input
+              id={id}
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder={room}
+              spellCheck={false}
+            />
+          )}
+        </Field>
         <Button
           type="button"
           variant="danger"
@@ -104,7 +106,7 @@ export default function RoomLifecycle() {
       <p className="studio-hint">{t("play.rooms.hint", { room })}</p>
 
       {admin.roomOp !== null ? (
-        <p className="studio-notice" role="status">
+        <Notice tone="success" role="status">
           {t(`play.rooms.done.${admin.roomOp.action}`, {
             room: admin.roomOp.room,
             keys: admin.roomOp.keys,
@@ -117,19 +119,14 @@ export default function RoomLifecycle() {
           <Button type="button" size="sm" variant="quiet" onClick={() => admin.clearRoomOp()}>
             {t("play.rooms.dismiss")}
           </Button>
-        </p>
+        </Notice>
       ) : null}
       {admin.serverUpdate !== null ? (
-        <p
-          className={
-            admin.serverUpdate.status === "restarting" ? "studio-notice" : "studio-notice split-error"
-          }
-          role="status"
-        >
+        <Notice tone={admin.serverUpdate.status === "restarting" ? "warning" : "danger"} role="status">
           {admin.serverUpdate.status === "restarting"
             ? t("play.rooms.updateRestarting")
             : t("play.rooms.updateFailed", { output: admin.serverUpdate.output ?? "" })}
-        </p>
+        </Notice>
       ) : null}
 
       <div className="room-action-stack">
@@ -137,15 +134,18 @@ export default function RoomLifecycle() {
           <h4>{t("play.rooms.backup")}</h4>
           <p className="studio-hint">{t("play.rooms.backupHint")}</p>
           <div className="dialog-row">
-            <label className="field">
-              {t("play.rooms.path")}
-              <input
-                value={exportPath}
-                onChange={(e) => setExportPath(e.target.value)}
-                placeholder={t("play.rooms.pathServerDefault")}
-                spellCheck={false}
-              />
-            </label>
+            <Field label={t("play.rooms.path")} hint={t("play.rooms.pathServerDefault")}>
+              {({ id, describedBy }) => (
+                <input
+                  id={id}
+                  value={exportPath}
+                  onChange={(e) => setExportPath(e.target.value)}
+                  placeholder={t("play.rooms.pathServerDefault")}
+                  aria-describedby={describedBy}
+                  spellCheck={false}
+                />
+              )}
+            </Field>
             <Button
               type="button"
               variant="quiet"
@@ -165,15 +165,17 @@ export default function RoomLifecycle() {
           onConfirm={() => admin.importRoom(importPath.trim())}
         >
           <div className="dialog-row">
-            <label className="field">
-              {t("play.rooms.path")}
-              <input
-                value={importPath}
-                onChange={(e) => setImportPath(e.target.value)}
-                placeholder="/…/room_backups/table-2026-08-15.json"
-                spellCheck={false}
-              />
-            </label>
+            <Field label={t("play.rooms.path")}>
+              {({ id }) => (
+                <input
+                  id={id}
+                  value={importPath}
+                  onChange={(e) => setImportPath(e.target.value)}
+                  placeholder="/…/room_backups/table-2026-08-15.json"
+                  spellCheck={false}
+                />
+              )}
+            </Field>
           </div>
         </DangerAction>
 
@@ -184,16 +186,17 @@ export default function RoomLifecycle() {
           confirmLabel={t("play.rooms.resetConfirm")}
           onConfirm={() => admin.resetRoom(room, scope)}
         >
-          <label className="field field-narrow">
-            {t("play.rooms.scope")}
-            <select value={scope} onChange={(e) => setScope(e.target.value as AdminResetScope)}>
-              {RESET_SCOPES.map((value) => (
-                <option key={value} value={value}>
-                  {t(`play.rooms.scopes.${value}`)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Field label={t("play.rooms.scope")} className="field-narrow">
+            {({ id }) => (
+              <select id={id} value={scope} onChange={(e) => setScope(e.target.value as AdminResetScope)}>
+                {RESET_SCOPES.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`play.rooms.scopes.${value}`)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
           <p className="studio-hint">{t("play.rooms.resetKeepsHint")}</p>
         </DangerAction>
 

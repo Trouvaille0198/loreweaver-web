@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { MediaFrame } from "@loreweaver/protocol"
-import { Button } from "../../components/ui"
+import { Button, Notice } from "../../components/ui"
 import { pickAnyFiles } from "../../lib/native"
 import { useConnectionStore } from "../../store/connection"
 import { useMediaStore } from "../../store/media"
@@ -53,7 +53,7 @@ function Thumb({ item }: { item: MediaFrame }) {
           className="media-thumb"
           src={src}
           alt={item.name ?? ""}
-          title={item.prompt ? t("play.media.promptTitle", { prompt: item.prompt }) : item.name ?? ""}
+          title={item.prompt ? t("play.media.promptTitle", { prompt: item.prompt }) : (item.name ?? "")}
         />
       ) : (
         <span className="media-thumb media-thumb-empty" aria-hidden="true">
@@ -131,9 +131,9 @@ export default function MediaDeck() {
         {blocked ? <span className="studio-hint">{t("play.media.uploadsOff")}</span> : null}
       </div>
       {error !== null ? (
-        <p className="studio-notice split-error" role="alert">
+        <Notice tone="danger" role="alert">
           {error}
-        </p>
+        </Notice>
       ) : null}
       {pending.map(([sha256, item]) => (
         <p key={sha256} className={item.phase === "error" ? "studio-hint split-error" : "studio-hint"}>

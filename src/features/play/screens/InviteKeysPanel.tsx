@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { AdminKeyInfo, PlayerRole } from "@loreweaver/protocol"
-import { Button } from "../../../components/ui"
+import { Button, Field } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
 
@@ -62,17 +62,17 @@ export default function InviteKeysPanel() {
   return (
     <>
       <div className="play-mint-row">
-        <label className="field">
-          {t("play.keys.name")}
-          <input value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label className="field field-narrow">
-          {t("play.keys.role")}
-          <select value={role} onChange={(e) => setRole(e.target.value as PlayerRole)}>
-            <option value="player">{t("play.menu.role.player")}</option>
-            <option value="keeper">{t("play.menu.role.keeper")}</option>
-          </select>
-        </label>
+        <Field label={t("play.keys.name")} className="field">
+          {({ id }) => <input id={id} value={name} onChange={(e) => setName(e.target.value)} />}
+        </Field>
+        <Field label={t("play.keys.role")} className="field field-narrow">
+          {({ id }) => (
+            <select id={id} value={role} onChange={(e) => setRole(e.target.value as PlayerRole)}>
+              <option value="player">{t("play.menu.role.player")}</option>
+              <option value="keeper">{t("play.menu.role.keeper")}</option>
+            </select>
+          )}
+        </Field>
         <Button type="button" variant="primary" disabled={!name.trim()} onClick={mint}>
           {t("play.keys.mint")}
         </Button>
@@ -89,7 +89,7 @@ export default function InviteKeysPanel() {
       ) : null}
 
       <div className="ui-table-scroll ui-table-scroll--wide">
-        <table className="play-table">
+        <table className="play-table play-keys-table">
           <thead>
             <tr>
               <th>{t("play.keys.name")}</th>
@@ -102,9 +102,9 @@ export default function InviteKeysPanel() {
           <tbody>
             {keys.map((key) => (
               <tr key={key.id}>
-                <td>{key.name}</td>
-                <td>{key.room}</td>
-                <td>
+                <td data-label={t("play.keys.name")}>{key.name}</td>
+                <td data-label={t("play.keys.room")}>{key.room}</td>
+                <td data-label={t("play.keys.role")}>
                   <select
                     value={key.role}
                     aria-label={t("play.keys.role")}
@@ -114,7 +114,7 @@ export default function InviteKeysPanel() {
                     <option value="keeper">{t("play.menu.role.keeper")}</option>
                   </select>
                 </td>
-                <td>
+                <td data-label={t("play.keys.key")}>
                   <code className="play-minted-key">{key.key ?? key.key_masked}</code>
                   {key.key ? (
                     <Button
@@ -128,7 +128,7 @@ export default function InviteKeysPanel() {
                     </Button>
                   ) : null}
                 </td>
-                <td>
+                <td data-label={t("play.keys.actions")}>
                   <Button type="button" size="sm" variant="danger" onClick={() => deleteKey(key.id)}>
                     {t("play.keys.delete")}
                   </Button>

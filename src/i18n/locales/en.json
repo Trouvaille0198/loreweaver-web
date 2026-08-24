@@ -170,7 +170,7 @@
     "mediaPromptTitle": "Prompt: {{prompt}}"
   },
   "play": {
-    "back": "← Back to the table",
+    "back": "Back to the table",
     "busy": "Working…",
     "sendFailed": "Nothing was sent — the app could not reach the room. Check the connection and try again.",
     "menuButton": "Menu",
@@ -205,6 +205,7 @@
       "copy": "Copy",
       "copied": "Copied ✓",
       "delete": "Delete",
+      "actions": "Actions",
       "empty": "No keys yet — mint an invite above."
     },
     "model": {
@@ -376,7 +377,6 @@
       "tabsLabel": "Module workspace",
       "tabs": {
         "library": "Module library",
-        "room": "Room content",
         "forge": "AI creation"
       },
       "kindText": "Text",
@@ -385,10 +385,6 @@
       "addSource": "Add source file",
       "noSources": "No Markdown or text module sources are available.",
       "current": "Current room module",
-      "loadedPacks": "Complete module packs loaded in this room",
-      "loadedPacksHint": "A .lwpack module (native world card) contributes its lore as an attached worldbook. Select one to inspect its entries.",
-      "loadedPacksEmpty": "No complete module packs are loaded in this room yet.",
-      "refresh": "Refresh",
       "ready": "ready",
       "importing": "Importing: analyzing the knowledge pool…",
       "bytes": "bytes",
@@ -421,6 +417,9 @@
         "items": "Items & clues",
         "asset": "Assets"
       },
+      "mediaOpen": "Enlarge {{name}}",
+      "mediaPreview": "Image preview for {{name}}",
+      "mediaClose": "Close image preview",
       "packNotImported": "This pack has no lore entries.",
       "imported": "Imported into this room.",
       "saved": "Saved",
@@ -478,7 +477,6 @@
       "attached": "Attached source",
       "librarySource": "Library source",
       "secret": "secret",
-      "noEntries": "This worldbook has no entries.",
       "selected": "Selected",
       "useRoom": "Use in this room",
       "disable": "Disable worldbook",

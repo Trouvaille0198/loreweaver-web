@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { createPortal } from "react-dom"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Button, Notice, SectionHeader, Surface } from "../../../components/ui"
@@ -11,7 +12,10 @@ import { KnowledgePool } from "./ModuleScreen"
 /** One illustration. Renders the inline base64 payload when present (a pack asset not reachable
  * via the room media channel); otherwise pulls through the content-addressed asset channel. */
 function ModuleMediaImage({ record }: { record: ModuleMediaRecord }) {
+  const { t } = useTranslation()
   const [src, setSrc] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     let live = true
@@ -34,10 +38,59 @@ function ModuleMediaImage({ record }: { record: ModuleMediaRecord }) {
     }
   }, [record.hash, record.mime, record.data])
 
+  useEffect(() => {
+    if (!previewOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    closeButtonRef.current?.focus()
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [previewOpen])
+
   return (
     <figure className="module-media-item">
-      {src !== null ? <img src={src} alt={record.name} /> : null}
+      {src !== null ? (
+        <button
+          type="button"
+          className="module-media-trigger"
+          aria-label={t("play.module.mediaOpen", { name: record.name })}
+          onClick={() => setPreviewOpen(true)}
+        >
+          <img src={src} alt={record.name} />
+        </button>
+      ) : null}
       <figcaption className="studio-hint">{record.name}</figcaption>
+      {previewOpen && src !== null
+        ? createPortal(
+            <div
+              className="module-image-lightbox-backdrop"
+              role="presentation"
+              onClick={() => setPreviewOpen(false)}
+            >
+              <section
+                className="module-image-lightbox"
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("play.module.mediaPreview", { name: record.name })}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  className="module-image-lightbox-close"
+                  aria-label={t("play.module.mediaClose")}
+                  onClick={() => setPreviewOpen(false)}
+                >
+                  ×
+                </button>
+                <img className="module-image-lightbox-image" src={src} alt={record.name} />
+                <p className="module-image-lightbox-caption">{record.name}</p>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
     </figure>
   )
 }
@@ -57,43 +110,42 @@ function PackDetailView({ detail }: { detail: ModuleDetail }) {
   const groupIds = MEDIA_GROUP_ORDER.filter((g) => (mediaGroups.get(g)?.length ?? 0) > 0)
 
   return (
-    <div className="module-detail-page">
-      <section className="play-form module-detail-card">
-        <div className="module-detail-head">
-          <div>
-            <h3 className="play-form-title">{detail.title || detail.name}</h3>
-            <p className="studio-hint">
-              <span className="chip chip-warn">{t("play.module.kindPack")}</span>{" "}
-              {detail.size} {t("play.module.bytes")}
-              {detail.worldbookEntries ? ` · ${detail.worldbookEntries.length} ${t("play.module.entries")}` : ""}
-              {detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}
-            </p>
-          </div>
-        </div>
+    <>
+      <Surface className="module-detail-card module-detail-summary-card" labelledBy="pack-detail-title">
+        <SectionHeader
+          titleId="pack-detail-title"
+          title={detail.title || detail.name}
+          description={`${detail.size} ${t("play.module.bytes")}${
+            detail.worldbookEntries ? ` · ${detail.worldbookEntries.length} ${t("play.module.entries")}` : ""
+          }${detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}`}
+          actions={<span className="chip chip-warn">{t("play.module.kindPack")}</span>}
+        />
         {detail.content ? <p className="studio-hint">{detail.content}</p> : null}
-      </section>
+      </Surface>
 
       {detail.media.length > 0 ? (
-        <section className="play-form module-detail-card">
-          <h3 className="play-form-title">{t("play.module.packMedia")}</h3>
-          {groupIds.map((kind) => (
-            <div key={kind}>
-              <h4 className="play-form-title">{t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })}</h4>
-              <ul className="module-media-grid">
-                {(mediaGroups.get(kind) ?? []).map((record) => (
-                  <li key={record.hash}>
-                    <ModuleMediaImage record={record} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
+        <Surface className="module-detail-card module-detail-media-card" labelledBy="pack-media-title">
+          <SectionHeader titleId="pack-media-title" title={t("play.module.packMedia")} />
+          <div className="module-media-layout">
+            {groupIds.map((kind) => (
+              <section className={`module-detail-subsection module-detail-subsection--${kind}`} key={kind}>
+                <SectionHeader title={t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })} />
+                <ul className="module-media-grid">
+                  {(mediaGroups.get(kind) ?? []).map((record) => (
+                    <li key={record.hash}>
+                      <ModuleMediaImage record={record} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </Surface>
       ) : null}
 
       {detail.worldbookEntries && detail.worldbookEntries.length > 0 ? (
-        <section className="play-form module-detail-card">
-          <h3 className="play-form-title">{t("play.module.packWorldbook")}</h3>
+        <Surface className="module-detail-card module-detail-content-card" labelledBy="pack-worldbook-title">
+          <SectionHeader titleId="pack-worldbook-title" title={t("play.module.packWorldbook")} />
           <div className="worldbook-entry-list">
             {detail.worldbookEntries.map((entry, index) => (
               <article className="worldbook-entry" key={`${entry.title}-${index}`}>
@@ -103,12 +155,15 @@ function PackDetailView({ detail }: { detail: ModuleDetail }) {
               </article>
             ))}
           </div>
-        </section>
+        </Surface>
       ) : null}
 
       {detail.pregens && detail.pregens.length > 0 ? (
-        <section className="play-form module-detail-card">
-          <h3 className="play-form-title">{t("play.module.packPregens")}</h3>
+        <Surface
+          className="module-detail-card module-detail-content-card module-detail-pregens-card"
+          labelledBy="pack-pregens-title"
+        >
+          <SectionHeader titleId="pack-pregens-title" title={t("play.module.packPregens")} />
           <ul className="play-list module-source-list">
             {detail.pregens.map((pregen) => (
               <li className="module-source-row" key={pregen.name}>
@@ -119,33 +174,43 @@ function PackDetailView({ detail }: { detail: ModuleDetail }) {
               </li>
             ))}
           </ul>
-        </section>
+        </Surface>
       ) : null}
 
       {detail.rulepacks && detail.rulepacks.length > 0 ? (
-        <section className="play-form module-detail-card">
-          <h3 className="play-form-title">{t("play.module.packRulepacks")}</h3>
-          {detail.rulepacks.map((rp) => (
-            <div className="worldbook-entry" key={rp.name}>
-              <strong>{rp.title || rp.name}</strong>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{rp.content}</ReactMarkdown>
-            </div>
-          ))}
-        </section>
+        <Surface
+          className="module-detail-card module-detail-content-card module-detail-scroll-card"
+          labelledBy="pack-rulepacks-title"
+        >
+          <SectionHeader titleId="pack-rulepacks-title" title={t("play.module.packRulepacks")} />
+          <div className="module-rich-entry-list">
+            {detail.rulepacks.map((rp) => (
+              <div className="worldbook-entry module-rich-entry" key={rp.name}>
+                <strong>{rp.title || rp.name}</strong>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{rp.content}</ReactMarkdown>
+              </div>
+            ))}
+          </div>
+        </Surface>
       ) : null}
 
       {detail.skills && detail.skills.length > 0 ? (
-        <section className="play-form module-detail-card">
-          <h3 className="play-form-title">{t("play.module.packSkills")}</h3>
-          {detail.skills.map((skill) => (
-            <div className="worldbook-entry" key={skill.name}>
-              <strong>{skill.name}</strong>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{skill.content}</ReactMarkdown>
-            </div>
-          ))}
-        </section>
+        <Surface
+          className="module-detail-card module-detail-content-card module-detail-scroll-card"
+          labelledBy="pack-skills-title"
+        >
+          <SectionHeader titleId="pack-skills-title" title={t("play.module.packSkills")} />
+          <div className="module-rich-entry-list">
+            {detail.skills.map((skill) => (
+              <div className="worldbook-entry module-rich-entry" key={skill.name}>
+                <strong>{skill.name}</strong>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{skill.content}</ReactMarkdown>
+              </div>
+            ))}
+          </div>
+        </Surface>
       ) : null}
-    </div>
+    </>
   )
 }
 
@@ -223,127 +288,137 @@ export default function ModuleDetailScreen({
           detailReady.sourceKind === "pack" ? (
             <PackDetailView detail={detailReady} />
           ) : (
-          <>
-            <header className="module-detail-hero">
-              <div>
-                <p className="module-detail-eyebrow">{t("play.module.detailEyebrow")}</p>
-                <h3>{detailReady.title || detailReady.name}</h3>
-                <p className="module-detail-summary">
-                  {detailReady.current
-                    ? `${importing ? t("play.module.importing") : detailReady.status || t("play.module.ready")} · ${detailReady.size} ${t("play.module.bytes")}`
-                    : `${detailReady.size} ${t("play.module.bytes")}`}
-                </p>
-              </div>
-              <div className="module-detail-actions">
-                {detailReady.current && !importing ? (
-                  <span className="chip chip-on">{t("play.module.current")}</span>
-                ) : null}
-                {importing ? <span className="chip chip-warn">{t("play.module.importing")}</span> : null}
-                <Button
-                  type="button"
-                  onClick={() => importModule(detailReady.name)}
-                  disabled={busy || deleting || importing}
-                >
-                  {t("play.module.importRoom")}
-                </Button>
-                {!detailReady.current && !importing ? (
-                  <Button type="button" variant="danger" onClick={remove} disabled={busy || deleting}>
-                    {deleting ? t("play.busy") : t("play.module.delete")}
-                  </Button>
-                ) : (
+            <>
+              <header className="module-detail-hero">
+                <div>
+                  <p className="module-detail-eyebrow">{t("play.module.detailEyebrow")}</p>
+                  <h3>{detailReady.title || detailReady.name}</h3>
+                  <p className="module-detail-summary">
+                    {detailReady.current
+                      ? `${importing ? t("play.module.importing") : detailReady.status || t("play.module.ready")} · ${detailReady.size} ${t("play.module.bytes")}`
+                      : `${detailReady.size} ${t("play.module.bytes")}`}
+                  </p>
+                </div>
+                <div className="module-detail-actions">
+                  {detailReady.current && !importing ? (
+                    <span className="chip chip-on">{t("play.module.current")}</span>
+                  ) : null}
+                  {importing ? <span className="chip chip-warn">{t("play.module.importing")}</span> : null}
                   <Button
                     type="button"
-                    className="module-delete-disabled"
-                    disabled
-                    title={t("play.module.deleteUnavailable")}
+                    onClick={() => importModule(detailReady.name)}
+                    disabled={busy || deleting || importing}
                   >
-                    {t("play.module.delete")}
+                    {t("play.module.importRoom")}
                   </Button>
-                )}
-              </div>
-            </header>
-
-            {matchingOperation?.kind === "module_import" && matchingOperation.ok ? (
-              <Notice tone="success" role="status">
-                {matchingOperation.receipt || t("play.module.imported")}
-              </Notice>
-            ) : null}
-
-            {matchingOperation?.kind === "module_update" && matchingOperation.ok ? (
-              <Notice tone="success" role="status">
-                {detailReady.current
-                  ? `${t("play.module.saved")} · ${t("play.module.saveApplyHint")}`
-                  : t("play.module.saved")}
-              </Notice>
-            ) : null}
-
-            {importing ? (
-              <Notice tone="warning" role="status">
-                {t("play.module.importing")}
-              </Notice>
-            ) : detailReady.current ? (
-              <p className="ui-eyebrow">{t("play.module.zoneRoom")}</p>
-            ) : null}
-            {importing || !detailReady.current ? null : (
-              <KnowledgePool detail={detailReady} label={t("play.module.knowledgePool")} />
-            )}
-
-            <p className="ui-eyebrow">{t("play.module.zoneSource")}</p>
-            {detailReady.media.length > 0 && detailReady.current ? (
-              <Surface labelledBy="module-media-heading">
-                <SectionHeader titleId="module-media-heading" title={t("play.module.poolGroups.media")} />
-                <ul className="module-media-grid">
-                  {detailReady.media.map((record) => (
-                    <li key={record.hash}>
-                      <ModuleMediaImage record={record} />
-                    </li>
-                  ))}
-                </ul>
-              </Surface>
-            ) : null}
-            <section className="module-detail-source-card" aria-label={t("play.module.sourceText")}>
-              <div className="module-detail-source-head">
-                <div>
-                  <p className="module-detail-eyebrow">{t("play.module.sourceEyebrow")}</p>
-                  <h3>{t("play.module.sourceText")}</h3>
-                </div>
-                <span className="module-detail-size">
-                  {detailReady.size} {t("play.module.bytes")}
-                </span>
-                {!editing ? (
-                  <Button type="button" size="sm" onClick={() => setEditing(true)} disabled={busy || deleting}>
-                    {t("play.module.edit")}
-                  </Button>
-                ) : null}
-              </div>
-              {editing ? (
-                <>
-                  <textarea
-                    className="module-source-editor"
-                    aria-label={t("play.module.sourceText")}
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
-                    disabled={saving}
-                    spellCheck={false}
-                  />
-                  <div className="module-detail-edit-actions">
-                    <Button type="button" variant="quiet" onClick={cancelEditing} disabled={saving}>
-                      {t("play.module.cancelEdit")}
+                  {!detailReady.current && !importing ? (
+                    <Button type="button" variant="danger" onClick={remove} disabled={busy || deleting}>
+                      {deleting ? t("play.busy") : t("play.module.delete")}
                     </Button>
+                  ) : (
                     <Button
                       type="button"
-                      onClick={save}
-                      disabled={busy || deleting || saving || !draft.trim() || draft === detailReady.content}
+                      className="module-delete-disabled"
+                      disabled
+                      title={t("play.module.deleteUnavailable")}
                     >
-                      {saving ? t("play.busy") : t("play.module.save")}
+                      {t("play.module.delete")}
                     </Button>
-                  </div>
-                </>
-              ) : (
-                <pre className="module-source-preview">{detailReady.content}</pre>
+                  )}
+                </div>
+              </header>
+
+              {matchingOperation?.kind === "module_import" && matchingOperation.ok ? (
+                <Notice tone="success" role="status">
+                  {matchingOperation.receipt || t("play.module.imported")}
+                </Notice>
+              ) : null}
+
+              {matchingOperation?.kind === "module_update" && matchingOperation.ok ? (
+                <Notice tone="success" role="status">
+                  {detailReady.current
+                    ? `${t("play.module.saved")} · ${t("play.module.saveApplyHint")}`
+                    : t("play.module.saved")}
+                </Notice>
+              ) : null}
+
+              {importing ? (
+                <Notice tone="warning" role="status">
+                  {t("play.module.importing")}
+                </Notice>
+              ) : detailReady.current ? (
+                <p className="ui-eyebrow">{t("play.module.zoneRoom")}</p>
+              ) : null}
+              {importing || !detailReady.current ? null : (
+                <KnowledgePool detail={detailReady} label={t("play.module.knowledgePool")} />
               )}
-            </section>
-          </>
+
+              <p className="ui-eyebrow">{t("play.module.zoneSource")}</p>
+              {detailReady.media.length > 0 && detailReady.current ? (
+                <Surface labelledBy="module-media-heading">
+                  <SectionHeader titleId="module-media-heading" title={t("play.module.poolGroups.media")} />
+                  <ul className="module-media-grid">
+                    {detailReady.media.map((record) => (
+                      <li key={record.hash}>
+                        <ModuleMediaImage record={record} />
+                      </li>
+                    ))}
+                  </ul>
+                </Surface>
+              ) : null}
+              <Surface className="module-detail-source-card" labelledBy="module-source-title">
+                <SectionHeader
+                  titleId="module-source-title"
+                  eyebrow={t("play.module.sourceEyebrow")}
+                  title={t("play.module.sourceText")}
+                  actions={
+                    <>
+                      <span className="module-detail-size">
+                        {detailReady.size} {t("play.module.bytes")}
+                      </span>
+                      {!editing ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setEditing(true)}
+                          disabled={busy || deleting}
+                        >
+                          {t("play.module.edit")}
+                        </Button>
+                      ) : null}
+                    </>
+                  }
+                />
+                {editing ? (
+                  <>
+                    <textarea
+                      className="module-source-editor"
+                      aria-label={t("play.module.sourceText")}
+                      value={draft}
+                      onChange={(event) => setDraft(event.target.value)}
+                      disabled={saving}
+                      spellCheck={false}
+                    />
+                    <div className="module-detail-edit-actions">
+                      <Button type="button" variant="quiet" onClick={cancelEditing} disabled={saving}>
+                        {t("play.module.cancelEdit")}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={save}
+                        disabled={
+                          busy || deleting || saving || !draft.trim() || draft === detailReady.content
+                        }
+                      >
+                        {saving ? t("play.busy") : t("play.module.save")}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <pre className="module-source-preview">{detailReady.content}</pre>
+                )}
+              </Surface>
+            </>
           )
         ) : (
           <p className="studio-hint" role="status">

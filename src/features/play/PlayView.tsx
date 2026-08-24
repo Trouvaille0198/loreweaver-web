@@ -135,16 +135,19 @@ function HostLocalBlock() {
         {native ? t("connect.hostLocal.hint") : t("connect.hostLocal.desktopOnly")}
       </p>
       <div className="host-local-home">
-        <label className="field">
-          {t("connect.hostLocal.home")}
-          <input
-            value={homeOverride}
-            placeholder={effectiveHome || t("connect.hostLocal.homePlaceholder")}
-            spellCheck={false}
-            disabled={!native || phase === "starting"}
-            onChange={(e) => setHomeOverride(e.target.value)}
-          />
-        </label>
+        <Field label={t("connect.hostLocal.home")} hint={t("connect.hostLocal.homePlaceholder")}>
+          {({ id, describedBy }) => (
+            <input
+              id={id}
+              value={homeOverride}
+              placeholder={effectiveHome || t("connect.hostLocal.homePlaceholder")}
+              aria-describedby={describedBy}
+              spellCheck={false}
+              disabled={!native || phase === "starting"}
+              onChange={(e) => setHomeOverride(e.target.value)}
+            />
+          )}
+        </Field>
         <Button
           type="button"
           size="sm"
@@ -162,9 +165,9 @@ function HostLocalBlock() {
             </div>
           ))}
           {error !== null ? (
-            <p className="connect-error" role="alert">
+            <Notice tone="danger" role="alert">
               {error}
-            </p>
+            </Notice>
           ) : null}
           {phase === "starting" ? (
             <Button type="button" size="sm" variant="quiet" onClick={() => void stop()}>

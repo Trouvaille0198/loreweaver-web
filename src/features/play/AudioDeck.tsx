@@ -15,7 +15,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { AudioLayer } from "@loreweaver/protocol"
-import { Button } from "../../components/ui"
+import { Button, Field, Notice } from "../../components/ui"
 import { assetFetch, assetReadBase64 } from "./panels/assets"
 import { AUDIO_LAYERS, effectiveVolume, useAudioStore, type LayerState } from "../../store/audio"
 import { transportSend } from "../../lib/transport"
@@ -150,35 +150,38 @@ function KeeperControls() {
   return (
     <div className="audio-keeper">
       <div className="dialog-row">
-        <label className="field field-narrow">
-          {t("play.audio.keeperLayer")}
-          <select
-            value={layer}
-            onChange={(e) => {
-              setLayer(e.target.value as AudioLayer)
-              // A new layer brings its own default; a tick made for the music
-              // must not follow the keeper over to the sound effects.
-              setLoopOverride(null)
-            }}
-          >
-            {AUDIO_LAYERS.map((name) => (
-              <option key={name} value={name}>
-                {t(`play.audio.layers.${name}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          {t("play.audio.keeperTrack")}
-          <select value={choice} onChange={(e) => setChoice(e.target.value)}>
-            <option value="">{t("play.audio.keeperPick")}</option>
-            {library.map((item) => (
-              <option key={item.id} value={item.title || item.name}>
-                {item.title || item.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Field label={t("play.audio.keeperLayer")} className="field field-narrow">
+          {({ id }) => (
+            <select
+              id={id}
+              value={layer}
+              onChange={(e) => {
+                setLayer(e.target.value as AudioLayer)
+                // A new layer brings its own default; a tick made for the music
+                // must not follow the keeper over to the sound effects.
+                setLoopOverride(null)
+              }}
+            >
+              {AUDIO_LAYERS.map((name) => (
+                <option key={name} value={name}>
+                  {t(`play.audio.layers.${name}`)}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+        <Field label={t("play.audio.keeperTrack")} className="field">
+          {({ id }) => (
+            <select id={id} value={choice} onChange={(e) => setChoice(e.target.value)}>
+              <option value="">{t("play.audio.keeperPick")}</option>
+              {library.map((item) => (
+                <option key={item.id} value={item.title || item.name}>
+                  {item.title || item.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
         <label className="audio-mute">
           <input type="checkbox" checked={loop} onChange={(e) => setLoopOverride(e.target.checked)} />
           {t("play.audio.keeperLoop")}
@@ -219,15 +222,17 @@ function KeeperControls() {
         />
       </div>
       <div className="dialog-row">
-        <label className="field field-narrow">
-          {t("play.audio.keeperImport")}
-          <input
-            value={packId}
-            onChange={(e) => setPackId(e.target.value)}
-            placeholder="deep-pier"
-            spellCheck={false}
-          />
-        </label>
+        <Field label={t("play.audio.keeperImport")} className="field field-narrow">
+          {({ id }) => (
+            <input
+              id={id}
+              value={packId}
+              onChange={(e) => setPackId(e.target.value)}
+              placeholder="deep-pier"
+              spellCheck={false}
+            />
+          )}
+        </Field>
         <Button
           type="button"
           variant="quiet"
@@ -276,12 +281,12 @@ export default function AudioDeck() {
       {waiting && !unlocked ? (
         // The one gesture the webview needs. Said plainly, because "why is
         // there no sound" is otherwise unanswerable from inside the app.
-        <p className="studio-notice" role="status">
+        <Notice tone="info" role="status">
           {t("play.audio.unlockHint")}{" "}
           <Button type="button" size="sm" variant="primary" onClick={() => unlock()}>
             {t("play.audio.unlock")}
           </Button>
-        </p>
+        </Notice>
       ) : null}
       {AUDIO_LAYERS.map((name) => (
         <LayerRow key={name} layer={layers[name]} />

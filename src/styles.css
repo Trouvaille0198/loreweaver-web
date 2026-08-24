@@ -1163,7 +1163,7 @@ body {
 .quick-menu-row.is-active {
   background: color-mix(in srgb, var(--accent) 14%, var(--bg-raised));
   border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  box-shadow: inset 2px 0 0 var(--accent);
+  box-shadow: none;
 }
 
 .quick-menu-line {
@@ -2553,7 +2553,7 @@ body {
 }
 
 .module-tab.is-active {
-  border-color: var(--lw-accent);
+  border-color: var(--border-soft);
   color: var(--lw-accent);
   background: color-mix(in srgb, var(--bg-raised) 80%, var(--lw-accent) 12%);
 }

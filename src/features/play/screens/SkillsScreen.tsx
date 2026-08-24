@@ -3,7 +3,7 @@
 
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
-import { EmptyState } from "../../../components/ui"
+import { EmptyState, SectionHeader, Surface } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
@@ -25,23 +25,26 @@ export default function SkillsScreen({
 
   return (
     <ScreenShell title={t("play.menu.skills")} onBack={onBack} showAdminError embedded={embedded}>
-      <ul className="play-list">
-        {skills.map((skill) => (
-          <li key={skill.id}>
-            <label className="play-skill-row">
-              <input
-                type="checkbox"
-                checked={skill.enabled}
-                onChange={(e) => enableSkill(skill.id, e.target.checked, i18n.language)}
-              />
-              <span className="play-skill-name">{skill.name}</span>
-              {skill.content_rating ? <span className="chip">{skill.content_rating}</span> : null}
-              <span className="play-skill-desc">{skill.description}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
-      {skills.length === 0 ? <EmptyState title={t("play.skills.empty")} /> : null}
+      <Surface labelledBy="skills-library-title">
+        <SectionHeader titleId="skills-library-title" title={t("play.menu.skills")} />
+        {skills.length === 0 ? <EmptyState title={t("play.skills.empty")} /> : null}
+        <ul className="play-list">
+          {skills.map((skill) => (
+            <li key={skill.id}>
+              <label className="play-skill-row">
+                <input
+                  type="checkbox"
+                  checked={skill.enabled}
+                  onChange={(e) => enableSkill(skill.id, e.target.checked, i18n.language)}
+                />
+                <span className="play-skill-name">{skill.name}</span>
+                {skill.content_rating ? <span className="chip">{skill.content_rating}</span> : null}
+                <span className="play-skill-desc">{skill.description}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </Surface>
     </ScreenShell>
   )
 }
