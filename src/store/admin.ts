@@ -134,6 +134,8 @@ export interface ModuleOperation {
   receipt?: string
   status?: string
   files?: number
+  /** Exact module references offered when an installed pack contains several world cards. */
+  choices?: string[]
 }
 
 function parseModuleDetail(frame: AdminGeneratedFrame): Record<string, unknown> {
@@ -147,32 +149,36 @@ function parseModuleDetail(frame: AdminGeneratedFrame): Record<string, unknown> 
   }
 }
 
-function isModuleSource(value: unknown): value is ModuleSource {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value) &&
-    "name" in value &&
-    typeof value.name === "string" &&
-    "size" in value &&
-    typeof value.size === "number" &&
-    "modified" in value &&
-    typeof value.modified === "number" &&
-    "current" in value &&
-    typeof value.current === "boolean"
-  )
-}
-
 function parseModuleSources(value: unknown): ModuleSource[] {
   if (!Array.isArray(value)) return []
-  return value.filter(isModuleSource).map((item) => ({
-    ...item,
-    title: typeof item.title === "string" && item.title ? item.title : item.name,
-    sourceKind: item.sourceKind === "pack" ? "pack" : "text",
-    entryCount: typeof item.entryCount === "number" ? item.entryCount : undefined,
-    pregenCount: typeof item.pregenCount === "number" ? item.pregenCount : undefined,
-    ...(item.importing ? { importing: true } : {}),
-  }))
+  return value.flatMap((raw): ModuleSource[] => {
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return []
+    const item = Object.fromEntries(Object.entries(raw))
+    if (
+      typeof item.name !== "string" ||
+      typeof item.size !== "number" ||
+      typeof item.modified !== "number" ||
+      typeof item.current !== "boolean"
+    ) {
+      return []
+    }
+    const sourceKind = item.source_kind === "pack" || item.sourceKind === "pack" ? "pack" : "text"
+    const entryCount = item.entry_count ?? item.entryCount
+    const pregenCount = item.pregen_count ?? item.pregenCount
+    return [
+      {
+        name: item.name,
+        title: typeof item.title === "string" && item.title ? item.title : item.name,
+        size: item.size,
+        modified: item.modified,
+        current: item.current,
+        sourceKind,
+        entryCount: typeof entryCount === "number" ? entryCount : undefined,
+        pregenCount: typeof pregenCount === "number" ? pregenCount : undefined,
+        ...(item.importing === true ? { importing: true } : {}),
+      },
+    ]
+  })
 }
 
 function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | null {
@@ -221,10 +227,15 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
       : undefined,
     pregens: Array.isArray(value.pregens)
       ? value.pregens
-          .filter((item): item is { name: string; concept?: string } => typeof item === "object" && item !== null)
+          .filter(
+            (item): item is { name: string; concept?: string } => typeof item === "object" && item !== null,
+          )
           .map((item) => ({
             name: String((item as { name?: unknown }).name ?? ""),
-            concept: typeof (item as { concept?: unknown }).concept === "string" ? String((item as { concept?: unknown }).concept) : undefined,
+            concept:
+              typeof (item as { concept?: unknown }).concept === "string"
+                ? String((item as { concept?: unknown }).concept)
+                : undefined,
           }))
       : undefined,
     rulepacks: Array.isArray(value.rulepacks)
@@ -256,8 +267,14 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
             hash: item.hash,
             mime: item.mime,
             size: item.size,
-            kind: typeof (item as { kind?: unknown }).kind === "string" ? String((item as { kind?: unknown }).kind) : undefined,
-            data: typeof (item as { data?: unknown }).data === "string" ? String((item as { data?: unknown }).data) : undefined,
+            kind:
+              typeof (item as { kind?: unknown }).kind === "string"
+                ? String((item as { kind?: unknown }).kind)
+                : undefined,
+            data:
+              typeof (item as { data?: unknown }).data === "string"
+                ? String((item as { data?: unknown }).data)
+                : undefined,
           }))
       : [],
   }
@@ -369,7 +386,9 @@ interface AdminState {
   /** Last admin_error, cleared by the next successful reply or request. */
   lastError: string | null
   busy: boolean
-  ingest: (frame: ServerFrame | AdminRoomConfigFrame | AdminGenerateStartedFrame | AdminGenerateProgressFrame) => boolean
+  ingest: (
+    frame: ServerFrame | AdminRoomConfigFrame | AdminGenerateStartedFrame | AdminGenerateProgressFrame,
+  ) => boolean
   refreshConfig: () => void
   setEmbedding: (profileId: string, dimension?: number) => void
   setModel: (provider: string, chatModel?: string, apiKey?: string, baseUrl?: string) => void
@@ -421,7 +440,13 @@ interface AdminState {
   enableSkill: (id: string, on: boolean, locale?: string) => void
   listRules: () => void
   generateModule: (description: string, options?: GenerateModuleOptions) => void
-  generatePackModule: (description: string, media?: string[], companion?: string[], extendsBase?: string, system?: string) => void
+  generatePackModule: (
+    description: string,
+    media?: string[],
+    companion?: string[],
+    extendsBase?: string,
+    system?: string,
+  ) => void
   listModules: () => void
   getModuleDetail: (name: string) => void
   uploadModule: (name: string, content: string) => void
@@ -585,6 +610,11 @@ export const useAdminStore = create<AdminState>((set) => ({
                 error: frame.ok ? undefined : frame.error,
                 receipt: typeof detail.receipt === "string" ? detail.receipt : undefined,
                 status: typeof detail.status === "string" ? detail.status : undefined,
+                choices: Array.isArray(detail.choices)
+                  ? detail.choices.filter(
+                      (choice): choice is string => typeof choice === "string" && !!choice,
+                    )
+                  : undefined,
               },
               ...(kind === "module_import" ? { moduleImporting: null } : {}),
               busy: false,
@@ -744,7 +774,8 @@ export const useAdminStore = create<AdminState>((set) => ({
     const frame: Record<string, unknown> = { type: "admin_generate", kind: "module", description, locale }
     const media = options?.media?.length ? options.media : null
     const companion = options?.companion?.length ? options.companion : null
-    if (media || companion) frame.options = { ...(media ? { media } : {}), ...(companion ? { companion } : {}) }
+    if (media || companion)
+      frame.options = { ...(media ? { media } : {}), ...(companion ? { companion } : {}) }
     send(frame as unknown as ClientFrame, set)
   },
   generatePackModule: (description, media, companion, extendsBase, system) => {
@@ -754,12 +785,13 @@ export const useAdminStore = create<AdminState>((set) => ({
     const c = companion?.length ? companion : null
     const e = extendsBase?.trim() || null
     const s = system?.trim() || null
-    if (m || c || e || s) frame.options = {
-      ...(m ? { media: m } : {}),
-      ...(c ? { companion: c } : {}),
-      ...(e ? { extends: e } : {}),
-      ...(s ? { system: s } : {}),
-    }
+    if (m || c || e || s)
+      frame.options = {
+        ...(m ? { media: m } : {}),
+        ...(c ? { companion: c } : {}),
+        ...(e ? { extends: e } : {}),
+        ...(s ? { system: s } : {}),
+      }
     send(frame as unknown as ClientFrame, set)
   },
   listModules: () => moduleAction("module_list", {}, set),
@@ -774,7 +806,11 @@ export const useAdminStore = create<AdminState>((set) => ({
       kind: "module_import",
       description: JSON.stringify({ name, locale: i18n.resolvedLanguage === "zh" ? "zh" : "en" }),
     } as unknown as ClientFrame).catch((cause) => {
-      set({ busy: false, moduleImporting: null, lastError: cause instanceof Error ? cause.message : String(cause) })
+      set({
+        busy: false,
+        moduleImporting: null,
+        lastError: cause instanceof Error ? cause.message : String(cause),
+      })
     })
   },
   deleteModule: (name) => moduleAction("module_delete", { name }, set),

@@ -425,6 +425,7 @@
       "saved": "Saved",
       "saveApplyHint": "Import it again to apply the edited source to this room.",
       "operationFailed": "Module operation failed.",
+      "chooseWorldCard": "This pack contains several world cards. Choose the one this room will use:",
       "addBundle": "Upload content ZIP",
       "poolCategories": {
         "scenes": "Scenes",

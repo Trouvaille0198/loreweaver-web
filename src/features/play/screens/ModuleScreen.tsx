@@ -293,15 +293,30 @@ function ModuleDetailPanel({
 function OperationNotice({
   operation,
   t,
+  onImport,
 }: {
   operation: ModuleOperation | null
   t: (key: string) => string
+  onImport: (name: string) => void
 }) {
   if (!operation) return null
   if (!operation.ok)
     return (
       <Notice tone="danger" role="alert">
-        {operation.error || t("play.module.operationFailed")}
+        <p>
+          {operation.choices?.length
+            ? t("play.module.chooseWorldCard")
+            : operation.error || t("play.module.operationFailed")}
+        </p>
+        {operation.choices?.length ? (
+          <div className="module-source-actions">
+            {operation.choices.map((choice) => (
+              <Button key={choice} type="button" size="sm" variant="quiet" onClick={() => onImport(choice)}>
+                {choice}
+              </Button>
+            ))}
+          </div>
+        ) : null}
       </Notice>
     )
   if (operation.kind === "module_import") {
@@ -565,7 +580,7 @@ export default function ModuleScreen({
                 </li>
               ))}
             </ul>
-            <OperationNotice operation={operation} t={t} />
+            <OperationNotice operation={operation} t={t} onImport={importModule} />
           </Surface>
 
           {detail ? (

@@ -425,6 +425,7 @@
       "saved": "已保存",
       "saveApplyHint": "请再次点击“导入当前房间”，让修改后的剧本生效。",
       "operationFailed": "模组操作失败。",
+      "chooseWorldCard": "这个包包含多张世界卡，请选择当前房间要使用的一张：",
       "addBundle": "上传资料包 ZIP",
       "poolCategories": {
         "scenes": "场景",

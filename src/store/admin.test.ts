@@ -73,12 +73,7 @@ describe("admin model requests", () => {
 
   it("requests and stores a capability-filtered SiliconFlow model catalog", () => {
     const admin = useAdminStore.getState()
-    admin.listModels(
-      "siliconflow",
-      "sk-siliconflow-test",
-      "https://api.siliconflow.cn/v1",
-      "image",
-    )
+    admin.listModels("siliconflow", "sk-siliconflow-test", "https://api.siliconflow.cn/v1", "image")
 
     expect(sent).toEqual([
       {
@@ -288,11 +283,33 @@ describe("admin model requests", () => {
       name: "",
       error: "",
       detail: JSON.stringify({
-        modules: [{ name: "scene.md", size: 12, modified: 100, current: true }],
+        modules: [
+          { name: "scene.md", size: 12, modified: 100, current: true, source_kind: "text" },
+          {
+            name: "harbour/cards/night.json",
+            title: "Harbour — Night",
+            size: 80,
+            modified: 101,
+            current: false,
+            source_kind: "pack",
+            entry_count: 7,
+            pregen_count: 3,
+          },
+        ],
       }),
     } as never)
     expect(useAdminStore.getState().moduleSources).toEqual([
       { name: "scene.md", title: "scene.md", size: 12, modified: 100, current: true, sourceKind: "text" },
+      {
+        name: "harbour/cards/night.json",
+        title: "Harbour — Night",
+        size: 80,
+        modified: 101,
+        current: false,
+        sourceKind: "pack",
+        entryCount: 7,
+        pregenCount: 3,
+      },
     ])
 
     ingest({
@@ -318,6 +335,27 @@ describe("admin model requests", () => {
       content: "# Scene",
       current: true,
       pool: { keeper: { summary: "A foggy pier" } },
+    })
+  })
+
+  it("preserves exact world-card choices from a multi-card import reply", () => {
+    useAdminStore.getState().ingest({
+      type: "admin_generated",
+      kind: "module_import",
+      ok: false,
+      id: "harbour",
+      name: "harbour",
+      error: "multiple_world_cards",
+      detail: JSON.stringify({
+        error: "multiple_world_cards",
+        choices: ["harbour/cards/day.json", "harbour/cards/night.json", 42],
+      }),
+    } as never)
+
+    expect(useAdminStore.getState().moduleOperation).toMatchObject({
+      kind: "module_import",
+      ok: false,
+      choices: ["harbour/cards/day.json", "harbour/cards/night.json"],
     })
   })
   it("sends the web UI language with module generation", async () => {

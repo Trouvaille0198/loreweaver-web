@@ -135,7 +135,7 @@ describe("ModuleScreen — community packs", () => {
           current: false,
           status: "ready",
           pool: null,
-        media: [],
+          media: [],
         },
       })
     })
@@ -147,6 +147,32 @@ describe("ModuleScreen — community packs", () => {
       type: "admin_generate",
       kind: "module_delete",
       description: JSON.stringify({ name: "scene.md" }),
+    })
+  })
+
+  it("renders a multi-world pack choice and imports the exact selected card", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => {}} />)
+    act(() => {
+      useAdminStore.setState({
+        busy: false,
+        moduleOperation: {
+          kind: "module_import",
+          ok: false,
+          name: "harbour",
+          error: "multiple_world_cards",
+          choices: ["harbour/cards/day.json", "harbour/cards/night.json"],
+        },
+      })
+    })
+
+    expect(screen.getByText(/contains several world cards/)).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "harbour/cards/night.json" }))
+
+    expect(sent.at(-1)).toEqual({
+      type: "admin_generate",
+      kind: "module_import",
+      description: JSON.stringify({ name: "harbour/cards/night.json", locale: "en" }),
     })
   })
 
@@ -174,7 +200,10 @@ describe("ModuleScreen — community packs", () => {
     // The mount-time listModules() leaves the store busy until a reply lands;
     // no server answers here, so clear it the way an ingested reply would.
     act(() => useAdminStore.setState({ busy: false }))
-    await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a fog-bound harbor town")
+    await user.type(
+      screen.getByLabelText("Or describe a module for the forge to write"),
+      "a fog-bound harbor town",
+    )
     await user.click(screen.getByRole("checkbox", { name: /Cover/ }))
     await user.click(screen.getByRole("checkbox", { name: /Skills/ }))
     await user.click(screen.getByRole("button", { name: "Generate & install" }))
@@ -192,7 +221,10 @@ describe("ModuleScreen — community packs", () => {
     render(<ModuleScreen onBack={() => {}} />)
     await user.click(screen.getByRole("tab", { name: "AI creation" }))
     act(() => useAdminStore.setState({ busy: false }))
-    await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a fog-bound harbor town")
+    await user.type(
+      screen.getByLabelText("Or describe a module for the forge to write"),
+      "a fog-bound harbor town",
+    )
     // The .lwpack format is the engine's canonical full-module shape.
     await user.click(screen.getByRole("radio", { name: /\.lwpack/ }))
     expect(screen.getByText("Companion content")).toBeInTheDocument()
