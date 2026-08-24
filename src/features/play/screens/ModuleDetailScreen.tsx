@@ -99,7 +99,17 @@ const MEDIA_GROUP_ORDER = ["cover", "scenes", "npcs", "items", "asset"] as const
 
 /** The complete view of an installed .lwpack module: its lore, claimable cast, typed variables,
  * illustrations (grouped by kind), rule systems, and KP skills. */
-function PackDetailView({ detail }: { detail: ModuleDetail }) {
+function PackDetailView({
+  detail,
+  importing,
+  deleting,
+  onDelete,
+}: {
+  detail: ModuleDetail
+  importing: boolean
+  deleting: boolean
+  onDelete: () => void
+}) {
   const { t } = useTranslation()
   const mediaGroups = new Map<string, ModuleMediaRecord[]>()
   for (const record of detail.media) {
@@ -118,7 +128,26 @@ function PackDetailView({ detail }: { detail: ModuleDetail }) {
           description={`${detail.size} ${t("play.module.bytes")}${
             detail.worldbookEntries ? ` · ${detail.worldbookEntries.length} ${t("play.module.entries")}` : ""
           }${detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}`}
-          actions={<span className="chip chip-warn">{t("play.module.kindPack")}</span>}
+          actions={
+            <div className="module-detail-actions">
+              <span className="chip chip-warn">{t("play.module.kindPack")}</span>
+              {detail.current && !importing ? <span className="chip chip-on">{t("play.module.current")}</span> : null}
+              {!detail.current && !importing ? (
+                <Button type="button" variant="danger" onClick={onDelete} disabled={deleting}>
+                  {deleting ? t("play.busy") : t("play.module.delete")}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  className="module-delete-disabled"
+                  disabled
+                  title={t("play.module.deleteUnavailable")}
+                >
+                  {t("play.module.delete")}
+                </Button>
+              )}
+            </div>
+          }
         />
         {detail.content ? <p className="studio-hint">{detail.content}</p> : null}
       </Surface>
@@ -264,7 +293,7 @@ export default function ModuleDetailScreen({
   const remove = () => {
     if (deleting || !window.confirm(t("play.module.deleteConfirm"))) return
     setDeleting(true)
-    deleteModule(moduleName)
+    deleteModule(moduleName, detailReady?.sourceKind === "pack" ? "pack" : "text")
   }
 
   const save = () => {
@@ -286,7 +315,7 @@ export default function ModuleDetailScreen({
       <div className="module-detail-page">
         {detailReady ? (
           detailReady.sourceKind === "pack" ? (
-            <PackDetailView detail={detailReady} />
+            <PackDetailView detail={detailReady} importing={importing} deleting={deleting} onDelete={remove} />
           ) : (
             <>
               <header className="module-detail-hero">

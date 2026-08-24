@@ -453,7 +453,7 @@ interface AdminState {
   updateModule: (name: string, content: string) => void
   uploadModuleBundle: (name: string, archive: string) => void
   importModule: (name: string) => void
-  deleteModule: (name: string) => void
+  deleteModule: (name: string, sourceKind?: "text" | "pack") => void
   listWorldbooks: () => void
   getWorldbookDetail: (name: string) => void
   uploadWorldbook: (name: string, content: string) => void
@@ -813,7 +813,8 @@ export const useAdminStore = create<AdminState>((set) => ({
       })
     })
   },
-  deleteModule: (name) => moduleAction("module_delete", { name }, set),
+  deleteModule: (name, sourceKind) =>
+    moduleAction("module_delete", { name, ...(sourceKind ? { source_kind: sourceKind } : {}) }, set),
   exportRoom: (room, path) => send({ type: "admin_export_room", room, ...(path ? { path } : {}) }, set),
   importRoom: (path) => send({ type: "admin_import_room", path }, set),
   resetRoom: (room, scope) => send({ type: "admin_reset_room", room, scope }, set),
