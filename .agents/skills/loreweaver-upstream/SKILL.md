@@ -27,8 +27,8 @@ cd /tmp && rm -rf lw-studio-upstream && \
 git clone --depth 60 https://github.com/1A7432/loreweaver-studio.git lw-studio-upstream && \
 cd lw-studio-upstream && git log --oneline --date=iso --pretty="%h %ad %s" | head -30
 
-# 引擎上游（我们的 loreweaver fork 就是从它 fork 的，可直接 fetch）
-cd /home/melon/self-pro/loreweaver && \
+# 引擎上游（我们的 loreweaver fork 就是从它 fork 的，可直接 fetch；本地引擎仓库在 ~/repos/loreweaver）
+cd /home/melon/repos/loreweaver && \
 git fetch https://github.com/1A7432/loreweaver.git main && \
 git log --oneline FETCH_HEAD --date=iso --pretty="%h %ad %s" | head -20
 ```
@@ -53,7 +53,7 @@ git log --oneline FETCH_HEAD --date=iso --pretty="%h %ad %s" | head -20
 ### 3. 移植候选怎么落地
 
 ```bash
-cd /home/melon/self-pro/loreweaver-web
+cd /home/melon/repos/loreweaver-web
 # 1) 把上游对应文件复制过来（只复制 play 相关文件，逐一核对）
 #    studio 和 web 的目录结构在 play 部分基本一致（web 删了 studio、改了少量导入路径），
 #    直接 cp 后跑测试看哪里坏，比手工 merge 快
@@ -65,21 +65,29 @@ export PATH="$HOME/.bun/bin:$PATH"
 bun run typecheck && bun run lint && bun run i18n:lint
 node node_modules/vitest/vitest.mjs run     # 注意：用 node 跑，bun 的 test runner 在本机 jsdom 加载有问题
 bun run build
-# 4) 提交 + 推送 + 部署（loreweaver-ops skill 的流程）
+# 4) 提交 + 推送（部署见下节"部署（本机就是服务器）"）
 git add -A && git commit -m "sync(upstream): <一句话说明搬了什么>" && git push origin main
-ssh -i ~/.ssh/id_github melon@154.64.255.99 'cd ~/apps/loreweaver-web && git pull --ff-only && docker compose up --build -d'
 ```
 
 ### 4. 引擎侧改动（服务端能力）
 
-引擎的提交影响服务端行为（回合、规则、命令、协议）。web 客户端一般**无需改代码**，只需在 VPS 上重建引擎镜像：
+引擎的提交影响服务端行为（回合、规则、命令、协议）。web 客户端一般**无需改代码**，只需按"部署"一节重建镜像（引擎代码会经 build context 打进镜像）；若引擎**协议版本**变了（`docs/protocol.md` 大版本/小版本），web 的 `loreweaver-protocol` npm 依赖要跟着升（见步骤 2 的"协议/依赖"行）。
+
+## 部署（本机就是服务器，没有 SSH 远程部署）
+
+**本机（154.64.255.99）就是部署服务器**，web 与引擎两个仓库都在 `~/repos/` 下。部署 = 把两个仓库都拉到最新 + 重建容器。**不存在"推到远程、再 SSH 过去拉取部署"这一步**；任何以 `ssh`/远程命令开头的旧部署写法都已过时，照下面做：
 
 ```bash
-ssh -i ~/.ssh/id_github melon@154.64.255.99 \
-  'cd ~/apps/loreweaver && git pull && cd ~/apps/loreweaver-web && docker compose up --build -d'
+# 1) 两个仓库都拉到 origin/main 最新
+git -C /home/melon/repos/loreweaver-web pull --ff-only
+git -C /home/melon/repos/loreweaver pull --ff-only
+# 2) 重建并重启容器（引擎代码经 docker build 的 additional context `ENGINE_CONTEXT`、
+#    默认 ~/repos/loreweaver 打进镜像，所以第 1 步的引擎 pull 很关键）
+cd /home/melon/repos/loreweaver-web && docker compose up --build -d
+# 3) 验证：服务在 8787 端口，返回 HTTP 200 即部署成功
+docker ps --filter name=loreweaver-web
+curl -s -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8787/
 ```
-
-但若引擎**协议版本**变了（`docs/protocol.md` 大版本/小版本），web 的 `loreweaver-protocol` npm 依赖要跟着升（见步骤 2 的"协议/依赖"行）。
 
 ## 已知移植对照（2026-08-21 检查）
 
