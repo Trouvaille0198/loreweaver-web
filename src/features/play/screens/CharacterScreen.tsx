@@ -18,14 +18,14 @@
 
 import { useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import { stripControlChars, type CharacterState, type RuleSystemEntry } from "@loreweaver/protocol"
+import { stripControlChars, type CharacterState, type ItemView, type RuleSystemEntry } from "@loreweaver/protocol"
 import { Button, Field, Notice, SectionHeader, Surface } from "../../../components/ui"
 import { transportSend } from "../../../lib/transport"
 import { useConnectionStore } from "../../../store/connection"
 import { useSessionStore } from "../../../store/session"
 import Avatar from "../Avatar"
 import { ResourceRow } from "../StatePanel"
-import { asCharacterDetails } from "../characterDetails"
+import { asCharacterDetails, equippedItemBonuses, type ItemBonusContribution } from "../characterDetails"
 import ScreenShell from "./ScreenShell"
 import { sheetWrite } from "./sheetWrite"
 
@@ -202,16 +202,27 @@ function CreateCharacter() {
 /** One attribute row. Editing writes through `.st <name>=<value>`, which the server
  * validates against the pack's constraints and answers in the chat log — nothing is
  * assumed to have worked here; the next `state` frame is the truth. */
-function AttributeRow({ name, value }: { name: string; value: unknown }) {
+function AttributeRow({
+  name,
+  value,
+  bonus,
+}: {
+  name: string
+  value: unknown
+  bonus?: ItemBonusContribution[]
+}) {
   const { t } = useTranslation()
   const online = useConnectionStore((s) => s.status === "online")
   const [draft, setDraft] = useState<string | null>(null)
+
+  // Hover over a stat shows which equipped items grant it what (phase 2 item bonuses).
+  const bonusHint = bonus && bonus.length > 0 ? t("play.character.equippedBonus") + ": " + bonus.map((b) => `${b.name} +${b.delta}`).join(", ") : undefined
 
   if (!isEditable(value)) {
     return (
       <tr>
         <td className="play-attr-name">{stripControlChars(name)}</td>
-        <td>{attrText(value)}</td>
+        <td title={bonusHint}>{attrText(value)}</td>
       </tr>
     )
   }
@@ -233,7 +244,7 @@ function AttributeRow({ name, value }: { name: string; value: unknown }) {
             size="sm"
             variant="quiet"
             disabled={!online}
-            title={t("play.character.editHint")}
+            title={bonusHint ? `${t("play.character.editHint")}\n${bonusHint}` : t("play.character.editHint")}
             onClick={() => setDraft(String(value))}
           >
             {value}
@@ -311,6 +322,14 @@ function CharacterDetailsView({
   const secondaryEntries = Object.entries(details.secondary_attributes ?? {})
   const skillEntries = Object.entries(details.skills ?? {})
   const equipment = details.equipment ?? []
+  const bonuses = equippedItemBonuses(details.items ?? [])
+  const hintFor = (key: string): string | undefined => {
+    const list = bonuses[key]
+    return list && list.length > 0
+      ? t("play.character.equippedBonus") + ": " + list.map((b) => `${b.name} +${b.delta}`).join(", ")
+      : undefined
+  }
+  const items = details.items ?? []
   const background = details.background?.trim() ?? ""
   const notes = details.notes?.trim() ?? ""
   const hasExtra =
@@ -318,6 +337,7 @@ function CharacterDetailsView({
     secondaryEntries.length > 0 ||
     skillEntries.length > 0 ||
     equipment.length > 0 ||
+    items.length > 0 ||
     Boolean(background || notes)
 
   return (
@@ -350,7 +370,7 @@ function CharacterDetailsView({
         <table className="play-table">
           <tbody>
             {Object.entries(character.attributes).map(([key, value]) => (
-              <AttributeRow key={key} name={key} value={value} />
+              <AttributeRow key={key} name={key} value={value} bonus={bonuses[key]} />
             ))}
           </tbody>
         </table>
@@ -364,7 +384,7 @@ function CharacterDetailsView({
         <CharacterDetailSection title={t("session.skills", { n: skillEntries.length })}>
           <div className="play-character-skill-grid" role="list">
             {skillEntries.map(([name, value]) => (
-              <div key={name} className="play-character-skill" role="listitem">
+              <div key={name} className="play-character-skill" role="listitem" title={hintFor(name)}>
                 <span>{stripControlChars(name)}</span>
                 <strong>{attrText(value)}</strong>
               </div>
@@ -377,6 +397,39 @@ function CharacterDetailsView({
           <ul className="play-character-equipment">
             {equipment.map((item, index) => (
               <li key={`${index}-${attrText(item)}`}>{attrText(item)}</li>
+            ))}
+          </ul>
+        </CharacterDetailSection>
+      ) : null}
+      {items.length > 0 ? (
+        <CharacterDetailSection title={t("play.character.items")}>
+          <ul className="play-character-items">
+            {items.map((item: ItemView, index) => (
+              <li key={`${index}-${String(item.name ?? "")}`} className="play-character-item">
+                <div className="play-character-item-head">
+                  <strong>{stripControlChars(String(item.name ?? ""))}</strong>
+                  {item.equipped_slot ? (
+                    <span className="chip">
+                      {t("play.character.equipped")} · {stripControlChars(String(item.equipped_slot))}
+                    </span>
+                  ) : null}
+                  {item.quantity && Number(item.quantity) > 1 ? (
+                    <span className="chip">×{Number(item.quantity)}</span>
+                  ) : null}
+                </div>
+                {item.kind ? (
+                  <span className="play-character-item-kind">
+                    {t("play.character.itemsKind")}: {stripControlChars(String(item.kind))}
+                  </span>
+                ) : null}
+                {item.effect ? <p>{stripControlChars(String(item.effect))}</p> : null}
+                {item.lore ? <p className="play-character-item-lore">{stripControlChars(String(item.lore))}</p> : null}
+                {item.origin ? (
+                  <p className="play-character-item-origin">
+                    {t("play.character.itemsOrigin")}: {stripControlChars(String(item.origin))}
+                  </p>
+                ) : null}
+              </li>
             ))}
           </ul>
         </CharacterDetailSection>

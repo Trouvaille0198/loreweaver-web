@@ -119,6 +119,53 @@ describe("StatePanel", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 
+  it("renders item detail in the party member popup", () => {
+    useSessionStore.getState().ingest({
+      type: "state",
+      character: { name: "Ash", system: "coc7", resources: [], attributes: {}, status_effects: [] },
+      party: [
+        {
+          name: "Bo",
+          online: true,
+          active: false,
+          system: "dnd5e",
+          attributes: { STR: 14 },
+          items: [
+            {
+              name: "Fencing Sword",
+              kind: "weapon",
+              effect: "+2 attack",
+              lore: "A captain's blade.",
+              origin: "the sunken galleon",
+              equipped_slot: "main_hand",
+              quantity: 1,
+              bonus: { STR: 2 },
+            },
+            { name: "Healing Potion", kind: "consumable", effect: "Heals 1d4", origin: "the apothecary" },
+          ],
+        },
+      ],
+      initiative: [],
+      online: 1,
+    })
+
+    render(<StatePanel />)
+    fireEvent.doubleClick(screen.getAllByText("Bo", { selector: ".party-name" })[0])
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Bo" })).toBeInTheDocument()
+    // Structured item detail (not just the equipment name list).
+    expect(screen.getByText("Fencing Sword")).toBeInTheDocument()
+    expect(screen.getByText(/main_hand/)).toBeInTheDocument()
+    expect(screen.getByText(/Kind: weapon/)).toBeInTheDocument()
+    expect(screen.getByText("+2 attack")).toBeInTheDocument()
+    expect(screen.getByText("A captain's blade.")).toBeInTheDocument()
+    expect(screen.getByText(/the sunken galleon/)).toBeInTheDocument()
+    expect(screen.getByText("Healing Potion")).toBeInTheDocument()
+    // Hovering the STR stat shows the equipped item's bonus contribution.
+    expect(screen.getByTitle(/Fencing Sword \+2/)).toBeInTheDocument()
+  })
+
   it("renders nothing without state or presence", () => {
     const { container } = render(<StatePanel />)
     expect(container.querySelectorAll(".desk-card")).toHaveLength(0)

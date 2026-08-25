@@ -517,7 +517,10 @@ interface AdminState {
   listSkills: (locale?: string) => void
   enableSkill: (id: string, on: boolean, locale?: string) => void
   listRules: () => void
-  generateModulePrompt: (description: string) => void
+  generateModulePrompt: (
+    description: string,
+    options?: { ruleStrategy?: string; roomSystem?: string },
+  ) => void
   clearGeneratedPrompt: (requestId: string) => void
   generateModule: (description: string, options?: GenerateModuleOptions) => void
   generatePackModule: (
@@ -923,7 +926,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   enableSkill: (id, on, locale) =>
     send({ type: "admin_enable_skill", id, on, ...(locale ? { locale } : {}) }, set),
   listRules: () => send({ type: "admin_list_rules" }, set),
-  generateModulePrompt: (description) => {
+  generateModulePrompt: (description, options) => {
     const requestId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
     const idea = description.trim()
     const mode = idea ? "rewrite" : "suggest"
@@ -933,11 +936,14 @@ export const useAdminStore = create<AdminState>((set) => ({
       modulePromptBusy: true,
       modulePromptError: null,
     })
+    const promptRequest: Record<string, unknown> = { idea, mode }
+    if (options?.ruleStrategy !== undefined) promptRequest.rule_strategy = options.ruleStrategy
+    if (options?.roomSystem !== undefined) promptRequest.room_system = options.roomSystem
     sendModulePrompt(
       {
         type: "admin_generate",
         kind: "module_prompt",
-        description: JSON.stringify({ idea, mode }),
+        description: JSON.stringify(promptRequest),
         locale: i18n.resolvedLanguage === "zh" ? "zh" : "en",
         request_id: requestId,
       } as unknown as ClientFrame,

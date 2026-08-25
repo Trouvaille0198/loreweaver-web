@@ -216,6 +216,15 @@ describe("ModuleDetailScreen", () => {
           keeper: {
             scenes: [{ name: "旧唱片行", description: "一家旧唱片行，柜台后堆满黑胶。" }],
             npcs: [{ name: "歌女", role: "失踪者", description: "深夜独自离去后再未归来。" }],
+            items: [
+              {
+                name: "银制怀表",
+                kind: "quest",
+                effect: "+1 INT",
+                lore: "唱针卡在特定音轨。",
+                origin: "唱片行后屋",
+              },
+            ],
             truths: [{ name: "真相", description: "唱片里藏着一个秘密。" }],
             summary: "弄堂里的歌女失踪了。",
           },
@@ -232,6 +241,10 @@ describe("ModuleDetailScreen", () => {
     // Knowledge pool sections render.
     expect(screen.getByText("旧唱片行")).toBeInTheDocument()
     expect(screen.getByText("歌女")).toBeInTheDocument()
+    // The module's designed items render in the knowledge pool.
+    expect(screen.getByText("银制怀表")).toBeInTheDocument()
+    expect(screen.getByText("+1 INT")).toBeInTheDocument()
+    expect(screen.getByText("唱针卡在特定音轨。")).toBeInTheDocument()
     expect(screen.getByText("真相")).toBeInTheDocument()
     expect(screen.getByText("弄堂里的歌女失踪了。")).toBeInTheDocument()
   })

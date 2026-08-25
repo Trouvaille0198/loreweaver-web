@@ -51,11 +51,11 @@ describe("additive web transport frames", () => {
         ok: true,
         config: {
           format: "loreweaver-llm-config",
-          version: 1,
+          version: 2,
           llm_profiles: { "deepseek::deepseek-chat": { api_key: "sk-x", kind: "chat" } },
-          llm_credentials: { deepseek: { api_key: "sk-x" } },
           runtime: { provider: "deepseek", chat_model: "deepseek-chat" },
           imagegen_credentials: {},
+          imagegen_runtime: { provider: "qwen", model: "qwen-image" },
         },
       }),
     )

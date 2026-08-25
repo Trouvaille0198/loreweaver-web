@@ -465,7 +465,8 @@
         "background": "背景",
         "summary": "摘要",
         "threats": "威胁",
-        "opening_facts": "开场事实"
+        "opening_facts": "开场事实",
+        "items": "物品"
       },
       "poolFields": {
         "name": "名称",
@@ -495,7 +496,8 @@
         "clues": "线索",
         "timeline": "时间线",
         "truthsThreats": "真相与威胁",
-        "media": "配图"
+        "media": "配图",
+        "items": "物品"
       },
       "generating": "正在生成…"
     },
@@ -575,7 +577,14 @@
       "finalizeHint": "把当前 HP / MP / 理智按现在的属性重置回上限。",
       "delete": "删除角色",
       "deleteConfirm": "确认删除",
-      "deleteCancel": "算了"
+      "deleteCancel": "算了",
+      "items": "物品",
+      "itemsKind": "类别",
+      "itemsEffect": "效果",
+      "itemsOrigin": "来源",
+      "itemsLore": "来历",
+      "equipped": "已装备",
+      "equippedBonus": "装备增益"
     },
     "settings": {
       "appearanceSection": "外观与阅读",

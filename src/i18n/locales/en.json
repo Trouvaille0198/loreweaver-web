@@ -465,7 +465,8 @@
         "background": "Background",
         "summary": "Summary",
         "threats": "Threats",
-        "opening_facts": "Opening facts"
+        "opening_facts": "Opening facts",
+        "items": "Items"
       },
       "poolFields": {
         "name": "Name",
@@ -495,7 +496,8 @@
         "clues": "Clues",
         "timeline": "Timeline",
         "truthsThreats": "Truths & threats",
-        "media": "Illustrations"
+        "media": "Illustrations",
+        "items": "Items"
       },
       "generating": "Generating…"
     },
@@ -575,7 +577,14 @@
       "finalizeHint": "Sets current HP / MP / SAN back to their maxima for the current characteristics.",
       "delete": "Delete character",
       "deleteConfirm": "Delete for good",
-      "deleteCancel": "Keep"
+      "deleteCancel": "Keep",
+      "items": "Items",
+      "itemsKind": "Kind",
+      "itemsEffect": "Effect",
+      "itemsOrigin": "Origin",
+      "itemsLore": "Story",
+      "equipped": "Equipped",
+      "equippedBonus": "Equipped bonus"
     },
     "settings": {
       "appearanceSection": "Appearance & reading",

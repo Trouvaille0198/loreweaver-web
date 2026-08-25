@@ -26,6 +26,9 @@ declare module "@loreweaver/protocol" {
     secondary_attributes?: Record<string, unknown>
     fields?: Record<string, unknown>
     equipment?: unknown[]
+    /** v2.6 wire: structured item detail (phase 2) for an item-detail section.
+     * `secret` items never reach this view. Absent when the server predates it. */
+    items?: ItemView[]
     background?: string
     notes?: string
   }
@@ -38,8 +41,26 @@ declare module "@loreweaver/protocol" {
     secondary_attributes?: Record<string, unknown>
     fields?: Record<string, unknown>
     equipment?: unknown[]
+    items?: ItemView[]
     background?: string
     status_effects?: string[]
+  }
+
+  /** Structured item detail sent in roster members (phase 2). `equipped_slot` set
+   * means the item is equipped (its bonus applies). Mirrored locally because the
+   * published npm protocol predates it. */
+  interface ItemView {
+    name?: string
+    kind?: string
+    slot?: string
+    description?: string
+    lore?: string
+    effect?: string
+    origin?: string
+    original_holder?: string
+    quantity?: number
+    equipped_slot?: string
+    bonus?: Record<string, number>
   }
 
   interface WelcomeFrame {
@@ -225,9 +246,9 @@ declare module "@loreweaver/protocol" {
     format: string
     version: number
     llm_profiles: Record<string, Record<string, string>>
-    llm_credentials: Record<string, Record<string, string>>
     runtime: Record<string, string>
     imagegen_credentials: Record<string, Record<string, string>>
+    imagegen_runtime: Record<string, string>
   }
 
   /** Client → server: ask for a portable snapshot of every saved LLM/embedding/

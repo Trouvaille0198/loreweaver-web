@@ -218,3 +218,50 @@ describe("CharacterScreen — editing", () => {
     expect(sent).toEqual([{ type: "input", text: ".st delete" }])
   })
 })
+
+describe("CharacterScreen — item detail", () => {
+  beforeEach(() => {
+    sent.length = 0
+    useSessionStore.getState().clear()
+    useConnectionStore.setState({
+      status: "online",
+      welcome: {
+        type: "welcome",
+        protocol: "2.3",
+        room: "table",
+        you: { id: "u1", name: "Nyx", role: "player" },
+        locale: "en",
+        server: "loreweaver/1",
+      },
+    })
+    useSessionStore.getState().ingest(
+      stateFrame({
+        character: {
+          ...SHEET,
+          items: [
+            {
+              name: "Fencing Sword",
+              kind: "weapon",
+              effect: "+2 attack",
+              lore: "A captain's blade.",
+              origin: "the sunken galleon",
+              equipped_slot: "main_hand",
+              quantity: 1,
+            },
+          ],
+        },
+      }),
+    )
+  })
+
+  it("renders held items with detail in the character sheet", () => {
+    render(<CharacterScreen onBack={() => {}} />)
+
+    expect(screen.getByText("Fencing Sword")).toBeInTheDocument()
+    expect(screen.getByText(/main_hand/)).toBeInTheDocument()
+    expect(screen.getByText("Kind: weapon")).toBeInTheDocument()
+    expect(screen.getByText("+2 attack")).toBeInTheDocument()
+    expect(screen.getByText("A captain's blade.")).toBeInTheDocument()
+    expect(screen.getByText("Origin: the sunken galleon")).toBeInTheDocument()
+  })
+})

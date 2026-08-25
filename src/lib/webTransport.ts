@@ -61,14 +61,15 @@ export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFram
     const doc = config as Record<string, unknown>
     return (
       typeof doc.format === "string" &&
+      typeof doc.version === "number" &&
       typeof doc.llm_profiles === "object" &&
       doc.llm_profiles !== null &&
-      typeof doc.llm_credentials === "object" &&
-      doc.llm_credentials !== null &&
       typeof doc.runtime === "object" &&
       doc.runtime !== null &&
       typeof doc.imagegen_credentials === "object" &&
-      doc.imagegen_credentials !== null
+      doc.imagegen_credentials !== null &&
+      typeof doc.imagegen_runtime === "object" &&
+      doc.imagegen_runtime !== null
     )
   }
   if (frame.type !== "admin_room_config") return false

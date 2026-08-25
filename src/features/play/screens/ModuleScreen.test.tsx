@@ -289,7 +289,12 @@ describe("ModuleScreen — community packs", () => {
     const frame = sent
       .filter((item: unknown) => (item as { kind?: string }).kind === "module_prompt")
       .at(-1) as Record<string, unknown>
-    expect(JSON.parse(frame.description as string)).toEqual({ idea: "", mode: "suggest" })
+    expect(JSON.parse(frame.description as string)).toEqual({
+      idea: "",
+      mode: "suggest",
+      rule_strategy: "",
+      room_system: "",
+    })
     expect(button).toBeDisabled()
 
     act(() => {
@@ -324,8 +329,36 @@ describe("ModuleScreen — community packs", () => {
     expect(JSON.parse(frame.description as string)).toEqual({
       idea: "A haunted railway station",
       mode: "rewrite",
+      rule_strategy: "",
+      room_system: "",
     })
     expect(sent.some((item) => (item as { kind?: string }).kind === "module")).toBe(false)
+  })
+
+  it("passes the selected room rule strategy to the prompt assistant", async () => {
+    const user = userEvent.setup()
+    useSessionStore.setState({
+      game: {
+        type: "state",
+        party: [],
+        initiative: [],
+        online: 1,
+        room_system: "coc7",
+      },
+    })
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    await user.click(screen.getByRole("radio", { name: /Complete module pack/ }))
+    await user.selectOptions(screen.getByRole("combobox", { name: "Rule strategy" }), "use:coc7")
+    await user.click(screen.getByRole("button", { name: "Generate story prompt" }))
+
+    const frame = sent
+      .filter((item: unknown) => (item as { kind?: string }).kind === "module_prompt")
+      .at(-1) as Record<string, unknown>
+    expect(JSON.parse(frame.description as string)).toMatchObject({
+      rule_strategy: "use:coc7",
+      room_system: "coc7",
+    })
   })
 
   it("names the room system in the follow option", async () => {

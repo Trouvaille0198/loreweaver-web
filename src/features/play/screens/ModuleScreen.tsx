@@ -50,7 +50,7 @@ function poolCategoryLabel(t: PoolT, key: string): string {
   return t(`play.module.poolCategories.${key}`, { defaultValue: key })
 }
 
-const POOL_CHIP_FIELDS: readonly string[] = ["role", "focus", "type"]
+const POOL_CHIP_FIELDS: readonly string[] = ["role", "focus", "type", "kind"]
 
 // One analyzed pool entry (a scene, NPC, clue, …): name + chips header, description body, and
 // every remaining field as a labeled meta line. Data-driven on purpose — the analysis schema
@@ -177,6 +177,7 @@ const POOL_GROUPS: ReadonlyArray<readonly [string, readonly string[]]> = [
   ["scenes", ["scenes"]],
   ["npcs", ["npcs"]],
   ["clues", ["clues"]],
+  ["items", ["items"]],
   ["timeline", ["timeline"]],
   ["truthsThreats", ["truths", "threats"]],
 ]
@@ -781,7 +782,7 @@ export default function ModuleScreen({
               variant="secondary"
               loading={modulePromptBusy}
               disabled={modulePromptBusy}
-              onClick={() => generateModulePrompt(description)}
+              onClick={() => generateModulePrompt(description, { ruleStrategy, roomSystem: roomSystemId })}
             >
               {modulePromptBusy ? t("play.module.promptBusy") : t("play.module.promptAssist")}
             </Button>
