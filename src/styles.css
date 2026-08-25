@@ -632,6 +632,14 @@ body {
   margin-bottom: 4px;
 }
 
+/* Keeper-only: a reply carrying a discarded pre-tool narration draft. Right-click
+ * opens it (players never see the flag — the server never sends them the draft). */
+.log-entry.has-draft .entry-speaker .draft-mark {
+  color: var(--lw-accent, var(--ink-dim));
+  font-size: 9px;
+  line-height: 1;
+}
+
 .log-media-img {
   display: block;
   max-width: 100%;
@@ -1218,69 +1226,85 @@ body {
 
 /* ---- Desk column: freely reorderable cards ---- */
 
+/* The grip rail lives inside each card's own right padding band (cards keep
+   ≥12px there), so the handle costs no card width, adds no gap beside the
+   pane, and never touches content. The card body stays selectable. */
 .desk-slot {
   position: relative;
 }
 
-/* The grip handle: the only element that starts a drag. It sits top-right of
-   each card, appears on hover, and leaves the card body free so its text can
-   still be selected and copied. */
 .desk-slot-grip {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  min-width: 28px;
-  height: 34px;
-  min-height: 34px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  /* Above the card box: the rail shares pixels with the card's right padding
+     band, and the card would otherwise swallow the pointer events. */
+  z-index: 1;
   padding: 0;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--bg-inset) 68%, transparent);
+  border: 0;
+  background: transparent;
   color: var(--ink-faint);
   cursor: grab;
-  opacity: 0.42;
+  opacity: 0.45;
   transition:
     opacity 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease;
+    color 120ms ease;
+}
+
+.desk-slot-grip-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  background-image: radial-gradient(circle, currentColor 1.2px, transparent 1.4px);
+  background-size: 4px 5px;
+  background-position: center;
 }
 
 .desk-slot:hover .desk-slot-grip,
 .desk-slot-grip:focus-visible {
-  opacity: 0.82;
-}
-
-.desk-slot-grip:hover {
   opacity: 1;
+}
+
+.desk-slot-grip:hover,
+.desk-slot-grip:focus-visible {
   color: var(--ink);
-  border-color: var(--border);
 }
 
-.desk-slot-grip-icon {
-  width: 14px;
-  height: 20px;
-  background-image: radial-gradient(circle, currentColor 1.4px, transparent 1.6px);
-  background-position: 0 0;
-  background-size: 7px 7px;
+/* A full-height outline around a 12px rail reads as a glitch; keyboard focus
+   lights the dots themselves instead (still a clearly visible focus state). */
+.desk-slot-grip:focus-visible {
+  outline: none;
 }
 
-/* The grip owns a narrow rail at the right of every card header. */
-.desk-sortable .desk-title {
-  padding-right: 38px;
+.desk-slot-grip:focus-visible .desk-slot-grip-icon {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 2px;
 }
 
-/* Dragging marks the source in place; cards never lift or shuffle mid-drag. */
-.desk-slot.is-dragging {
-  cursor: grabbing;
+/* No drag rail without a fine pointer — touch scrolls the desk instead. */
+@media (pointer: coarse) {
+  .desk-slot-grip {
+    display: none;
+  }
 }
 
-.desk-slot.is-dragging .desk-card {
-  border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
-  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 75%, transparent);
+/* While sorting, slots glide through the stack (translate-only live
+   reorder). The DOM order commits once, on release, so the drop itself
+   never animates a second time. */
+.desk-sortable.is-sorting .desk-slot {
+  transition: transform 180ms var(--ease-out);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-sortable.is-sorting .desk-slot {
+    transition: none;
+  }
 }
 
 .desk-sortable.is-sorting {
@@ -1288,27 +1312,17 @@ body {
   user-select: none;
 }
 
-/* One insertion edge moves through the fixed stack. The actual DOM order is
-   committed only on pointer-up. */
-.desk-slot.drop-before::before,
-.desk-slot.drop-after::after {
-  content: "";
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
-  z-index: 3;
+/* The dragged card leads with the accent edge; its slot translates through
+   the stack while the others part around it. */
+.desk-slot.is-dragging {
+  z-index: 2;
 }
 
-.desk-slot.drop-before::before {
-  top: -6px;
-}
-
-.desk-slot.drop-after::after {
-  bottom: -6px;
+.desk-slot.is-dragging .desk-card {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+  box-shadow:
+    var(--shadow-md),
+    inset 3px 0 0 color-mix(in srgb, var(--accent) 75%, transparent);
 }
 
 .desk-order-reset {
@@ -1336,7 +1350,7 @@ body {
   flex-wrap: wrap;
   gap: 3px 12px;
   margin: 6px 0 0;
-  font: 11px/1.4 var(--font-mono);
+  font: 12px/1.5 var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--ink-faint);
 }
@@ -1346,14 +1360,14 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  font: 600 11px/1.3 var(--font-ui);
-  letter-spacing: 0.08em;
+  font: 600 13px/1.35 var(--font-ui);
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--ink-dim);
 }
 
 .desk-tag {
-  font: 10px/1.4 var(--font-ui);
+  font: 11px/1.4 var(--font-ui);
   letter-spacing: normal;
   text-transform: none;
   color: var(--ink-faint);
@@ -1381,8 +1395,8 @@ body {
 }
 
 .attr-key {
-  font: 9px/1 var(--font-ui);
-  letter-spacing: 0.06em;
+  font: 11px/1.3 var(--font-ui);
+  letter-spacing: 0.02em;
   color: var(--ink-dim);
   text-transform: uppercase;
   overflow: hidden;
@@ -1403,8 +1417,8 @@ body {
   background: none;
   border: none;
   color: var(--ink-dim);
-  font: 600 11px/1.4 var(--font-ui);
-  letter-spacing: 0.06em;
+  font: 600 12px/1.4 var(--font-ui);
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   padding: 4px 2px;
   cursor: pointer;
@@ -1414,6 +1428,16 @@ body {
 .skills-fold-toggle:hover {
   color: var(--ink);
   background: var(--bg-inset);
+}
+
+/* Outranks the later-loaded ui-button chrome: a small quiet disclosure, not a full-size button. */
+.session .desk-pane .skills-fold-toggle {
+  min-height: 26px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
 }
 
 .skills-fold-caret {
@@ -1438,7 +1462,7 @@ body {
 }
 
 .skill-name {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-dim);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1446,7 +1470,7 @@ body {
 }
 
 .skill-value {
-  font: 600 12px/1 var(--font-mono);
+  font: 600 13px/1.3 var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   flex-shrink: 0;
@@ -1465,7 +1489,7 @@ body {
   grid-template-columns: auto minmax(40px, 1fr) auto;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .meter-label {
@@ -1491,7 +1515,7 @@ body {
 }
 
 .meter-value {
-  font: 11px/1 var(--font-mono);
+  font: 12px/1.3 var(--font-mono);
   color: var(--ink-dim);
 }
 
@@ -1518,7 +1542,7 @@ body {
 }
 
 .chip {
-  font-size: 10px;
+  font-size: 11px;
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1px 6px;
@@ -1548,7 +1572,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .clue-list {
@@ -1566,7 +1590,7 @@ body {
   gap: 2px;
   padding: 6px 8px;
   border-left: 2px solid var(--border-soft);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .clue-title {
@@ -1622,7 +1646,7 @@ body {
   flex-wrap: wrap;
   min-width: 0;
   color: var(--ink-faint);
-  font: 11px/1.25 var(--font-ui);
+  font: 12px/1.4 var(--font-ui);
 }
 
 .party-controller-name {
@@ -1652,6 +1676,14 @@ body {
   min-width: 0;
   flex-direction: column;
   gap: 2px;
+}
+
+/* Status chip + switch button on a held-but-inactive pregen row. */
+.pregen-row-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
 }
 
 .pregen-row .party-name {
@@ -2796,7 +2828,7 @@ body {
   text-align: left;
 }
 
-.module-source-select > .ui-button-label {
+.module-source-select>.ui-button-label {
   align-items: stretch;
   flex-direction: column;
   gap: var(--space-1);
@@ -4414,7 +4446,7 @@ code {
 .session .desk-pane .character-card .desk-title {
   align-items: center;
   justify-content: flex-start;
-  font-size: 17px;
+  font-size: 16px;
   letter-spacing: 0.01em;
   text-transform: none;
   color: var(--ink);
@@ -4471,7 +4503,7 @@ code {
 
 .session .desk-pane .variables-card .desk-title {
   letter-spacing: 0;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -4508,7 +4540,7 @@ code {
 }
 
 .session .desk-pane .var-value {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -4668,6 +4700,28 @@ code {
   color: var(--ink);
   font: 700 13px/1.3 var(--font-ui);
   letter-spacing: 0.02em;
+}
+
+/* Release-a-claimed-pregen footer in the character detail modal. */
+.character-modal-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.character-modal-release-warn {
+  margin: 0;
+  color: var(--ink-dim);
+  font: 12px/1.5 var(--font-ui);
+}
+
+.character-modal-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .character-modal-table {

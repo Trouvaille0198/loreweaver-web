@@ -15,7 +15,6 @@ import "../../i18n"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import StatePanel from "./StatePanel"
-import { PACK_CARDS_REPLY_TIMEOUT_MS } from "./timing"
 
 describe("StatePanel", () => {
   beforeEach(() => useSessionStore.getState().clear())
@@ -311,7 +310,7 @@ describe("PregenCard", () => {
     expect(screen.queryByText("Pre-generated cast")).not.toBeInTheDocument()
   })
 
-  it("marks the pregen you are playing and offers switching via the row's context menu", async () => {
+  it("marks the pregen you are playing and offers switching on a held row", async () => {
     useSessionStore.setState({
       game: {
         ...BASE,
@@ -324,28 +323,29 @@ describe("PregenCard", () => {
     })
     render(<StatePanel />)
 
-    // The played pregen is marked active (row style + chip); rows stay free of
-    // inline buttons once claimed — switching lives in the context menu.
+    // The played pregen is marked active (row style + chip) and carries no
+    // button — there is nothing to switch to from itself.
     expect(screen.getByText("白榆生", { selector: ".party-name" }).closest(".party-row")).toHaveClass(
       "is-active",
     )
     expect(screen.getByText("playing")).toBeInTheDocument()
     expect(screen.getByText("yours")).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Switch" })).not.toBeInTheDocument()
 
-    // The active row has nothing to switch to — its menu offers Release only.
+    // A pregen you hold but are not playing shows the switch as a row-level
+    // button — one tap re-claims down the same command path; the engine's
+    // `yours` branch re-activates it with progress untouched.
+    const switchButton = screen.getByRole("button", { name: "Switch" })
+    expect(screen.getByText("陈九鲤", { selector: ".party-name" }).closest(".party-row")).toContainElement(
+      switchButton,
+    )
+    await userEvent.click(switchButton)
+    expect(sent).toContainEqual({ type: "input", text: ".pc claim 陈九鲤" })
+
+    // The active row's context menu offers Release only.
     fireEvent.contextMenu(screen.getByText("白榆生", { selector: ".party-name" }))
     expect(screen.queryByRole("menuitem", { name: "Switch" })).not.toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: "Release" })).toBeInTheDocument()
     await userEvent.keyboard("{Escape}")
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
-
-    // Right-clicking another pregen you hold offers the switch; choosing it
-    // re-claims down the same command path — the engine's `yours` branch
-    // re-activates it with progress untouched — and the menu closes.
-    fireEvent.contextMenu(screen.getByText("陈九鲤", { selector: ".party-name" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Switch" }))
-    expect(sent).toContainEqual({ type: "input", text: ".pc claim 陈九鲤" })
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
   })
 
@@ -423,178 +423,68 @@ describe("PregenCard", () => {
     expect(screen.getByRole("dialog")).toHaveTextContent("A careful observer.")
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
   })
-})
 
-describe("PackImportCard (v2.2)", () => {
-  beforeEach(() => {
-    sent.length = 0
-    useSessionStore.getState().clear()
-    useConnectionStore.setState({
-      status: "online",
-      welcome: {
-        type: "welcome",
-        protocol: "2.1",
-        room: "table",
-        you: { id: "u1", name: "Nyx", role: "player" },
-        locale: "en",
-        server: "loreweaver/1",
-      },
-    })
-  })
-
-  it("requests the card list on open, renders entries, and imports through the chat lane", async () => {
-    render(<StatePanel />)
-
-    // Opening the picker is what asks the server — no request before that.
-    expect(sent).toEqual([])
-    await userEvent.click(screen.getByRole("button", { name: "Browse" }))
-    expect(sent).toEqual([{ type: "list_pack_cards" }])
-    expect(screen.getByText("Fetching the card list…")).toBeInTheDocument()
-
-    // The unicast reply lands in the store; drive it directly (the installed
-    // 2.1.x package validator would drop the frame on a real connection).
-    act(() => {
-      useSessionStore.getState().ingest({
-        type: "pack_cards",
-        cards: [
-          { ref: "midnight-pier/cards/lin_wan.png", pack: "midnight-pier", name: "lin_wan" },
-          { ref: "midnight-pier/cards/chen_jiuli.png", pack: "midnight-pier", name: "chen_jiuli" },
+  it("releases a held pregen from the character detail modal", async () => {
+    useSessionStore.setState({
+      game: {
+        ...BASE,
+        party: [
+          { name: "白榆生", online: true, active: true },
+          { name: "陈九鲤", online: true, active: false },
         ],
-      })
-    })
-
-    expect(screen.getByText("lin_wan")).toBeInTheDocument()
-    expect(screen.getAllByText("midnight-pier")).toHaveLength(2)
-    // The raw ref rides along as the row tooltip.
-    expect(screen.getByText("lin_wan").closest("li")).toHaveAttribute(
-      "title",
-      "midnight-pier/cards/lin_wan.png",
-    )
-
-    await userEvent.click(screen.getAllByRole("button", { name: "Import" })[0])
-    expect(sent).toContainEqual({ type: "input", text: ".import midnight-pier/cards/lin_wan.png pc" })
-  })
-
-  it("stops claiming to load when the server never answers, and retry re-asks", () => {
-    // An older (<2.2) server never sends `pack_cards`; without the timeout the
-    // picker would spin forever on "Fetching the card list…". fireEvent (not
-    // userEvent) on purpose: userEvent's own waiting deadlocks under fake timers.
-    vi.useFakeTimers()
-    try {
-      render(<StatePanel />)
-      fireEvent.click(screen.getByRole("button", { name: "Browse" }))
-      expect(screen.getByText("Fetching the card list…")).toBeInTheDocument()
-
-      act(() => {
-        vi.advanceTimersByTime(PACK_CARDS_REPLY_TIMEOUT_MS)
-      })
-      expect(screen.getByText(/No reply from the server/)).toBeInTheDocument()
-
-      sent.length = 0
-      fireEvent.click(screen.getByRole("button", { name: "Retry" }))
-      expect(sent).toEqual([{ type: "list_pack_cards" }])
-      expect(screen.getByText("Fetching the card list…")).toBeInTheDocument()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it("shows a friendly empty state when no installed pack ships cards", async () => {
-    render(<StatePanel />)
-    await userEvent.click(screen.getByRole("button", { name: "Browse" }))
-    act(() => {
-      useSessionStore.getState().ingest({ type: "pack_cards", cards: [] })
-    })
-    expect(screen.getByText("No installed pack ships character cards.")).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Import" })).not.toBeInTheDocument()
-  })
-
-  it("imports a world card with the WORLD verb when the keeper clicks it", async () => {
-    // The bug: every picker hard-coded `pc`, so the module's own world card was
-    // offered as a character and the import died on a name collision.
-    useConnectionStore.setState({
-      status: "online",
-      welcome: {
-        type: "welcome",
-        protocol: "2.3",
-        room: "table",
-        you: { id: "u1", name: "Nyx", role: "keeper" },
-        locale: "en",
-        server: "loreweaver/1",
+        character: { name: "白榆生", system: "coc7", resources: [], attributes: {}, status_effects: [] },
+        pregens: [
+          { name: "白榆生", claimed_by: "Nyx" },
+          { name: "陈九鲤", claimed_by: "Nyx", blurb: "A careful observer." },
+        ],
       },
     })
     render(<StatePanel />)
-    await userEvent.click(screen.getByRole("button", { name: "Browse" }))
-    act(() => {
-      useSessionStore.getState().ingest({
-        type: "pack_cards",
-        cards: [
-          {
-            ref: "mistwharf/cards/customs.json",
-            pack: "mistwharf",
-            name: "customs",
-            kind: "world",
-          },
-        ],
-      })
-    })
 
-    const row = screen.getByText("customs").closest("li")!
-    expect(within(row).getByText("world card")).toBeInTheDocument()
-    await userEvent.click(within(row).getByRole("button", { name: "Import" }))
-    expect(sent).toContainEqual({ type: "input", text: ".import mistwharf/cards/customs.json world" })
+    const card = screen.getByText("Pre-generated cast").closest("section") as HTMLElement
+    fireEvent.contextMenu(within(card).getByText("陈九鲤", { selector: ".party-name" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "View sheet" }))
+    const dialog = screen.getByRole("dialog")
+
+    // One tap never releases: the footer names the consequence first.
+    await userEvent.click(within(dialog).getByRole("button", { name: "Release" }))
+    expect(sent).toHaveLength(0)
+    expect(within(dialog).getByText(/progress included/)).toBeInTheDocument()
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Release it" }))
+    expect(sent).toContainEqual({ type: "input", text: ".pc release 陈九鲤" })
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 
-  it("offers a player no click on a world card", async () => {
-    useConnectionStore.setState({
-      status: "online",
-      welcome: {
-        type: "welcome",
-        protocol: "2.3",
-        room: "table",
-        you: { id: "u1", name: "Nyx", role: "player" },
-        locale: "en",
-        server: "loreweaver/1",
+  it("switches to a held pregen from the character detail modal", async () => {
+    useSessionStore.setState({
+      game: {
+        ...BASE,
+        party: [
+          { name: "白榆生", online: true, active: true },
+          { name: "陈九鲤", online: true, active: false },
+        ],
+        character: { name: "白榆生", system: "coc7", resources: [], attributes: {}, status_effects: [] },
+        pregens: [
+          { name: "白榆生", claimed_by: "Nyx" },
+          { name: "陈九鲤", claimed_by: "Nyx" },
+        ],
       },
     })
     render(<StatePanel />)
-    await userEvent.click(screen.getByRole("button", { name: "Browse" }))
-    act(() => {
-      useSessionStore.getState().ingest({
-        type: "pack_cards",
-        cards: [
-          {
-            ref: "mistwharf/cards/customs.json",
-            pack: "mistwharf",
-            name: "customs",
-            kind: "world",
-          },
-        ],
-      })
-    })
 
-    const row = screen.getByText("customs").closest("li")!
-    expect(within(row).getByRole("button", { name: "Import" })).toBeDisabled()
-  })
+    // The ACTIVE character's own sheet offers release only — nothing to switch to.
+    fireEvent.doubleClick(screen.getAllByText("白榆生", { selector: ".party-name" })[0])
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Switch" })).not.toBeInTheDocument()
+    fireEvent.keyDown(window, { key: "Escape" })
 
-  it("still sends `pc` for a card whose kind a pre-2.3 server omits", async () => {
-    render(<StatePanel />)
-    await userEvent.click(screen.getByRole("button", { name: "Browse" }))
-    act(() => {
-      useSessionStore.getState().ingest({
-        type: "pack_cards",
-        cards: [{ ref: "harbour/cards/pilot.json", pack: "harbour", name: "pilot" }],
-      })
-    })
-
-    await userEvent.click(screen.getByRole("button", { name: "Import" }))
-    expect(sent).toContainEqual({ type: "input", text: ".import harbour/cards/pilot.json pc" })
-  })
-
-  it("stays hidden while offline", () => {
-    useConnectionStore.setState({ status: "offline", welcome: null })
-    render(<StatePanel />)
-    expect(screen.queryByText("Import from pack")).not.toBeInTheDocument()
+    // A held-but-not-played pregen's sheet offers the switch; the same
+    // `.pc claim` path re-activates it, and the modal closes on click.
+    fireEvent.doubleClick(screen.getAllByText("陈九鲤", { selector: ".party-name" })[0])
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Switch" }))
+    expect(sent).toContainEqual({ type: "input", text: ".pc claim 陈九鲤" })
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 })
 

@@ -1,15 +1,27 @@
-// The desk column as one freely reorderable stack. Every card is a slot;
-// drag a card by its grip handle (⠿) to move it, and the order persists per
-// room in localStorage. Slots with nothing to show are skipped and return to
-// their stored place when their data comes back.
+// The desk column as one freely reorderable stack. Every card is a slot; drag
+// a slot by the grip rail on its right edge to move it, and the order persists
+// per room in localStorage. Slots with nothing to show are skipped and return
+// to their stored place when their data comes back.
 //
-// Only the grip starts a drag — the card body stays freely selectable so the
-// text inside can still be selected and copied. Drag is mouse-driven (pointer
-// events, fine pointers only): the desk column scrolls on touch, and hijacking
-// that for a drag would break the phone drawer. The persisted order still
-// applies to the drawer on every screen.
+// The grip rail is DEDICATED space beside the card, never a floating button
+// over its content — and only the rail starts a drag, so the card body stays
+// freely selectable and copyable. While dragging, the stack parts around the
+// moving card (translate-only live reorder; the DOM order commits once, on
+// release). Drag is fine-pointer driven (mouse/pen): the desk column scrolls
+// on touch, and hijacking that for a drag would break the phone drawer — on
+// coarse pointers the rail is hidden entirely. The persisted order still
+// applies to the drawer on every screen. The rail doubles as the keyboard
+// handle: focus it and move the card with ↑/↓ (Home/End jump to the ends).
 
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react"
 import { useTranslation } from "react-i18next"
 import { Button } from "../../components/ui"
 import { useConnectionStore } from "../../store/connection"
@@ -19,7 +31,6 @@ import {
   CharacterCard,
   ClueCard,
   InitiativeCard,
-  PackImportCard,
   PartyCard,
   PregenCard,
   SceneCard,
@@ -40,7 +51,6 @@ export type DeskSlotId =
   | "initiative"
   | "pregens"
   | "clues"
-  | "packImport"
   | "usage"
 
 const DEFAULT_ORDER: readonly DeskSlotId[] = [
@@ -54,7 +64,6 @@ const DEFAULT_ORDER: readonly DeskSlotId[] = [
   "initiative",
   "pregens",
   "clues",
-  "packImport",
   "usage",
 ]
 
@@ -85,31 +94,69 @@ function writeOrder(room: string, order: DeskSlotId[]): void {
   }
 }
 
-interface DragState {
-  id: DeskSlotId
-  pointerId: number
-  startX: number
-  startY: number
-  moved: boolean
-}
-
-interface DropTarget {
-  id: DeskSlotId
-  edge: "before" | "after"
-}
-
-function moveSlot(order: DeskSlotId[], source: DeskSlotId, target: DropTarget): DeskSlotId[] {
-  if (source === target.id || !order.includes(source) || !order.includes(target.id)) return order
-  const next = order.filter((id) => id !== source)
-  const targetIndex = next.indexOf(target.id)
-  next.splice(targetIndex + (target.edge === "after" ? 1 : 0), 0, source)
+/** Commit a live move: `to` is the dragged slot's index among the OTHER
+ * visible slots. The card lands next to its anchor (the card it now precedes,
+ * or the last one at the end) in the FULL order, so hidden slots keep their
+ * stored places — a card that temporarily disappears still returns where the
+ * user put it. */
+function commitOrder(
+  order: DeskSlotId[],
+  visible: DeskSlotId[],
+  dragged: DeskSlotId,
+  to: number,
+): DeskSlotId[] {
+  const others = visible.filter((id) => id !== dragged)
+  const next = order.filter((id) => id !== dragged)
+  const anchor = to < others.length ? others[to]! : others[others.length - 1]!
+  const anchorIndex = next.indexOf(anchor)
+  next.splice(to < others.length ? anchorIndex : anchorIndex + 1, 0, dragged)
   return next
+}
+
+/** Slot geometry captured at drag start, in scroll-content coordinates so
+ * auto-scrolling during the drag cannot invalidate it. */
+interface DragMetrics {
+  scroller: HTMLElement | null
+  baseTop: number
+  gap: number
+  tops: Map<DeskSlotId, number>
+  heights: Map<DeskSlotId, number>
+  visible: DeskSlotId[]
+  pointerY: number
+}
+
+interface LiveDrag {
+  id: DeskSlotId
+  from: number
+  to: number
+}
+
+/** How far one base row (card + gap) measures. */
+function strideOf(metrics: DragMetrics, baseIndex: number): number {
+  return metrics.heights.get(metrics.visible[baseIndex]!)! + metrics.gap
+}
+
+/** The live-reorder offset of the slot at `baseIndex`: the dragged card glides
+ * across every card it passed, and those cards part by exactly one dragged
+ * height, so the stack always stays a solid column with no hole. */
+function shiftFor(metrics: DragMetrics, live: LiveDrag, baseIndex: number): number {
+  const { from, to } = live
+  if (to === from) return 0
+  if (baseIndex === from) {
+    let span = 0
+    if (to > from) for (let k = from + 1; k <= to; k++) span += strideOf(metrics, k)
+    else for (let k = to; k < from; k++) span += strideOf(metrics, k)
+    return to > from ? span : -span
+  }
+  const displaced = to > from ? baseIndex > from && baseIndex <= to : baseIndex >= to && baseIndex < from
+  if (!displaced) return 0
+  const draggedStride = metrics.heights.get(live.id)! + metrics.gap
+  return to > from ? -draggedStride : draggedStride
 }
 
 export default function DeskColumn() {
   const { t } = useTranslation()
   const room = useConnectionStore((s) => s.welcome?.room ?? "")
-  const online = useConnectionStore((s) => s.status === "online")
   const game = useSessionStore((s) => s.game)
   const uiPanels = useSessionStore((s) => s.uiPanels)
   const manifest = usePanelsStore((s) => s.manifest)
@@ -135,35 +182,137 @@ export default function DeskColumn() {
       initiative: Boolean(game && game.initiative.length > 0),
       pregens: Boolean(game && (game.pregens ?? []).length > 0),
       clues: Boolean(game && (game.clues ?? []).length > 0),
-      packImport: online,
       usage: Boolean(game && game.usage && game.usage.context_window > 0),
     }),
-    [game, uiPanels, manifest, closed, online],
+    [game, uiPanels, manifest, closed],
   )
 
   const visible = order.filter((id) => hasContent[id])
 
   // --- drag reorder (fine pointers only) ---
-  const [dragId, setDragId] = useState<DeskSlotId | null>(null)
-  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
-  const dragRef = useRef<DragState | null>(null)
-  const dropTargetRef = useRef<DropTarget | null>(null)
+  const [drag, setDrag] = useState<LiveDrag | null>(null)
+  const dragRef = useRef<{ id: DeskSlotId; pointerId: number; startX: number; startY: number; moved: boolean } | null>(
+    null,
+  )
+  const liveRef = useRef<LiveDrag | null>(null)
+  const metricsRef = useRef<DragMetrics | null>(null)
   const slotRefs = useRef(new Map<DeskSlotId, HTMLElement>())
-  // Mirror of `order` kept in sync inside the updater, so the drop handler
-  // can persist the final layout without waiting for a render.
+  const stackRef = useRef<HTMLDivElement | null>(null)
+  const rafRef = useRef<number | null>(null)
+  // Mirror of `order` kept in sync inside the updater, so handlers can persist
+  // the final layout without waiting for a render.
   const orderRef = useRef<DeskSlotId[]>(order)
 
-  const applyOrder = (updater: (prev: DeskSlotId[]) => DeskSlotId[]) => {
-    setOrder((prev) => {
-      const next = updater(prev)
-      orderRef.current = next
-      return next
-    })
+  useEffect(() => {
+    // A dropped or unmounted drag must not leave the auto-scroll loop running.
+    const raf = rafRef.current
+    return () => {
+      if (raf !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(raf)
+    }
+  }, [])
+
+  const stopAutoScroll = () => {
+    if (rafRef.current === null) return
+    if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(rafRef.current)
+    else window.clearTimeout(rafRef.current)
+    rafRef.current = null
   }
 
-  const onPointerDown = (event: ReactPointerEvent<HTMLElement>, id: DeskSlotId) => {
-    // Mouse only: touch scrolls the drawer; hijacking it would break the phone.
-    if (event.pointerType !== "mouse" || event.button !== 0) return
+  const cancelDrag = () => {
+    dragRef.current = null
+    liveRef.current = null
+    metricsRef.current = null
+    stopAutoScroll()
+    setDrag(null)
+  }
+
+  /** Snapshot the stack's geometry once, at drag start. */
+  const beginDrag = (id: DeskSlotId): boolean => {
+    const scroller = stackRef.current?.closest<HTMLElement>(".desk-pane") ?? stackRef.current
+    const base = scroller?.getBoundingClientRect()
+    const tops = new Map<DeskSlotId, number>()
+    const heights = new Map<DeskSlotId, number>()
+    for (const slotId of visible) {
+      const el = slotRefs.current.get(slotId)
+      if (!el) return false
+      const rect = el.getBoundingClientRect()
+      tops.set(slotId, rect.top - (base?.top ?? 0))
+      heights.set(slotId, rect.height)
+    }
+    let gap = 12
+    for (let i = 1; i < visible.length; i++) {
+      const measured = tops.get(visible[i]!)! - (tops.get(visible[i - 1]!)! + heights.get(visible[i - 1]!)!)
+      if (measured > 0) {
+        gap = measured
+        break
+      }
+    }
+    metricsRef.current = { scroller, baseTop: base?.top ?? 0, gap, tops, heights, visible, pointerY: 0 }
+    const from = visible.indexOf(id)
+    liveRef.current = { id, from, to: from }
+    setDrag({ id, from, to: from })
+    return true
+  }
+
+  /** Where the pointer falls in the LIVE sequence: the insertion index among
+   * the other cards, judged against their shifted (visual) midpoints. */
+  const hitTest = (clientY: number): number => {
+    const metrics = metricsRef.current
+    const live = liveRef.current
+    if (!metrics || !live) return -1
+    const contentY = clientY - metrics.baseTop + (metrics.scroller?.scrollTop ?? 0)
+    const others = metrics.visible.filter((id) => id !== live.id)
+    for (let i = 0; i < others.length; i++) {
+      const other = others[i]!
+      const top = metrics.tops.get(other)! + shiftFor(metrics, live, metrics.visible.indexOf(other))
+      if (contentY < top + metrics.heights.get(other)! / 2) return i
+    }
+    return others.length
+  }
+
+  const retarget = (clientY: number) => {
+    const metrics = metricsRef.current
+    const live = liveRef.current
+    if (!metrics || !live) return
+    metrics.pointerY = clientY
+    const to = hitTest(clientY)
+    if (to >= 0 && to !== live.to) {
+      live.to = to
+      setDrag({ id: live.id, from: live.from, to })
+    }
+  }
+
+  /** Keep scrolling while the pointer rests near the pane's top or bottom —
+   * long desks must be draggable past the fold. */
+  const maybeAutoScroll = () => {
+    const metrics = metricsRef.current
+    if (!metrics?.scroller) return
+    if (metrics.scroller.scrollHeight - metrics.scroller.clientHeight < 2) return
+    if (rafRef.current !== null) return
+    const EDGE = 44
+    const SPEED = 12
+    const step = () => {
+      rafRef.current = null
+      const current = metricsRef.current
+      if (!current?.scroller) return
+      const rect = current.scroller.getBoundingClientRect()
+      if (current.pointerY < rect.top + EDGE) current.scroller.scrollTop -= SPEED
+      else if (current.pointerY > rect.bottom - EDGE) current.scroller.scrollTop += SPEED
+      else return
+      retarget(current.pointerY)
+      schedule()
+    }
+    const schedule = () => {
+      if (typeof requestAnimationFrame === "function") rafRef.current = requestAnimationFrame(step)
+      else rafRef.current = window.setTimeout(step, 16) as unknown as number
+    }
+    schedule()
+  }
+
+  const onGripPointerDown = (event: ReactPointerEvent<HTMLButtonElement>, id: DeskSlotId) => {
+    // Fine pointers only: touch scrolls the drawer; hijacking it would break
+    // the phone.
+    if ((event.pointerType !== "mouse" && event.pointerType !== "pen") || event.button !== 0) return
     dragRef.current = {
       id,
       pointerId: event.pointerId,
@@ -178,47 +327,60 @@ export default function DeskColumn() {
     }
   }
 
-  const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
-    const drag = dragRef.current
-    if (!drag) return
-    const moved = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >= 5
-    if (!drag.moved && !moved) return
-    if (!drag.moved) {
-      drag.moved = true
-      setDragId(drag.id)
-    }
-    event.preventDefault()
-    // Cards remain fixed while dragging. Only an insertion edge moves, and
-    // the order changes once on release. This avoids the stack repeatedly
-    // jumping under the pointer as the old live-reorder implementation did.
-    const y = event.clientY
-    const candidates = Array.from(slotRefs.current)
-      .filter(([id]) => id !== drag.id)
-      .map(([id, el]) => ({ id, rect: el.getBoundingClientRect() }))
-      .sort((a, b) => a.rect.top - b.rect.top)
-    let nextTarget: DropTarget | null = null
-    for (const candidate of candidates) {
-      if (y < candidate.rect.top + candidate.rect.height / 2) {
-        nextTarget = { id: candidate.id, edge: "before" }
-        break
+  const onGripPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const session = dragRef.current
+    if (!session || event.pointerId !== session.pointerId) return
+    if (!session.moved) {
+      if (Math.hypot(event.clientX - session.startX, event.clientY - session.startY) < 5) return
+      session.moved = true
+      if (!beginDrag(session.id)) {
+        cancelDrag()
+        return
       }
     }
-    if (!nextTarget && candidates.length > 0) {
-      nextTarget = { id: candidates[candidates.length - 1].id, edge: "after" }
+    // The stack changed under the drag (a card appeared or vanished) — the
+    // captured geometry is stale, so abandon the move instead of guessing.
+    const metrics = metricsRef.current
+    if (!metrics || metrics.visible.length !== visible.length || metrics.visible.some((id, i) => id !== visible[i])) {
+      cancelDrag()
+      return
     }
-    dropTargetRef.current = nextTarget
-    setDropTarget(nextTarget)
+    event.preventDefault()
+    retarget(event.clientY)
+    maybeAutoScroll()
   }
 
-  const onPointerEnd = () => {
-    const drag = dragRef.current
-    const target = dropTargetRef.current
+  const onGripPointerEnd = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const session = dragRef.current
+    if (!session || event.pointerId !== session.pointerId) return
     dragRef.current = null
-    dropTargetRef.current = null
-    setDragId(null)
-    setDropTarget(null)
-    if (!drag?.moved || !target) return
-    const next = moveSlot(orderRef.current, drag.id, target)
+    stopAutoScroll()
+    const live = liveRef.current
+    const metrics = metricsRef.current
+    liveRef.current = null
+    metricsRef.current = null
+    setDrag(null)
+    if (!session.moved || !live || !metrics || live.to === live.from) return
+    const next = commitOrder(orderRef.current, metrics.visible, live.id, live.to)
+    orderRef.current = next
+    setOrder(next)
+    if (room) writeOrder(room, next)
+  }
+
+  /** The rail is a keyboard handle too — the drag must not be mouse-only. */
+  const onGripKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, id: DeskSlotId) => {
+    const from = visible.indexOf(id)
+    if (from < 0) return
+    const others = visible.filter((slotId) => slotId !== id)
+    let to: number
+    if (event.key === "ArrowUp") to = Math.max(0, from - 1)
+    else if (event.key === "ArrowDown") to = Math.min(others.length, from + 1)
+    else if (event.key === "Home") to = 0
+    else if (event.key === "End") to = others.length
+    else return
+    event.preventDefault()
+    if (to === from) return
+    const next = commitOrder(orderRef.current, visible, id, to)
     orderRef.current = next
     setOrder(next)
     if (room) writeOrder(room, next)
@@ -227,8 +389,10 @@ export default function DeskColumn() {
   const customized = order.some((id, index) => DEFAULT_ORDER[index] !== id)
 
   const resetOrder = () => {
-    applyOrder(() => [...DEFAULT_ORDER])
-    if (room) writeOrder(room, [...DEFAULT_ORDER])
+    const next = [...DEFAULT_ORDER]
+    orderRef.current = next
+    setOrder(next)
+    if (room) writeOrder(room, next)
   }
 
   const renderSlot = (id: DeskSlotId) => {
@@ -253,42 +417,47 @@ export default function DeskColumn() {
         return game ? <PregenCard game={game} /> : null
       case "clues":
         return game ? <ClueCard game={game} /> : null
-      case "packImport":
-        return <PackImportCard />
       case "usage":
         return game ? <UsageCard game={game} /> : null
     }
   }
 
   return (
-    <div className={`desk-stack desk-sortable${dragId ? " is-sorting" : ""}`}>
-      {visible.map((id) => (
-        <div
-          key={id}
-          ref={(el) => {
-            if (el) slotRefs.current.set(id, el)
-            else slotRefs.current.delete(id)
-          }}
-          className={`desk-slot${id === dragId ? " is-dragging" : ""}${id === dropTarget?.id ? ` drop-${dropTarget.edge}` : ""}`}
-          data-slot={id}
-        >
-          <Button
-            type="button"
-            variant="quiet"
-            size="icon"
-            className="desk-slot-grip"
-            aria-label={t("session.deskGrip")}
-            title={t("session.deskGrip")}
-            onPointerDown={(event) => onPointerDown(event, id)}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerEnd}
-            onPointerCancel={onPointerEnd}
+    <div ref={stackRef} className={`desk-stack desk-sortable${drag ? " is-sorting" : ""}`}>
+      {visible.map((id, baseIndex) => {
+        let style: CSSProperties | undefined
+        if (drag && metricsRef.current) {
+          const shift = shiftFor(metricsRef.current, drag, baseIndex)
+          if (shift !== 0) style = { transform: `translateY(${shift}px)` }
+        }
+        return (
+          <div
+            key={id}
+            ref={(el) => {
+              if (el) slotRefs.current.set(id, el)
+              else slotRefs.current.delete(id)
+            }}
+            className={`desk-slot${id === drag?.id ? " is-dragging" : ""}`}
+            data-slot={id}
+            style={style}
           >
-            <span className="desk-slot-grip-icon" aria-hidden="true" />
-          </Button>
-          {renderSlot(id)}
-        </div>
-      ))}
+            <button
+              type="button"
+              className="desk-slot-grip"
+              aria-label={t("session.deskGrip")}
+              title={t("session.deskGripHint")}
+              onPointerDown={(event) => onGripPointerDown(event, id)}
+              onPointerMove={onGripPointerMove}
+              onPointerUp={onGripPointerEnd}
+              onPointerCancel={onGripPointerEnd}
+              onKeyDown={(event) => onGripKeyDown(event, id)}
+            >
+              <span className="desk-slot-grip-icon" aria-hidden="true" />
+            </button>
+            {renderSlot(id)}
+          </div>
+        )
+      })}
       {customized ? (
         <Button type="button" size="sm" variant="quiet" className="desk-order-reset" onClick={resetOrder}>
           {t("session.deskReset")}

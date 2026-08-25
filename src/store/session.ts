@@ -5,6 +5,7 @@ import type {
   ErrorFrame,
   MediaFrame,
   NarrativeDeltaFrame,
+  NarrativeDraftFrame,
   NarrativeFrame,
   PackCardEntry,
   PresenceFrame,
@@ -52,7 +53,16 @@ export interface PendingEcho {
 }
 
 export type LogEntry =
-  | { seq: number; kind: "narrative"; frame: NarrativeFrame; draft?: boolean }
+  | {
+      seq: number
+      kind: "narrative"
+      frame: NarrativeFrame
+      /** True while this bubble is an OPEN streaming draft. */
+      draft?: boolean
+      /** Keeper-only: the narration a tool round discarded before the dice settled,
+       * attached by the server to this reply's id. Players never receive it. */
+      discardedDraft?: string
+    }
   | { seq: number; kind: "dice"; frame: DiceFrame }
   | { seq: number; kind: "system"; frame: SystemFrame }
   | { seq: number; kind: "ui"; frame: UiFrame }
@@ -109,8 +119,9 @@ interface SessionState {
   /** v2.2 installed-pack card list; `null` until the first `pack_cards` reply,
    * then the (possibly empty) card list. */
   packCards: PackCardEntry[] | null
-  /** Feed one validated server frame into the session. */
-  ingest: (frame: ServerFrame, now?: number) => void
+  /** Feed one validated server frame into the session (the keeper-only
+   * `narrative_draft` rides alongside the published package's `ServerFrame`). */
+  ingest: (frame: ServerFrame | NarrativeDraftFrame, now?: number) => void
   /** Show a line this client just sent, until the table reflects it back.
    * Returns the entry's seq, so the caller can fail it if the send throws. */
   echoLocalInput: (text: string, speaker: string, now?: number) => number
@@ -153,11 +164,31 @@ function ingestNarrative(entries: LogEntry[], frame: NarrativeFrame): LogEntry[]
   if (index !== -1) {
     if (!frame.text) return entries.filter((_, i) => i !== index)
     const next = [...entries]
-    next[index] = { seq: entries[index].seq, kind: "narrative", frame, draft: false }
+    const prior = entries[index]
+    next[index] = {
+      seq: prior.seq,
+      kind: "narrative",
+      frame,
+      draft: false,
+      // A replay/close replacing the line must keep the keeper-side draft already
+      // attached to this id (it arrives as its own `narrative_draft` frame).
+      ...("discardedDraft" in prior && prior.discardedDraft ? { discardedDraft: prior.discardedDraft } : {}),
+    }
     return next
   }
   if (!frame.text) return entries
   return pushEntry(entries, { kind: "narrative", frame, draft: false })
+}
+
+/** Keeper-only: attach a discarded streaming draft to the reply bubble it belongs to. */
+function ingestDraft(entries: LogEntry[], frame: NarrativeDraftFrame): LogEntry[] {
+  const index = entries.findIndex((e) => e.kind === "narrative" && e.frame.id === frame.id)
+  if (index === -1) return entries
+  const entry = entries[index]
+  if (entry.kind !== "narrative") return entries
+  const next = [...entries]
+  next[index] = { ...entry, discardedDraft: frame.text }
+  return next
 }
 
 /** One streaming text delta, accumulated into the draft bubble for its id. */
@@ -279,7 +310,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   uiPanels: [],
   packCards: null,
 
-  ingest: (frame, now = Date.now()) => {
+  ingest: (frame: ServerFrame | NarrativeDraftFrame, now = Date.now()) => {
     switch (frame.type) {
       case "ui":
         if (frame.panel === "sidebar") {
@@ -293,6 +324,11 @@ export const useSessionStore = create<SessionState>((set) => ({
         return
       case "narrative_delta":
         set((s) => ({ entries: ingestDelta(s.entries, frame) }))
+        return
+      case "narrative_draft":
+        // Keeper-only: attach the discarded draft to its reply bubble (no-op for
+        // players — the server never sends this frame to them).
+        set((s) => ({ entries: ingestDraft(s.entries, frame) }))
         return
       case "dice":
         set((s) => ({ entries: pushEntry(s.entries, { kind: "dice", frame }) }))

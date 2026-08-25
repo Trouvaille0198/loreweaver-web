@@ -13,6 +13,17 @@ declare module "@loreweaver/protocol" {
     blurb?: string
   }
 
+  /** v2.4 wire: KEEPER-ONLY discarded streaming draft attached to a KP reply —
+   * the narration a tool round dropped before the dice settled. Players never
+   * receive it (the server filters it at the hub). Mirrored locally because
+   * the published npm protocol predates it. */
+  interface NarrativeDraftFrame {
+    type: "narrative_draft"
+    /** The KP reply's message id this draft belongs to. */
+    id: string
+    text: string
+  }
+
   interface StateFrame {
     /** The room's resolved rule system, distinct from the complete systems list. */
     room_system?: string

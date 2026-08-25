@@ -4,7 +4,6 @@ import {
   stripControlChars,
   type CharacterState,
   type ModuleVariable,
-  type PackCardEntry,
   type ResourceState,
   type StateFrame,
 } from "@loreweaver/protocol"
@@ -16,7 +15,6 @@ import AudioDeck from "./AudioDeck"
 import Avatar from "./Avatar"
 import MediaDeck from "./MediaDeck"
 import Meter, { type MeterTone } from "./Meter"
-import { PACK_CARDS_REPLY_TIMEOUT_MS } from "./timing"
 import { addVarCommand, isWritable, setVarCommand, stepFor } from "./varCommands"
 import UiBlocks from "./UiBlocks"
 import { asCharacterDetails, equippedItemBonuses } from "./characterDetails"
@@ -415,14 +413,23 @@ function PartyCharacterModal({
   member,
   ownCharacter,
   blurb,
+  onSwitch,
+  onRelease,
   onClose,
 }: {
   member: PartyCharacterInfo
   ownCharacter: CharacterState | null
   blurb?: string
+  /** Set when the shown character is a pregen this seat holds but is not
+   * playing — one tap re-points the active-character slot to it. */
+  onSwitch?: () => void
+  /** Set when the shown character is a pregen this seat holds — releases the
+   * claim from the detail view. Destructive, so the footer confirms first. */
+  onRelease?: () => void
   onClose: () => void
 }) {
   const { t } = useTranslation()
+  const [confirmingRelease, setConfirmingRelease] = useState(false)
   const info: PartyCharacterInfo = ownCharacter ? { ...member, ...asCharacterDetails(ownCharacter) } : member
   const attributes = Object.entries(info.attributes ?? {})
   const secondary = Object.entries(info.secondary_attributes ?? {})
@@ -570,6 +577,55 @@ function PartyCharacterModal({
         {!hasExtra && !info.background && !(ownCharacter && info.notes) && !blurb ? (
           <p className="studio-hint">{t("play.character.noDetails")}</p>
         ) : null}
+        {onSwitch || onRelease ? (
+          <footer className="character-modal-actions">
+            {confirmingRelease ? (
+              <>
+                <p className="character-modal-release-warn">
+                  {t("session.pregenReleaseWarn", { name: stripControlChars(info.name) })}
+                </p>
+                <div className="character-modal-action-buttons">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="danger"
+                    autoFocus
+                    onClick={() => {
+                      onRelease?.()
+                      onClose()
+                    }}
+                  >
+                    {t("session.pregenReleaseConfirm")}
+                  </Button>
+                  <Button type="button" size="sm" variant="quiet" onClick={() => setConfirmingRelease(false)}>
+                    {t("session.pregenCancel")}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="character-modal-action-buttons">
+                {onSwitch ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="quiet"
+                    onClick={() => {
+                      onSwitch()
+                      onClose()
+                    }}
+                  >
+                    {t("session.pregenSwitch")}
+                  </Button>
+                ) : null}
+                {onRelease ? (
+                  <Button type="button" size="sm" variant="danger" onClick={() => setConfirmingRelease(true)}>
+                    {t("session.pregenRelease")}
+                  </Button>
+                ) : null}
+              </div>
+            )}
+          </footer>
+        ) : null}
       </section>
     </div>
   )
@@ -577,6 +633,8 @@ function PartyCharacterModal({
 
 export function PartyCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
+  const you = useConnectionStore((s) => s.welcome?.you.name ?? "")
+  const online = useConnectionStore((s) => s.status === "online")
   const [selectedName, setSelectedName] = useState<string | null>(null)
   useEffect(() => {
     if (!selectedName) return
@@ -660,6 +718,16 @@ export function PartyCard({ game }: { game: StateFrame }) {
           member={selected}
           ownCharacter={ownCharacter}
           blurb={selectedPregen?.blurb}
+          onSwitch={
+            selectedPregen && selectedPregen.claimed_by.trim() === you && online && game.character?.name !== selected.name
+              ? () => void transportSend({ type: "input", text: `.pc claim ${selected.name}` }).catch(() => { })
+              : undefined
+          }
+          onRelease={
+            selectedPregen && selectedPregen.claimed_by.trim() === you && online
+              ? () => void transportSend({ type: "input", text: `.pc release ${selected.name}` }).catch(() => { })
+              : undefined
+          }
           onClose={() => setSelectedName(null)}
         />
       ) : null}
@@ -678,7 +746,8 @@ export function PartyCard({ game }: { game: StateFrame }) {
  * first claim and switching between characters you hold. The row's context
  * menu (right-click; long-press on touch) carries everything past the first
  * claim — switching, viewing the sheet, releasing your claim, and the
- * keeper's force-release — so the row itself stays a read-only roster entry. */
+ * keeper's force-release — while the one action that earns a row-level button
+ * is switching back to a pregen you hold but are not playing. */
 export function PregenCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   const you = useConnectionStore((s) => s.welcome?.you.name ?? "")
@@ -792,6 +861,19 @@ export function PregenCard({ game }: { game: StateFrame }) {
                 >
                   {t("session.pregenClaim")}
                 </Button>
+              ) : mine && !active ? (
+                <div className="pregen-row-actions">
+                  <span className="chip">{t("session.pregenYours")}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="quiet"
+                    disabled={!online}
+                    onClick={() => send(`.pc claim ${pregen.name}`)}
+                  >
+                    {t("session.pregenSwitch")}
+                  </Button>
+                </div>
               ) : (
                 <span className="chip">
                   {mine
@@ -897,124 +979,18 @@ export function PregenCard({ game }: { game: StateFrame }) {
           member={viewMember}
           ownCharacter={game.character?.name === viewMember.name ? game.character : null}
           blurb={viewPregen?.blurb}
+          onSwitch={
+            viewPregen && viewPregen.claimed_by.trim() === you && online && viewMember.name !== activeName
+              ? () => send(`.pc claim ${viewMember.name}`)
+              : undefined
+          }
+          onRelease={
+            viewPregen && viewPregen.claimed_by.trim() === you && online
+              ? () => send(`.pc release ${viewMember.name}`)
+              : undefined
+          }
           onClose={() => setViewName(null)}
         />
-      ) : null}
-    </section>
-  )
-}
-
-/** One importable card row: name + owning pack, the raw ref as tooltip.
- * Importing goes through the ordinary command path, the same lane the chat box
- * uses — the server's own gates keep applying no matter how the ref was
- * discovered.
- *
- * The VERB comes from the card's own kind (protocol 2.3). Every client used to
- * hard-code `pc`, so clicking a module's world card asked the server to build a
- * player character out of a module and failed on a name collision. A world card
- * is module machinery: keeper-only, and it lands through `.import <ref> world`. */
-function PackCardRow({
-  card,
-  online,
-  isKeeper,
-}: {
-  card: PackCardEntry
-  online: boolean
-  isKeeper: boolean
-}) {
-  const { t } = useTranslation()
-  const world = card.kind === "world"
-  const locked = world && !isKeeper
-  return (
-    <li className="party-row" title={card.ref}>
-      <span className="party-name">{stripControlChars(card.name)}</span>
-      <span className="desk-tag">{stripControlChars(card.pack)}</span>
-      {world ? <span className="desk-tag">{t("session.packImportWorld")}</span> : null}
-      <Button
-        type="button"
-        size="sm"
-        variant="quiet"
-        disabled={!online || locked}
-        title={locked ? t("session.packImportKeeperOnly") : undefined}
-        onClick={() => {
-          const verb = world ? "world" : "pc"
-          void transportSend({ type: "input", text: `.import ${card.ref} ${verb}` }).catch(() => {
-            // The transport surfaces failures through status events.
-          })
-        }}
-      >
-        {t("session.packImportAction")}
-      </Button>
-    </li>
-  )
-}
-
-/** v2.2 "import from installed pack" picker: opening it asks the server for
- * the card files installed packs ship (`list_pack_cards`), so a player never
- * types a path. `packCards === null` means no reply yet. */
-export function PackImportCard() {
-  const { t } = useTranslation()
-  const online = useConnectionStore((s) => s.status === "online")
-  const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
-  const packCards = useSessionStore((s) => s.packCards)
-  const requestPackCards = useSessionStore((s) => s.requestPackCards)
-  const [open, setOpen] = useState(false)
-  const [timedOut, setTimedOut] = useState(false)
-  const waiting = open && packCards === null && !timedOut
-  useEffect(() => {
-    if (!waiting) return
-    const timer = window.setTimeout(() => setTimedOut(true), PACK_CARDS_REPLY_TIMEOUT_MS)
-    return () => window.clearTimeout(timer)
-  }, [waiting])
-  if (!online && !open) return null
-  return (
-    <section className="desk-card">
-      <header className="desk-title">
-        {t("session.packImport")}
-        <Button
-          type="button"
-          size="sm"
-          variant="quiet"
-          onClick={() => {
-            if (!open) {
-              setTimedOut(false)
-              requestPackCards()
-            }
-            setOpen(!open)
-          }}
-        >
-          {t(open ? "session.packImportClose" : "session.packImportBrowse")}
-        </Button>
-      </header>
-      {open ? (
-        packCards === null ? (
-          timedOut ? (
-            <p className="studio-hint">
-              {t("session.packImportTimeout")}{" "}
-              <Button
-                type="button"
-                size="sm"
-                variant="quiet"
-                onClick={() => {
-                  setTimedOut(false)
-                  requestPackCards()
-                }}
-              >
-                {t("session.packImportRetry")}
-              </Button>
-            </p>
-          ) : (
-            <p className="studio-hint">{t("session.packImportLoading")}</p>
-          )
-        ) : packCards.length === 0 ? (
-          <p className="studio-hint">{t("session.packImportEmpty")}</p>
-        ) : (
-          <ul className="party-list">
-            {packCards.map((card) => (
-              <PackCardRow key={card.ref} card={card} online={online} isKeeper={isKeeper} />
-            ))}
-          </ul>
-        )
       ) : null}
     </section>
   )
@@ -1169,7 +1145,6 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
         {game ? <VariablesCard game={game} /> : null}
         {game ? <InitiativeCard game={game} /> : null}
         {game ? <PregenCard game={game} /> : null}
-        <PackImportCard />
         {game ? <UsageCard game={game} /> : null}
       </div>
     )
@@ -1181,7 +1156,6 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
       {game ? <VariablesCard game={game} /> : null}
       {game ? <PartyCard game={game} /> : null}
       {game ? <PregenCard game={game} /> : null}
-      <PackImportCard />
       {game ? <SceneCard game={game} /> : null}
       {game ? <InitiativeCard game={game} /> : null}
       <PresenceCard />

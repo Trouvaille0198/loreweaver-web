@@ -75,14 +75,13 @@ describe("DeskColumn", () => {
   it("renders the cards in the default order, skipping empty slots", () => {
     render(<DeskColumn />)
     // sidebar/tray/uiPanels/pregens have no data here — the rest follow the
-    // default order with packImport and usage in their slots.
+    // default order with usage in its slot.
     expect(domOrder()).toEqual([
       "character",
       "party",
       "scene",
       "trackers",
       "initiative",
-      "packImport",
       "usage",
     ])
     expect(screen.queryByRole("button", { name: "Reset order" })).not.toBeInTheDocument()
@@ -100,17 +99,20 @@ describe("DeskColumn", () => {
     // Move into the upper half of the party slot (index 1 → y 100..180).
     fireEvent.pointerMove(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 110 })
 
-    // Dragging only moves the insertion marker. Cards remain fixed until drop.
+    // While dragging the DOM order is untouched — the reorder is expressed as
+    // translations only. Usage glides four rows up (4 × 100px stride), and the
+    // four cards it passes each part by one usage height (80px + 20px gap).
     expect(domOrder()).toEqual([
       "character",
       "party",
       "scene",
       "trackers",
       "initiative",
-      "packImport",
       "usage",
     ])
-    expect(document.querySelector('[data-slot="party"]')).toHaveClass("drop-before")
+    expect(usage!.style.transform).toBe("translateY(-400px)")
+    const party = document.querySelector<HTMLElement>('[data-slot="party"]')!
+    expect(party.style.transform).toBe("translateY(100px)")
 
     fireEvent.pointerUp(grip, { pointerType: "mouse", pointerId: 1, clientX: 10, clientY: 110 })
 
@@ -124,7 +126,6 @@ describe("DeskColumn", () => {
       "scene",
       "trackers",
       "initiative",
-      "packImport",
     ])
     expect(localStorage.getItem("lw-desk-order:r1")).toBe(
       JSON.stringify([
@@ -138,9 +139,41 @@ describe("DeskColumn", () => {
         "trackers",
         "initiative",
         "pregens",
-        "packImport",
+        "clues",
       ]),
     )
+  })
+
+  it("moves a card by keyboard from the grip, and persists the order", () => {
+    render(<DeskColumn />)
+    const usage = document.querySelector<HTMLElement>('[data-slot="usage"]')!
+    const grip = gripOf(usage)
+    grip.focus()
+
+    // ↑ moves the card one slot up (it lands between trackers and initiative).
+    fireEvent.keyDown(grip, { key: "ArrowUp" })
+    expect(domOrder()).toEqual(["character", "party", "scene", "trackers", "usage", "initiative"])
+    expect(localStorage.getItem("lw-desk-order:r1")).toBe(
+      JSON.stringify([
+        "character",
+        "party",
+        "sidebar",
+        "tray",
+        "scene",
+        "uiPanels",
+        "trackers",
+        "usage",
+        "initiative",
+        "pregens",
+        "clues",
+      ]),
+    )
+
+    // Home/End jump to the ends of the stack.
+    fireEvent.keyDown(grip, { key: "Home" })
+    expect(domOrder()[0]).toBe("usage")
+    fireEvent.keyDown(grip, { key: "End" })
+    expect(domOrder().at(-1)).toBe("usage")
   })
 
   it("keeps the custom order across remounts, and resets it back to default", () => {
@@ -168,7 +201,6 @@ describe("DeskColumn", () => {
       "scene",
       "trackers",
       "initiative",
-      "packImport",
       "usage",
     ])
     expect(localStorage.getItem("lw-desk-order:r1")).toBe(
@@ -182,22 +214,16 @@ describe("DeskColumn", () => {
         "trackers",
         "initiative",
         "pregens",
-        "packImport",
+        "clues",
         "usage",
       ]),
     )
   })
 
-  it("only the grip starts a drag — the card body and its controls do not", () => {
+  it("only the grip starts a drag — the card body does not", () => {
     render(<DeskColumn />)
-    const slot = document.querySelector<HTMLElement>('[data-slot="packImport"]')!
+    const slot = document.querySelector<HTMLElement>('[data-slot="party"]')!
     const before = domOrder()
-
-    // Pressing a control inside the card must not begin a drag.
-    const browse = screen.getByRole("button", { name: /browse/i })
-    fireEvent.pointerDown(browse, { pointerType: "mouse", button: 0, pointerId: 2, clientX: 10, clientY: 10 })
-    fireEvent.pointerMove(browse, { pointerType: "mouse", pointerId: 2, clientX: 10, clientY: 500 })
-    fireEvent.pointerUp(browse, { pointerType: "mouse", pointerId: 2, clientX: 10, clientY: 500 })
 
     // Pressing the card body (its text) must not begin a drag either — that is
     // what keeps the text inside selectable and copyable.

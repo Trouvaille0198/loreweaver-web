@@ -80,3 +80,15 @@ describe("additive web transport frames", () => {
     expect(parseAdditiveServerFrame(JSON.stringify({ type: "presence", players: [], online: 0 }))).toBeNull()
   })
 })
+
+
+describe("narrative_draft additive frame", () => {
+  it("accepts a keeper-only discarded draft and rejects malformed ones", () => {
+    expect(
+      parseAdditiveServerFrame(JSON.stringify({ type: "narrative_draft", id: "r1", text: "美咲的刀锋。" })),
+    ).toMatchObject({ type: "narrative_draft", id: "r1" })
+    expect(isAdditiveServerFrame({ type: "narrative_draft", id: "r1", text: "" })).toBe(true)
+    expect(isAdditiveServerFrame({ type: "narrative_draft", id: "r1" })).toBe(false) // no text
+    expect(isAdditiveServerFrame({ type: "narrative_draft", text: "x" })).toBe(false) // no id
+  })
+})

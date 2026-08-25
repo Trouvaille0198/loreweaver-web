@@ -1,5 +1,5 @@
 // The connection status pill. While a room presence frame is known, the pill
-// becomes a button: it shows the online count inline ("· 3 online") and opens
+// becomes a button: it shows the online count inline ("3 online") and opens
 // a popover listing every member with their online/offline state — one glance
 // answers "who is at the table right now". Without presence data it stays a
 // plain static pill (the connect card, pre-welcome).
@@ -39,14 +39,15 @@ export default function StatusPill() {
     }
   }, [open])
 
+  // While the count is shown it alone carries the "online" wording.
+  const onlineCount = status === "online" && presence && presence.online > 0 ? presence.online : null
+
   const label = (
     <>
       <span className="status-dot" aria-hidden="true" />
-      {t(`connect.status.${status}`)}
+      {onlineCount === null ? t(`connect.status.${status}`) : null}
       {status === "reconnecting" && attempt > 0 ? ` (${t("connect.attempt", { n: attempt })})` : null}
-      {status === "online" && presence && presence.online > 0
-        ? ` · ${t("session.online", { n: presence.online })}`
-        : null}
+      {onlineCount === null ? null : t("session.online", { n: onlineCount })}
     </>
   )
 

@@ -113,16 +113,6 @@
     "pregenReleaseConfirm": "Release it",
     "pregenForceConfirm": "Release it",
     "pregenCancel": "Cancel",
-    "packImport": "Import from pack",
-    "packImportBrowse": "Browse",
-    "packImportClose": "Close",
-    "packImportLoading": "Fetching the card list…",
-    "packImportTimeout": "No reply from the server — it may predate protocol 2.2.",
-    "packImportRetry": "Retry",
-    "packImportEmpty": "No installed pack ships character cards.",
-    "packImportAction": "Import",
-    "packImportWorld": "world card",
-    "packImportKeeperOnly": "Module machinery — the keeper imports this one.",
     "varEdit": "Write",
     "varEditDone": "Done",
     "varEditHint": "These go through the ordinary `.var set` / `.var add` commands, so the engine validates every value against the variable's own spec — bounds, options, and all — and the table sees the change immediately.",
@@ -144,6 +134,7 @@
     "quickMenuEmpty": "No matching commands",
     "deskReset": "Reset order",
     "deskGrip": "Drag to reorder",
+    "deskGripHint": "Drag along the right edge to reorder; focus and use ↑ ↓ to move",
     "clues": "Discovered clues"
   },
   "panels": {
@@ -178,7 +169,10 @@
     "media": "Image",
     "mediaFailed": "Image could not be loaded.",
     "mediaPrompt": "Hover the image to see the prompt",
-    "mediaPromptTitle": "Prompt: {{prompt}}"
+    "mediaPromptTitle": "Prompt: {{prompt}}",
+    "draftTitle": "Discarded narration draft",
+    "draftClose": "Close",
+    "draftHint": "This reply has a discarded pre-tool draft — right-click to review it."
   },
   "play": {
     "back": "Back to the table",

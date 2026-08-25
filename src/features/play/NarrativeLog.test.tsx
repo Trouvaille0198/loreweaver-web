@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import "../../i18n"
+import { useConnectionStore } from "../../store/connection"
 import { PENDING_ECHO_TIMEOUT_MS, useSessionStore } from "../../store/session"
 import NarrativeLog from "./NarrativeLog"
 import { ECHO_SWEEP_MS } from "./timing"
@@ -170,5 +171,43 @@ describe("NarrativeLog", () => {
     const notice = container.querySelector(".system-line")
     expect(notice?.className).toContain("level-info")
     expect(notice?.className).not.toContain("level-error")
+  })
+})
+
+
+describe("NarrativeLog discarded draft (keeper-only)", () => {
+  beforeEach(() => {
+    useSessionStore.getState().clear()
+  })
+
+  it("lets a keeper right-click a reply to review its discarded pre-tool draft", () => {
+    useConnectionStore.setState({
+      status: "online",
+      welcome: { you: { id: "k1", name: "Keeper", role: "keeper" } } as never,
+    })
+    ingest({ type: "narrative", id: "r1", speaker: "kp", text: "骰子落定：突袭失败。", format: "markdown" })
+    ingest({ type: "narrative_draft", id: "r1", text: "美咲的刀锋抵上岩本的喉咙，血珠顺着刀刃滑落。" })
+
+    render(<NarrativeLog />)
+
+    fireEvent.contextMenu(screen.getByText("骰子落定：突袭失败。"))
+    expect(screen.getByRole("dialog")).toHaveTextContent("美咲的刀锋抵上岩本的喉咙")
+    fireEvent.click(screen.getByRole("button", { name: "Close" }))
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
+  it("does nothing on right-click for a player (no draft surface at all)", () => {
+    useConnectionStore.setState({
+      status: "online",
+      welcome: { you: { id: "p1", name: "Nora", role: "player" } } as never,
+    })
+    ingest({ type: "narrative", id: "r2", speaker: "kp", text: "骰子落定：突袭失败。", format: "markdown" })
+
+    render(<NarrativeLog />)
+
+    fireEvent.contextMenu(screen.getByText("骰子落定：突袭失败。"))
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    // No draft marker on the bubble either.
+    expect(document.querySelector(".draft-mark")).toBeNull()
   })
 })

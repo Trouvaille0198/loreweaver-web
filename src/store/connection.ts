@@ -158,7 +158,13 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     // (which disarms its join deadline) and announced `online`, so staying
     // quiet would leave the app online with no room and nothing to show for it.
     if (isAdditiveServerFrame(frame)) {
-      useAdminStore.getState().ingest(frame)
+      // Keeper-only discarded drafts belong to the chronicle (attached to their
+      // reply bubble), not the admin store — everything else additive is admin.
+      if (frame.type === "narrative_draft") {
+        useSessionStore.getState().ingest(frame)
+      } else {
+        useAdminStore.getState().ingest(frame)
+      }
       return
     }
     if (!isServerFrame(frame)) {
