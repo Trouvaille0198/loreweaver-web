@@ -436,7 +436,7 @@
       "packPregens": "可认领调查员",
       "packRulepacks": "规则体系",
       "packSkills": "KP 技能",
-      "packItems": "线索",
+      "packItems": "物品",
       "itemScopeUniversal": "通用",
       "itemScopeModule": "剧情",
       "itemOrigin": "来源",
@@ -472,7 +472,7 @@
         "summary": "摘要",
         "threats": "威胁",
         "opening_facts": "开场事实",
-        "items": "线索"
+        "items": "物品"
       },
       "poolFields": {
         "name": "名称",
@@ -503,7 +503,7 @@
         "timeline": "时间线",
         "truthsThreats": "真相与威胁",
         "media": "配图",
-        "items": "线索"
+        "items": "物品"
       },
       "generating": "正在生成…"
     },
@@ -813,7 +813,7 @@
       "image": "生成图片发到房间",
       "image.scene": "生成当前场景图",
       "image.portrait": "生成当前角色肖像图",
-      "image.item": "生成线索图",
+      "image.item": "生成物品图",
       "image.combat": "生成当前战斗图",
       "import": "导入卡牌",
       "init": "先攻",

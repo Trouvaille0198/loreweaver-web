@@ -436,7 +436,7 @@
       "packPregens": "Claimable investigators",
       "packRulepacks": "Rule systems",
       "packSkills": "KP skills",
-      "packItems": "Clues",
+      "packItems": "Items",
       "itemScopeUniversal": "Universal",
       "itemScopeModule": "Module-bound",
       "itemOrigin": "Origin",
@@ -472,7 +472,7 @@
         "summary": "Summary",
         "threats": "Threats",
         "opening_facts": "Opening facts",
-        "items": "Clues"
+        "items": "Items"
       },
       "poolFields": {
         "name": "Name",
@@ -503,7 +503,7 @@
         "timeline": "Timeline",
         "truthsThreats": "Truths & threats",
         "media": "Illustrations",
-        "items": "Clues"
+        "items": "Items"
       },
       "generating": "Generating…"
     },
@@ -813,7 +813,7 @@
       "image": "Generate an image to the room",
       "image.scene": "Generate the current scene image",
       "image.portrait": "Generate the current character portrait",
-      "image.item": "Generate a clue image",
+      "image.item": "Generate an item image",
       "image.combat": "Generate the current combat image",
       "import": "Import a card",
       "init": "Initiative",
