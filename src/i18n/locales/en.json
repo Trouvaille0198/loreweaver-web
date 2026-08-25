@@ -437,6 +437,8 @@
       "packRulepacks": "Rule systems",
       "packSkills": "KP skills",
       "packItems": "Designed items",
+      "itemScopeUniversal": "Universal",
+      "itemScopeModule": "Module-bound",
       "itemOrigin": "Origin",
       "itemSlot": "Slot",
       "packMedia": "Illustrations",

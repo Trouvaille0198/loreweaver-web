@@ -437,6 +437,8 @@
       "packRulepacks": "规则体系",
       "packSkills": "KP 技能",
       "packItems": "设计物品",
+      "itemScopeUniversal": "通用",
+      "itemScopeModule": "剧情",
       "itemOrigin": "来源",
       "itemSlot": "槽位",
       "packMedia": "配图",

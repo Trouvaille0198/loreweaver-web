@@ -100,6 +100,7 @@ export interface ModuleDetail {
     name: string
     kind?: string
     slot?: string
+    scope?: string
     description?: string
     effect?: string
     lore?: string
@@ -328,6 +329,7 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
           name: String(item.name ?? ""),
           kind: typeof item.kind === "string" ? item.kind : undefined,
           slot: typeof item.slot === "string" ? item.slot : undefined,
+          scope: typeof item.scope === "string" ? item.scope : undefined,
           description: typeof item.description === "string" ? item.description : undefined,
           effect: typeof item.effect === "string" ? item.effect : undefined,
           lore: typeof item.lore === "string" ? item.lore : undefined,

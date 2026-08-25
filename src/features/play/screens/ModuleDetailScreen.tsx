@@ -236,9 +236,17 @@ function PackDetailView({
               <article className="worldbook-entry" key={`${item.name}-${index}`}>
                 <div className="module-item-head">
                   <strong>{item.name}</strong>
-                  {item.kind || item.slot ? (
+                  {item.kind || item.slot || item.scope ? (
                     <span className="chip">
-                      {[item.kind, item.slot ? `${t("play.module.itemSlot")}: ${item.slot}` : ""]
+                      {[
+                        item.scope === "universal"
+                          ? t("play.module.itemScopeUniversal")
+                          : item.scope === "module"
+                            ? t("play.module.itemScopeModule")
+                            : "",
+                        item.kind,
+                        item.slot ? `${t("play.module.itemSlot")}: ${item.slot}` : "",
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </span>
