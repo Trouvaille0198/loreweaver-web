@@ -228,6 +228,36 @@ function PackDetailView({
         </Surface>
       ) : null}
 
+      {detail.items && detail.items.length > 0 ? (
+        <Surface className="module-detail-card module-detail-content-card" labelledBy="pack-items-title">
+          <SectionHeader titleId="pack-items-title" title={t("play.module.packItems")} />
+          <div className="worldbook-entry-list">
+            {detail.items.map((item, index) => (
+              <article className="worldbook-entry" key={`${item.name}-${index}`}>
+                <div className="module-item-head">
+                  <strong>{item.name}</strong>
+                  {item.kind || item.slot ? (
+                    <span className="chip">
+                      {[item.kind, item.slot ? `${t("play.module.itemSlot")}: ${item.slot}` : ""]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  ) : null}
+                </div>
+                {item.effect ? <p>{item.effect}</p> : null}
+                {item.description ? <p className="studio-hint">{item.description}</p> : null}
+                {item.lore ? <p className="studio-hint">{item.lore}</p> : null}
+                {item.origin ? (
+                  <p className="studio-hint">
+                    {t("play.module.itemOrigin")}: {item.origin}
+                  </p>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        </Surface>
+      ) : null}
+
       {detail.rulepacks && detail.rulepacks.length > 0 ? (
         <Surface
           className="module-detail-card module-detail-content-card module-detail-scroll-card"

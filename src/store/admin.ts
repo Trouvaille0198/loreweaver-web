@@ -95,6 +95,18 @@ export interface ModuleDetail {
   rulepacks?: { name: string; title: string; content: string }[]
   /** A pack's bundled KP skills. */
   skills?: { name: string; content: string }[]
+  /** A pack's designed items (the catalog templates `.item grant` hands out). */
+  items?: {
+    name: string
+    kind?: string
+    slot?: string
+    description?: string
+    effect?: string
+    lore?: string
+    origin?: string
+    quantity?: number
+    bonus?: Record<string, number>
+  }[]
   pool: {
     keeper?: Record<string, unknown>
     player?: Record<string, unknown>

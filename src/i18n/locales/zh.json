@@ -436,6 +436,9 @@
       "packPregens": "可认领调查员",
       "packRulepacks": "规则体系",
       "packSkills": "KP 技能",
+      "packItems": "设计物品",
+      "itemOrigin": "来源",
+      "itemSlot": "槽位",
       "packMedia": "配图",
       "packMediaGroups": {
         "cover": "封面",

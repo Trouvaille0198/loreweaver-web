@@ -436,6 +436,9 @@
       "packPregens": "Claimable investigators",
       "packRulepacks": "Rule systems",
       "packSkills": "KP skills",
+      "packItems": "Designed items",
+      "itemOrigin": "Origin",
+      "itemSlot": "Slot",
       "packMedia": "Illustrations",
       "packMediaGroups": {
         "cover": "Cover",
