@@ -279,6 +279,55 @@ describe("ModuleScreen — community packs", () => {
     })
   })
 
+  it("uses the prompt assistant to fill an empty idea", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => { }} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    const button = screen.getByRole("button", { name: "Generate story prompt" })
+    await user.click(button)
+
+    const frame = sent
+      .filter((item: unknown) => (item as { kind?: string }).kind === "module_prompt")
+      .at(-1) as Record<string, unknown>
+    expect(JSON.parse(frame.description as string)).toEqual({ idea: "", mode: "suggest" })
+    expect(button).toBeDisabled()
+
+    act(() => {
+      useAdminStore.getState().ingest({
+        type: "admin_generated",
+        kind: "module_prompt",
+        ok: true,
+        id: "",
+        name: "",
+        error: "",
+        detail: "A museum clock stops whenever the missing curator is mentioned.",
+        request_id: frame.request_id,
+      } as never)
+    })
+    expect(screen.getByLabelText("Or describe a module for the forge to write")).toHaveValue(
+      "A museum clock stops whenever the missing curator is mentioned.",
+    )
+    expect(screen.getByRole("button", { name: "Generate story prompt" })).not.toBeDisabled()
+  })
+
+  it("rewrites the typed idea through the prompt assistant without installing a module", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => { }} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    const field = screen.getByLabelText("Or describe a module for the forge to write")
+    await user.type(field, "A haunted railway station")
+    await user.click(screen.getByRole("button", { name: "Generate story prompt" }))
+
+    const frame = sent
+      .filter((item: unknown) => (item as { kind?: string }).kind === "module_prompt")
+      .at(-1) as Record<string, unknown>
+    expect(JSON.parse(frame.description as string)).toEqual({
+      idea: "A haunted railway station",
+      mode: "rewrite",
+    })
+    expect(sent.some((item) => (item as { kind?: string }).kind === "module")).toBe(false)
+  })
+
   it("names the room system in the follow option", async () => {
     const user = userEvent.setup()
     useSessionStore.setState({

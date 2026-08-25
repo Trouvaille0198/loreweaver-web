@@ -433,6 +433,10 @@ interface AdminState {
   skills: AdminSkillInfo[]
   rules: AdminRuleInfo[]
   generated: AdminGeneratedFrame | null
+  generatedPrompt: { requestId: string; text: string } | null
+  modulePromptRequestId: string | null
+  modulePromptBusy: boolean
+  modulePromptError: string | null
   generationStage: string | null
   generationDetail: string
   generationKind: "module" | "pack" | null
@@ -513,6 +517,8 @@ interface AdminState {
   listSkills: (locale?: string) => void
   enableSkill: (id: string, on: boolean, locale?: string) => void
   listRules: () => void
+  generateModulePrompt: (description: string) => void
+  clearGeneratedPrompt: (requestId: string) => void
   generateModule: (description: string, options?: GenerateModuleOptions) => void
   generatePackModule: (
     description: string,
@@ -598,6 +604,29 @@ function moduleAction(
   )
 }
 
+function sendModulePrompt(
+  frame: ClientFrame,
+  set: (patch: Partial<AdminState>) => void,
+): void {
+  const deliver = () =>
+    transportSend(frame).catch((cause) => {
+      set({
+        modulePromptBusy: false,
+        modulePromptError: cause instanceof Error ? cause.message : String(cause),
+      })
+    })
+  const { status, welcome } = useConnectionStore.getState()
+  if (welcome !== null || status === "offline") {
+    void deliver()
+    return
+  }
+  const unsubscribe = useConnectionStore.subscribe((state) => {
+    if (state.welcome === null && state.status !== "offline") return
+    unsubscribe()
+    void deliver()
+  })
+}
+
 const EMPTY = {
   config: null,
   modelsProvider: "",
@@ -610,6 +639,10 @@ const EMPTY = {
   skills: [],
   rules: [],
   generated: null,
+  generatedPrompt: null,
+  modulePromptRequestId: null,
+  modulePromptBusy: false,
+  modulePromptError: null,
   generationStage: null,
   generationDetail: "",
   generationKind: null,
@@ -681,6 +714,20 @@ export const useAdminStore = create<AdminState>((set) => ({
         return true
       case "admin_generated": {
         const kind = String(frame.kind)
+        if (kind === "module_prompt") {
+          const rawRequestId = (frame as AdminGeneratedFrame & { request_id?: unknown }).request_id
+          const requestId = typeof rawRequestId === "string" ? rawRequestId : ""
+          const text = frame.ok ? frame.detail.trim() : ""
+          set((state) => {
+            if (requestId !== state.modulePromptRequestId) return state
+            return {
+              generatedPrompt: frame.ok && text ? { requestId, text } : null,
+              modulePromptBusy: false,
+              modulePromptError: frame.ok && text ? null : frame.error || i18n.t("play.module.promptError"),
+            }
+          })
+          return true
+        }
         if (kind.startsWith("module_")) {
           const detail = parseModuleDetail(frame)
           if (kind === "module_list") {
@@ -876,6 +923,29 @@ export const useAdminStore = create<AdminState>((set) => ({
   enableSkill: (id, on, locale) =>
     send({ type: "admin_enable_skill", id, on, ...(locale ? { locale } : {}) }, set),
   listRules: () => send({ type: "admin_list_rules" }, set),
+  generateModulePrompt: (description) => {
+    const requestId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const idea = description.trim()
+    const mode = idea ? "rewrite" : "suggest"
+    set({
+      generatedPrompt: null,
+      modulePromptRequestId: requestId,
+      modulePromptBusy: true,
+      modulePromptError: null,
+    })
+    sendModulePrompt(
+      {
+        type: "admin_generate",
+        kind: "module_prompt",
+        description: JSON.stringify({ idea, mode }),
+        locale: i18n.resolvedLanguage === "zh" ? "zh" : "en",
+        request_id: requestId,
+      } as unknown as ClientFrame,
+      set,
+    )
+  },
+  clearGeneratedPrompt: (requestId) =>
+    set((state) => (state.generatedPrompt?.requestId === requestId ? { generatedPrompt: null } : state)),
   generateModule: (description, options) => {
     const locale = i18n.resolvedLanguage === "zh" ? "zh" : "en"
     const frame: Record<string, unknown> = { type: "admin_generate", kind: "module", description, locale }

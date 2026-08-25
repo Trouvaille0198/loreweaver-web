@@ -209,6 +209,73 @@ describe("admin model requests", () => {
       },
     ])
   })
+
+  it("sends an empty idea as a correlated prompt suggestion", () => {
+    useAdminStore.getState().generateModulePrompt("  ")
+
+    const frame = sent[0] as Record<string, unknown>
+    expect(frame).toMatchObject({
+      type: "admin_generate",
+      kind: "module_prompt",
+      locale: "en",
+    })
+    expect(JSON.parse(frame.description as string)).toEqual({ idea: "", mode: "suggest" })
+    expect(frame.request_id).toEqual(expect.any(String))
+
+    useAdminStore.getState().ingest({
+      type: "admin_generated",
+      kind: "module_prompt",
+      ok: true,
+      id: "",
+      name: "",
+      error: "",
+      detail: "A lighthouse mystery with a changing tide.",
+      request_id: frame.request_id,
+    } as never)
+    expect(useAdminStore.getState()).toMatchObject({
+      generatedPrompt: { requestId: frame.request_id, text: "A lighthouse mystery with a changing tide." },
+      modulePromptBusy: false,
+      modulePromptError: null,
+    })
+  })
+
+  it("rewrites a non-empty idea and ignores stale prompt replies", () => {
+    useAdminStore.getState().generateModulePrompt("A haunted railway station")
+    const frame = sent[0] as Record<string, unknown>
+    expect(JSON.parse(frame.description as string)).toEqual({
+      idea: "A haunted railway station",
+      mode: "rewrite",
+    })
+
+    useAdminStore.getState().ingest({
+      type: "admin_generated",
+      kind: "module_prompt",
+      ok: true,
+      id: "",
+      name: "",
+      error: "",
+      detail: "stale",
+      request_id: "another-request",
+    } as never)
+    expect(useAdminStore.getState().modulePromptBusy).toBe(true)
+    expect(useAdminStore.getState().generatedPrompt).toBeNull()
+
+    useAdminStore.getState().ingest({
+      type: "admin_generated",
+      kind: "module_prompt",
+      ok: false,
+      id: "",
+      name: "",
+      error: "provider unavailable",
+      detail: "",
+      request_id: frame.request_id,
+    } as never)
+    expect(useAdminStore.getState()).toMatchObject({
+      modulePromptBusy: false,
+      modulePromptError: "provider unavailable",
+    })
+  })
+
   it("requests and selects a worldbook for the current room", () => {
     useAdminStore.getState().listWorldbooks()
     useAdminStore.getState().selectWorldbook("north.json")

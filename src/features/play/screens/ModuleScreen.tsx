@@ -347,13 +347,18 @@ export default function ModuleScreen({
 }) {
   const { t } = useTranslation()
   const generated = useAdminStore((s) => s.generated)
+  const generatedPrompt = useAdminStore((s) => s.generatedPrompt)
   const generationStage = useAdminStore((s) => s.generationStage)
   const generationDetail = useAdminStore((s) => s.generationDetail)
   const generationKind = useAdminStore((s) => s.generationKind)
   const busy = useAdminStore((s) => s.busy)
+  const modulePromptBusy = useAdminStore((s) => s.modulePromptBusy)
+  const modulePromptError = useAdminStore((s) => s.modulePromptError)
   const moduleImporting = useAdminStore((s) => s.moduleImporting)
   const generateModule = useAdminStore((s) => s.generateModule)
   const generatePackModule = useAdminStore((s) => s.generatePackModule)
+  const generateModulePrompt = useAdminStore((s) => s.generateModulePrompt)
+  const clearGeneratedPrompt = useAdminStore((s) => s.clearGeneratedPrompt)
   const sources = useAdminStore((s) => s.moduleSources)
   const detail = useAdminStore((s) => s.moduleDetail)
   const operation = useAdminStore((s) => s.moduleOperation)
@@ -383,6 +388,7 @@ export default function ModuleScreen({
   const [packFetchStatus, setPackFetchStatus] = useState<SendStatus>("idle")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const bundleInputRef = useRef<HTMLInputElement | null>(null)
+  const appliedPromptRequestRef = useRef<string | null>(null)
   // Remember the last AI-creation selections (media / companion / rule strategy / pack mode) so
   // a keeper's forge defaults survive navigation and reloads.
   useEffect(() => {
@@ -418,6 +424,13 @@ export default function ModuleScreen({
   useEffect(() => {
     if (selectedName && !sources.some((source) => source.name === selectedName)) setSelectedName("")
   }, [selectedName, sources])
+
+  useEffect(() => {
+    if (!generatedPrompt || generatedPrompt.requestId === appliedPromptRequestRef.current) return
+    appliedPromptRequestRef.current = generatedPrompt.requestId
+    setDescription(generatedPrompt.text)
+    clearGeneratedPrompt(generatedPrompt.requestId)
+  }, [clearGeneratedPrompt, generatedPrompt])
 
   useEffect(() => {
     if (selectedName) getModuleDetail(selectedName)
@@ -762,6 +775,22 @@ export default function ModuleScreen({
               />
             )}
           </Field>
+          <div className="module-action-row">
+            <Button
+              type="button"
+              variant="secondary"
+              loading={modulePromptBusy}
+              disabled={modulePromptBusy}
+              onClick={() => generateModulePrompt(description)}
+            >
+              {modulePromptBusy ? t("play.module.promptBusy") : t("play.module.promptAssist")}
+            </Button>
+          </div>
+          {modulePromptError ? (
+            <Notice tone="danger" role="alert">
+              {modulePromptError}
+            </Notice>
+          ) : null}
           <div className="module-generate-mode" role="group" aria-label={t("play.module.mode")}>
             <label className="play-skill-row">
               <input
