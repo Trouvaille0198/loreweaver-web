@@ -315,7 +315,7 @@
       "install": "Install (.module)",
       "sent": "Sent — the result lands as a system line in the game log.",
       "describe": "Or describe a module for the forge to write",
-      "describePlaceholder": "A one-night CoC scenario in a fog-bound lighthouse…",
+      "describePlaceholder": "Describe the module you want: era, place, and tone. The more specific the better — name the concrete city, age, and atmosphere.",
       "promptAssist": "Generate story prompt",
       "promptBusy": "Shaping story prompt…",
       "promptError": "Prompt generation failed. Try again.",
@@ -1872,7 +1872,7 @@
     "macroDeterminism": "{{random}} / {{pick}} (and a lore entry's probability roll) are seeded per room and TURN: different turns vary freely, but re-running the same turn — a retry, an undo replay — reproduces the same picks. Expect “random” to repeat within one turn; that is what makes a turn reconstructable. The two draws use separate streams, so adding a {{random}} never shifts which probabilistic entries fire.",
     "panels": {
       "describe": "Describe the panels this module needs",
-      "describePlaceholder": "A sidebar showing the tide clock and how many lanterns are still lit, plus a keeper-only board tracking who suspects the harbourmaster.",
+      "describePlaceholder": "Describe the module you want: era, place, and tone. The more specific the better — name the concrete city, age, and atmosphere.",
       "draft": "Draft panels",
       "drafting": "Drafting…",
       "aiUnset": "Set a model under AI settings to draft from a description.",
