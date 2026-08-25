@@ -18,6 +18,16 @@ declare module "@loreweaver/protocol" {
     room_system?: string
     /** Player-visible noun lists for `.image` completions (NPC/clue names). */
     image_names?: { npcs?: string[]; clues?: string[] }
+    /** The room's discovered-clue log (player projection), discovery order.
+     * Every entry is a clue the table has already found; an unrevealed secret
+     * clue never appears. Absent when the room has none. */
+    clues?: {
+      title: string
+      keys?: string[]
+      content?: string
+      image?: string
+      found_turn?: number
+    }[]
   }
 
   interface CharacterState {

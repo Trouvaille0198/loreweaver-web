@@ -1551,6 +1551,34 @@ body {
   font-size: 13px;
 }
 
+.clue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clue-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--border-soft);
+  font-size: 13px;
+}
+
+.clue-title {
+  color: var(--text-primary);
+}
+
+.clue-content {
+  margin: 0;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
 .party-member-head {
   display: flex;
   align-items: center;

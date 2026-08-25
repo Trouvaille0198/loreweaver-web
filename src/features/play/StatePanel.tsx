@@ -1020,6 +1020,32 @@ export function PackImportCard() {
   )
 }
 
+/** The room's discovered-clue log (`state.clues`, structural clue tracking).
+ * Every entry is a clue the table has already found — the Keeper/AI registered
+ * it at discovery time, snapshotted from the worldbook. Players see the same
+ * list the keeper does (the log holds only discovered clues); an unrevealed
+ * secret clue never appears here. */
+export function ClueCard({ game }: { game: StateFrame }) {
+  const { t } = useTranslation()
+  const clues = game.clues ?? []
+  if (clues.length === 0) return null
+  return (
+    <section className="desk-card clue-card">
+      <header className="desk-title">{t("session.clues")}</header>
+      <ul className="clue-list">
+        {clues.map((clue, index) => (
+          <li key={`${clue.title}-${index}`} className="clue-row">
+            <strong className="clue-title">{stripControlChars(clue.title)}</strong>
+            {clue.content ? (
+              <p className="clue-content">{stripControlChars(clue.content)}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 export function SceneCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   if (!game.scene && !game.clock) return null

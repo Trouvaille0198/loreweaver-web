@@ -17,6 +17,7 @@ import { usePanelsStore } from "../../store/panels"
 import { useSessionStore } from "../../store/session"
 import {
   CharacterCard,
+  ClueCard,
   InitiativeCard,
   PackImportCard,
   PartyCard,
@@ -38,6 +39,7 @@ export type DeskSlotId =
   | "trackers"
   | "initiative"
   | "pregens"
+  | "clues"
   | "packImport"
   | "usage"
 
@@ -51,6 +53,7 @@ const DEFAULT_ORDER: readonly DeskSlotId[] = [
   "trackers",
   "initiative",
   "pregens",
+  "clues",
   "packImport",
   "usage",
 ]
@@ -131,6 +134,7 @@ export default function DeskColumn() {
       trackers: Boolean(game && (game.variables ?? []).length > 0),
       initiative: Boolean(game && game.initiative.length > 0),
       pregens: Boolean(game && (game.pregens ?? []).length > 0),
+      clues: Boolean(game && (game.clues ?? []).length > 0),
       packImport: online,
       usage: Boolean(game && game.usage && game.usage.context_window > 0),
     }),
@@ -247,6 +251,8 @@ export default function DeskColumn() {
         return game ? <InitiativeCard game={game} /> : null
       case "pregens":
         return game ? <PregenCard game={game} /> : null
+      case "clues":
+        return game ? <ClueCard game={game} /> : null
       case "packImport":
         return <PackImportCard />
       case "usage":
