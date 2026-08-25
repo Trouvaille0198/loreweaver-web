@@ -282,6 +282,10 @@ export default function ModelScreen({
 
   const selectedProfile = profiles.find((profile) => profile.id === selectedProfileId)
   const selectedProviderMetadata = providerCatalog.find((provider) => provider.id === selectedProvider)
+  const defaultBaseUrlFor = (metadata: ProviderMetadata | undefined, kind: ModelKind): string =>
+    kind === "image" && metadata?.image_default_base_url
+      ? metadata.image_default_base_url
+      : (metadata?.default_base_url ?? "")
   const availableKinds = selectedProviderMetadata?.model_kinds?.length
     ? selectedProviderMetadata.model_kinds
     : (["chat", "embedding", "image"] as ModelKind[])
@@ -470,9 +474,10 @@ export default function ModelScreen({
     setSelectedProvider(provider)
     setChatModel("")
     const metadata = providerCatalog.find((item) => item.id === provider)
-    setModelKind(metadata?.model_kinds?.[0] ?? "chat")
+    const firstKind = metadata?.model_kinds?.[0] ?? "chat"
+    setModelKind(firstKind)
     setProfileEmbeddingDim("")
-    setBaseUrl(metadata?.default_base_url ?? "")
+    setBaseUrl(defaultBaseUrlFor(metadata, firstKind))
     setApiKey("")
   }
 
@@ -689,6 +694,9 @@ export default function ModelScreen({
                       const kind = event.target.value as ModelKind
                       setModelKind(kind)
                       setProfileEmbeddingDim("")
+                      // Image profiles must not inherit the chat endpoint — prefill the
+                      // repo-defined image base_url when switching to the image kind.
+                      setBaseUrl(defaultBaseUrlFor(selectedProviderMetadata, kind))
                     }}
                   >
                     {availableKinds.map((kind) => (

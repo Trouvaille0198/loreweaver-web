@@ -94,6 +94,7 @@ declare module "@loreweaver/protocol" {
   interface ProviderMetadata {
     id: string
     default_base_url: string
+    image_default_base_url?: string
     auth_type: ProviderAuthType
     model_kinds?: ModelKind[]
   }
