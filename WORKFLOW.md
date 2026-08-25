@@ -23,7 +23,7 @@ git push
 docker compose up --build -d
 ```
 
-> 只改了引擎（`~/repos/loreweaver`）时：在该 repo 提交推送后，直接 `cd ~/repos/loreweaver-web && docker compose up --build -d` 即可，无需任何 pull。
+> 只改了引擎（`~/repos/loreweaver`）时：**先确认引擎 repo 已是最新**——本机开发则提交推送即可；若新提交来自别处（origin 领先本地），先 `git -C ~/repos/loreweaver pull --ff-only`，否则镜像打进去的还是旧引擎（引擎源码经 `engine` 上下文直接从本地 checkout 打入，本地不新，镜像里就不会新）。然后 `cd ~/repos/loreweaver-web && docker compose up --build -d`。
 
 ## 为什么
 

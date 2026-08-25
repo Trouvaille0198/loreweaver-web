@@ -28,19 +28,25 @@ ENV PYTHONUNBUFFERED=1 \
     TRPG_DATA_DIR=/data \
     TRPG_WEB_STATIC_DIR=/srv/web-dist
 WORKDIR /srv
+# ---- 依赖层：只复制 pyproject.toml，引擎代码改动不触发依赖重装 ----
+# 从 pyproject.toml 提取 dependencies + `vector` extra 先装好（tomllib 是
+# Python 3.11+ 内置）。该层只在依赖清单变化时重建；pip 用 BuildKit 持久
+# cache mount 缓存 wheel，即使 `--no-cache` 全量重建也不重新下载。
+COPY --from=engine /pyproject.toml /tmp/engine-deps/pyproject.toml
+RUN --mount=type=cache,target=/root/.cache/pip,id=engine-pip \
+    pip install $(python3 -c "import tomllib; d = tomllib.load(open('/tmp/engine-deps/pyproject.toml','rb'))['project']; print(' '.join(d['dependencies'] + d['optional-dependencies'].get('vector', [])))") \
+    && rm -rf /tmp/engine-deps
+# ---- 引擎代码层：引擎每有新提交只重建这一层（约 10s）----
 # The engine checkout (with its .git, so setuptools-scm can version it) is
 # mounted from the `engine` named context — hence `COPY --from=engine`, not
 # `COPY .`. A directory named context exposes its contents at the context
 # ROOT, so the repo lands under /repo with `COPY --from=engine / /repo`.
-# `vector` extra = sqlite-vec (RAG search); iroh rides the base deps as a
-# py3-none wheel. No compiler needed for either.
+# `--no-deps`：依赖已在上一层装好，这里只安装引擎本体代码。
 COPY --from=engine / /repo
-# pip's wheel cache rides a cache mount (id=engine-pip), so a --no-cache
-# rebuild re-installs from the repo but reuses previously downloaded wheels
-# instead of re-fetching them. The cache mount never lands in the image layer;
-# dropping --no-cache-dir only moves the cache out of the layer, not into it.
+# pip 的 wheel 缓存走 cache mount（id=engine-pip，与依赖层共享），--no-cache
+# 重建时仍复用已下载的 wheel；cache mount 永远不进镜像层。
 RUN --mount=type=cache,target=/root/.cache/pip,id=engine-pip \
-    pip install "/repo[vector]" && rm -rf /repo
+    pip install --no-deps "/repo[vector]" && rm -rf /repo
 # The combined runner is bind-mounted from the web checkout, while its
 # web-only engine extension lives in the sibling engine checkout.
 COPY --from=engine /module_admin.py /srv/module_admin.py
