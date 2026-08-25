@@ -440,6 +440,7 @@
       "itemScopeUniversal": "Universal",
       "itemScopeModule": "Module-bound",
       "itemOrigin": "Origin",
+      "itemHolder": "Original holder",
       "itemSlot": "Slot",
       "packMedia": "Illustrations",
       "packMediaGroups": {

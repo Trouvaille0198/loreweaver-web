@@ -255,6 +255,11 @@ function PackDetailView({
                 {item.effect ? <p>{item.effect}</p> : null}
                 {item.description ? <p className="studio-hint">{item.description}</p> : null}
                 {item.lore ? <p className="studio-hint">{item.lore}</p> : null}
+                {item.original_holder ? (
+                  <p className="studio-hint">
+                    {t("play.module.itemHolder")}: {item.original_holder}
+                  </p>
+                ) : null}
                 {item.origin ? (
                   <p className="studio-hint">
                     {t("play.module.itemOrigin")}: {item.origin}

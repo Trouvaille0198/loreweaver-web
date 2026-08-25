@@ -105,6 +105,7 @@ export interface ModuleDetail {
     effect?: string
     lore?: string
     origin?: string
+    original_holder?: string
     quantity?: number
     bonus?: Record<string, number>
   }[]
@@ -334,6 +335,7 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
           effect: typeof item.effect === "string" ? item.effect : undefined,
           lore: typeof item.lore === "string" ? item.lore : undefined,
           origin: typeof item.origin === "string" ? item.origin : undefined,
+          original_holder: typeof item.original_holder === "string" ? item.original_holder : undefined,
           quantity: typeof item.quantity === "number" ? item.quantity : undefined,
           bonus:
             typeof item.bonus === "object" && item.bonus !== null && !Array.isArray(item.bonus)
