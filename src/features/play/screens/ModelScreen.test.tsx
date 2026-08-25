@@ -7,6 +7,7 @@ vi.mock("../../../lib/transport", () => ({
 }))
 
 import i18n from "../../../i18n"
+import { transportSend } from "../../../lib/transport"
 import { useAdminStore } from "../../../store/admin"
 import ModelScreen from "./ModelScreen"
 
@@ -218,5 +219,108 @@ describe("ModelScreen provider defaults", () => {
     expect(within(newEditor).getByLabelText("Model name or ID")).toHaveValue("")
     expect(within(newEditor).getByLabelText("Base URL (optional)")).toHaveValue("")
     expect(within(newEditor).getByLabelText(/^API key \(write-only\)/)).toHaveValue("")
+  })
+})
+
+describe("ModelScreen per-kind default", () => {
+  const PROFILE = [
+    {
+      id: "deepseek::deepseek-v4-flash",
+      provider: "deepseek",
+      chat_model: "deepseek-v4-flash",
+      kind: "chat",
+      embedding_dim: 0,
+      base_url: "",
+      api_key_masked: "sk-••••",
+      has_key: true,
+    },
+    {
+      id: "minimax-cn::image::image-01",
+      provider: "minimax-cn",
+      chat_model: "image-01",
+      kind: "image",
+      embedding_dim: 0,
+      base_url: "",
+      api_key_masked: "sk-••••",
+      has_key: true,
+    },
+    {
+      id: "siliconflow::embedding::baai/bge-m3",
+      provider: "siliconflow",
+      chat_model: "BAAI/bge-m3",
+      kind: "embedding",
+      embedding_dim: 1024,
+      base_url: "",
+      api_key_masked: "sk-••••",
+      has_key: true,
+    },
+  ]
+
+  beforeEach(async () => {
+    await i18n.changeLanguage("en")
+    useAdminStore.getState().reset()
+    vi.clearAllMocks()
+    useAdminStore.setState({
+      config: {
+        type: "admin_config",
+        provider: "deepseek",
+        chat_model: "deepseek-v4-flash",
+        base_url: "https://api.deepseek.com/v1",
+        api_key_masked: "",
+        provider_catalog: [
+          { id: "deepseek", default_base_url: "", auth_type: "api_key", model_kinds: ["chat"] },
+          { id: "minimax-cn", default_base_url: "", auth_type: "api_key", model_kinds: ["chat", "image"] },
+          { id: "siliconflow", default_base_url: "", auth_type: "api_key", model_kinds: ["chat", "embedding", "image"] },
+        ],
+        saved_providers: [],
+        llms: PROFILE,
+        embedding_profile: "siliconflow::embedding::baai/bge-m3",
+        embedding_dim: 1024,
+        imagegen: { provider: "minimax-cn", model: "image-01", configured: true, has_key: true },
+      } as never,
+      busy: false,
+    })
+  })
+
+  it("shows the current-default badge on every kind with no set-default button", () => {
+    render(<ModelScreen embedded onBack={() => {}} />)
+    expect(screen.getAllByText("Current default")).toHaveLength(3)
+    expect(screen.queryByRole("button", { name: "Set as default" })).not.toBeInTheDocument()
+  })
+
+  it("sends admin_set_imagegen when a non-default image profile is set as default", async () => {
+    useAdminStore.setState((state) => ({
+      ...state,
+      config: {
+        ...state.config,
+        imagegen: { provider: "minimax-cn", model: "image-02", configured: true, has_key: true },
+      } as never,
+    }))
+    const user = userEvent.setup()
+    render(<ModelScreen embedded onBack={() => {}} />)
+    // chat + embedding are still the current defaults; only image offers the button.
+    const btn = screen.getByRole("button", { name: "Set as default" })
+    await user.click(btn)
+    expect(transportSend).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "admin_set_imagegen", provider: "minimax-cn", model: "image-01" }),
+    )
+  })
+
+  it("sends admin_set_embedding when a non-default embedding profile is set as default", async () => {
+    useAdminStore.setState((state) => ({
+      ...state,
+      config: { ...state.config, embedding_profile: "" } as never,
+    }))
+    const user = userEvent.setup()
+    render(<ModelScreen embedded onBack={() => {}} />)
+    const btn = screen.getByRole("button", { name: "Set as default" })
+    await user.click(btn)
+    expect(transportSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "admin_set_embedding",
+        profile_id: "siliconflow::embedding::baai/bge-m3",
+        embedding_dim: 1024,
+      }),
+    )
   })
 })

@@ -20,14 +20,16 @@ type SendStatus = "idle" | "sent" | "failed"
 // Per-generation opt-ins for the forge path. The enabled companion ids reuse
 // existing generators; the SOON ids have no engine yet and render disabled so
 // the intended scope stays visible.
-const MEDIA_OPTIONS = ["cover", "scenes", "npcs", "items"] as const
-const COMPANION_OPTIONS = ["skills", "rulepacks", "cards"] as const
+const MEDIA_OPTIONS = ["cover", "scenes", "npcs", "items", "pregens"] as const
+const COMPANION_OPTIONS = ["skills", "cards"] as const
 const COMPANION_SOON_OPTIONS = ["worldbook", "presets", "presentation", "panels"] as const
 
 // Base rule systems a generated module's rulepack may `extends: <base>` — reuse a
 // known system's sheet (e.g. CoC attributes/HP/SAN) and patch in only the module's
 // own mechanics. Empty selection means a standalone rulepack (no extends).
 const BASE_SYSTEMS = ["coc7", "dnd5e", "wod"] as const
+type BaseSystem = (typeof BASE_SYSTEMS)[number]
+type RuleStrategy = "" | "standalone" | `use:${BaseSystem}` | `patch:${BaseSystem}`
 
 function isEmptyPoolValue(value: unknown): boolean {
   return value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)
@@ -342,6 +344,7 @@ export default function ModuleScreen({
   const generated = useAdminStore((s) => s.generated)
   const generationStage = useAdminStore((s) => s.generationStage)
   const generationDetail = useAdminStore((s) => s.generationDetail)
+  const generationKind = useAdminStore((s) => s.generationKind)
   const busy = useAdminStore((s) => s.busy)
   const moduleImporting = useAdminStore((s) => s.moduleImporting)
   const generateModule = useAdminStore((s) => s.generateModule)
@@ -361,7 +364,7 @@ export default function ModuleScreen({
   const [description, setDescription] = useState("")
   const [mediaOptions, setMediaOptions] = useState<string[]>([])
   const [companionOptions, setCompanionOptions] = useState<string[]>([])
-  const [extendsBase, setExtendsBase] = useState<string>("")
+  const [ruleStrategy, setRuleStrategy] = useState<RuleStrategy>("")
   const [packMode, setPackMode] = useState(false)
   const [view, setView] = useState<"library" | "forge">("library")
   const [path, setPath] = useState("")
@@ -397,6 +400,12 @@ export default function ModuleScreen({
       if (operation.kind === "module_bundle_upload") importModule(operation.name)
     }
   }, [getModuleDetail, importModule, listModules, operation])
+
+  useEffect(() => {
+    if (!generated) return
+    const kind = String(generated.kind)
+    if (kind === "module" || kind === "pack") listModules()
+  }, [generated, listModules])
 
   const send = async (line: string, mark: (status: SendStatus) => void, clear: () => void): Promise<void> => {
     mark("idle")
@@ -452,17 +461,10 @@ export default function ModuleScreen({
     setList(on ? [...list, id] : list.filter((value) => value !== id))
   }
 
-  // The rule-system dropdown is a raw choice string:
-  //   ""             -> follow the room system (no rulepack)
-  //   "use:coc7|dnd5e|wod"  -> DIRECTLY use a built-in system (no rulepack generated)
-  //   "patch:coc7|dnd5e|wod"-> generate a rulepack that extends that base system
-  // `handleExtendsChange` stores it raw; the generate call splits it into `extends`/`system`.
-  const handleExtendsChange = (value: string) => {
-    setExtendsBase(value)
-    // A "patch" choice implies the module ships that rulepack — auto-add `rulepacks` to the
-    // companion opt-ins so it actually takes effect. A "use" choice needs no rulepack at all.
-    if (value.startsWith("patch:") && !companionOptions.includes("rulepacks")) {
-      setCompanionOptions([...companionOptions, "rulepacks"])
+  const selectGenerateMode = (nextPackMode: boolean) => {
+    setPackMode(nextPackMode)
+    if (!nextPackMode && (ruleStrategy.startsWith("use:") || ruleStrategy.startsWith("patch:"))) {
+      setRuleStrategy("")
     }
   }
 
@@ -543,9 +545,12 @@ export default function ModuleScreen({
                     variant="quiet"
                     className="module-source-select"
                     aria-pressed={source.name === selectedName}
+                    disabled={source.generating}
                     onClick={() => {
                       // Both text .md and installed .lwpack pack sources open their detail view —
-                      // the backend serves a complete detail for each kind.
+                      // the backend serves a complete detail for each kind. A generating
+                      // placeholder has no detail yet, so it is inert.
+                      if (source.generating) return
                       if (onOpenDetail) {
                         onOpenDetail(source.name)
                         return
@@ -553,19 +558,34 @@ export default function ModuleScreen({
                       setSelectedName(source.name)
                     }}
                   >
-                    <strong>{source.title ?? source.name}</strong>
-                    <span className={`chip ${source.sourceKind === "pack" ? "chip-warn" : ""}`}>
-                      {source.sourceKind === "pack" ? t("play.module.kindPack") : t("play.module.kindText")}
+                    <strong>{source.generating ? t("play.module.generating") : (source.title ?? source.name)}</strong>
+                    <span
+                      className={`chip ${
+                        (source.generating ? source.generationKind ?? generationKind : source.sourceKind) === "pack"
+                          ? "chip-warn"
+                          : ""
+                      }`}
+                    >
+                      {(source.generating ? source.generationKind ?? generationKind : source.sourceKind) === "pack"
+                        ? t("play.module.kindPack")
+                        : t("play.module.kindText")}
                     </span>
-                    <span className="studio-hint">
-                      {source.size} {t("play.module.bytes")}
-                      {source.sourceKind === "pack" && source.entryCount !== undefined
-                        ? ` · ${source.entryCount} ${t("play.module.entries")}`
-                        : ""}
-                      {source.sourceKind === "pack" && source.pregenCount !== undefined
-                        ? ` · ${source.pregenCount} ${t("play.module.packPregens")}`
-                        : ""}
-                    </span>
+                    {source.generating ? (
+                      <span className="studio-hint">
+                        {t(`play.module.stages.${source.stage ?? ""}`, { defaultValue: source.stage || "" })}
+                        {source.detail ? ` — ${source.detail}` : ""}
+                      </span>
+                    ) : (
+                      <span className="studio-hint">
+                        {source.size} {t("play.module.bytes")}
+                        {source.sourceKind === "pack" && source.entryCount !== undefined
+                          ? ` · ${source.entryCount} ${t("play.module.entries")}`
+                          : ""}
+                        {source.sourceKind === "pack" && source.pregenCount !== undefined
+                          ? ` · ${source.pregenCount} ${t("play.module.packPregens")}`
+                          : ""}
+                      </span>
+                    )}
                     {source.current && !source.importing ? (
                       <span className="chip chip-on">{t("play.module.current")}</span>
                     ) : null}
@@ -703,7 +723,7 @@ export default function ModuleScreen({
                 type="radio"
                 name="module-generate-mode"
                 checked={!packMode}
-                onChange={() => setPackMode(false)}
+                onChange={() => selectGenerateMode(false)}
               />
               <span className="play-skill-name">{t("play.module.modeText")}</span>
               <span className="play-skill-desc">{t("play.module.modeTextHint")}</span>
@@ -713,7 +733,7 @@ export default function ModuleScreen({
                 type="radio"
                 name="module-generate-mode"
                 checked={packMode}
-                onChange={() => setPackMode(true)}
+                onChange={() => selectGenerateMode(true)}
               />
               <span className="play-skill-name">{t("play.module.modePack")}</span>
               <span className="play-skill-desc">{t("play.module.modePackHint")}</span>
@@ -764,17 +784,19 @@ export default function ModuleScreen({
               </li>
             ))}
           </ul>
-          {packMode ? (
-            <>
-              <Field label={t("play.module.options.extendsTitle")}>
-                {({ id }) => (
-                  <select
-                    id={id}
-                    className="module-extends-select"
-                    value={extendsBase}
-                    onChange={(e) => handleExtendsChange(e.target.value)}
-                  >
-                    <option value="">{t("play.module.options.extendsNone")}</option>
+          <Field label={t("play.module.options.extendsTitle")} hint={t("play.module.options.extendsHint")}>
+            {({ id, describedBy }) => (
+              <select
+                id={id}
+                className="module-extends-select"
+                value={ruleStrategy}
+                onChange={(e) => setRuleStrategy(e.target.value as RuleStrategy)}
+                aria-describedby={describedBy}
+              >
+                <option value="">{t("play.module.options.extendsNone")}</option>
+                <option value="standalone">{t("play.module.options.standalone")}</option>
+                {packMode ? (
+                  <>
                     <optgroup label={t("play.module.options.useGroup")}>
                       {BASE_SYSTEMS.map((id) => (
                         <option key={`use-${id}`} value={`use:${id}`}>
@@ -789,24 +811,27 @@ export default function ModuleScreen({
                         </option>
                       ))}
                     </optgroup>
-                  </select>
-                )}
-              </Field>
-              <p className="studio-hint">{t("play.module.options.extendsHint")}</p>
-            </>
-          ) : null}
+                  </>
+                ) : null}
+              </select>
+            )}
+          </Field>
           <Button
             type="button"
             variant="primary"
             loading={busy}
             disabled={!description.trim()}
             onClick={() => {
+              const generatesRulepack = ruleStrategy === "standalone" || ruleStrategy.startsWith("patch:")
+              const selectedCompanion = generatesRulepack
+                ? [...companionOptions, "rulepacks"]
+                : companionOptions
               if (!packMode) {
-                generateModule(description.trim(), { media: mediaOptions, companion: companionOptions })
+                generateModule(description.trim(), { media: mediaOptions, companion: selectedCompanion })
                 return
               }
               // Split the raw rule-system choice into the engine's two exclusive knobs.
-              const raw = extendsBase
+              const raw = ruleStrategy
               let extendsValue = ""
               let systemValue = ""
               if (raw.startsWith("patch:")) extendsValue = raw.slice("patch:".length)
@@ -814,7 +839,7 @@ export default function ModuleScreen({
               generatePackModule(
                 description.trim(),
                 mediaOptions,
-                companionOptions,
+                selectedCompanion,
                 extendsValue,
                 systemValue,
               )
@@ -829,7 +854,7 @@ export default function ModuleScreen({
             </Notice>
           ) : null}
           {generated !== null &&
-          (String(generated.kind) === "module" || String(generated.kind) === "pack") ? (
+            (String(generated.kind) === "module" || String(generated.kind) === "pack") ? (
             <Notice tone={generated.ok ? "success" : "danger"} role={generated.ok ? "status" : "alert"}>
               {generated.ok
                 ? t("play.module.generateOk", { name: generated.name, detail: generated.detail })

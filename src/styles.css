@@ -4713,6 +4713,29 @@ code {
   margin: 0;
 }
 
+.module-media-caption {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+  font: 13px/1.45 var(--font-ui);
+}
+
+.module-media-subject {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.module-media-filename {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-tertiary);
+  font: 11px/1.4 var(--font-mono);
+}
+
 .module-media-item img {
   width: 100%;
   border: 1px solid var(--line-subtle);

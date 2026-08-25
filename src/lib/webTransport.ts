@@ -11,7 +11,10 @@
 import {
   WsClient,
   isServerFrame,
+  type AdminLLMExportFrame,
   type AdminRoomConfigFrame,
+  type AdminGenerateProgressFrame,
+  type AdminGenerateStartedFrame,
   type ClientFrame,
   type MediaFrame,
   type MediaPayload,
@@ -27,14 +30,47 @@ function emit(event: TransportEvent): void {
   for (const handler of eventHandlers) handler(event)
 }
 
+type AdditiveServerFrame =
+  | AdminRoomConfigFrame
+  | AdminGenerateStartedFrame
+  | AdminGenerateProgressFrame
+  | AdminLLMExportFrame
+
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string")
 }
 
 /** Validates project-owned additive frames before they enter application state. */
-export function isAdditiveServerFrame(data: unknown): data is AdminRoomConfigFrame {
+export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFrame {
   if (typeof data !== "object" || data === null) return false
   const frame = data as Record<string, unknown>
+  if (frame.type === "admin_generate_started") {
+    return frame.kind === "module" || frame.kind === "pack"
+  }
+  if (frame.type === "admin_generate_progress") {
+    return (
+      (frame.kind === "module" || frame.kind === "pack") &&
+      typeof frame.stage === "string" &&
+      typeof frame.detail === "string"
+    )
+  }
+  if (frame.type === "admin_llm_export") {
+    if (typeof frame.ok !== "boolean") return false
+    const config = frame.config
+    if (typeof config !== "object" || config === null) return false
+    const doc = config as Record<string, unknown>
+    return (
+      typeof doc.format === "string" &&
+      typeof doc.llm_profiles === "object" &&
+      doc.llm_profiles !== null &&
+      typeof doc.llm_credentials === "object" &&
+      doc.llm_credentials !== null &&
+      typeof doc.runtime === "object" &&
+      doc.runtime !== null &&
+      typeof doc.imagegen_credentials === "object" &&
+      doc.imagegen_credentials !== null
+    )
+  }
   if (frame.type !== "admin_room_config") return false
   const stored = frame.stored
   if (
@@ -59,7 +95,7 @@ export function isAdditiveServerFrame(data: unknown): data is AdminRoomConfigFra
 }
 
 /** Parses a project-owned additive frame omitted by the published protocol package. */
-export function parseAdditiveServerFrame(data: unknown): AdminRoomConfigFrame | null {
+export function parseAdditiveServerFrame(data: unknown): AdditiveServerFrame | null {
   if (typeof data !== "string") return null
   let parsed: unknown
   try {

@@ -282,6 +282,11 @@
       "configured": "已配置",
       "notConfigured": "未配置",
       "demoActive": "离线示例守秘人正在运行——应用模型后房间会切换过去。",
+      "exportLlm": "导出配置",
+      "importLlm": "导入配置",
+      "exportLlmHint": "把全部已保存的对话/Embedding/图像模型配置（含密钥）导出为 JSON 文件，便于备份或迁移到另一台服务器。",
+      "importLlmHint": "从 JSON 文件恢复模型配置。会替换当前全部已保存配置；导入含密钥的导出文件即可直接使用。",
+      "importLlmConfirm": "导入将替换当前全部已保存的模型配置（含密钥），确定继续吗？",
       "roomSection": "本房间模型",
       "roomHint": "为本房间固定自己的服务商/密钥/模型。留空的字段跟随下方全局配置；房间覆盖对本房间的每一回合生效。",
       "roomInherit": "跟随全局",
@@ -337,25 +342,29 @@
           "cover": "封面/海报",
           "scenes": "场景图",
           "npcs": "NPC 立绘",
-          "items": "物品/线索图"
+          "items": "物品/线索图",
+          "pregens": "调查员"
         },
         "mediaHints": {
           "cover": "为剧本生成一张开场封面图。",
           "scenes": "为每个关键场景生成一张气氛图。",
           "npcs": "为主要 NPC 各生成一张肖像（每人一张）。",
-          "items": "为关键物品/线索各生成一张图。"
+          "items": "为关键物品/线索各生成一张图。",
+          "pregens": "可认领调查员的立绘——每张会成为认领该调查员的玩家的角色头像。"
         },
         "mediaCaps": {
           "cover": "1 张",
           "scenes": "最多 6 张",
           "npcs": "最多 6 张",
-          "items": "最多 6 张"
+          "items": "最多 6 张",
+          "pregens": "≤ 6"
         },
-        "extendsTitle": "规则系统",
+        "extendsTitle": "规则策略",
         "extendsNone": "跟随房间系统（默认）",
+        "standalone": "为剧本生成独立规则包",
         "useGroup": "直接用内置系统",
         "patchGroup": "在基础系统上生成补丁",
-        "extendsHint": "选择模组如何运行规则。「直接用内置系统」把模组绑定到某个内置体系（不生成规则包，最省）。「生成补丁」会写一个扩展该基础体系的规则包，只叠加模组自身机制（多一次 LLM 调用）。",
+        "extendsHint": "规则策略只能选一种：默认不额外生成规则；独立规则包由 AI 从零编写。完整包模式还可以直接使用内置系统，或基于它生成补丁。",
         "use": {
           "coc7": "克苏鲁的呼唤 (coc7)",
           "dnd5e": "龙与地下城 (dnd5e)",
@@ -427,11 +436,13 @@
         "scenes": "场景图",
         "npcs": "NPC 立绘",
         "items": "物品/线索图",
-        "asset": "素材"
+        "asset": "素材",
+        "pregens": "调查员"
       },
       "mediaOpen": "放大查看{{name}}",
       "mediaPreview": "{{name}}图片预览",
       "mediaClose": "关闭图片预览",
+      "mediaFallback": "{{kind}} {{index}}",
       "packNotImported": "这个包没有设定条目。",
       "imported": "已导入当前房间。",
       "saved": "已保存",
@@ -479,7 +490,8 @@
         "timeline": "时间线",
         "truthsThreats": "真相与威胁",
         "media": "配图"
-      }
+      },
+      "generating": "正在生成…"
     },
     "worldbook": {
       "library": "世界书库",

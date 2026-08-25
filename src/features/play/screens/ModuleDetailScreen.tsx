@@ -11,8 +11,10 @@ import { KnowledgePool } from "./ModuleScreen"
 
 /** One illustration. Renders the inline base64 payload when present (a pack asset not reachable
  * via the room media channel); otherwise pulls through the content-addressed asset channel. */
-function ModuleMediaImage({ record }: { record: ModuleMediaRecord }) {
+function ModuleMediaImage({ record, fallbackLabel }: { record: ModuleMediaRecord; fallbackLabel?: string }) {
   const { t } = useTranslation()
+  const subject = record.subject?.trim() || ""
+  const displayName = subject || fallbackLabel || record.name
   const [src, setSrc] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -54,13 +56,16 @@ function ModuleMediaImage({ record }: { record: ModuleMediaRecord }) {
         <button
           type="button"
           className="module-media-trigger"
-          aria-label={t("play.module.mediaOpen", { name: record.name })}
+          aria-label={t("play.module.mediaOpen", { name: displayName })}
           onClick={() => setPreviewOpen(true)}
         >
-          <img src={src} alt={record.name} />
+          <img src={src} alt={displayName} />
         </button>
       ) : null}
-      <figcaption className="studio-hint">{record.name}</figcaption>
+      <figcaption className="module-media-caption">
+        {subject || fallbackLabel ? <strong className="module-media-subject">{displayName}</strong> : null}
+        <span className="module-media-filename">{record.name}</span>
+      </figcaption>
       {previewOpen && src !== null
         ? createPortal(
             <div
@@ -72,7 +77,7 @@ function ModuleMediaImage({ record }: { record: ModuleMediaRecord }) {
                 className="module-image-lightbox"
                 role="dialog"
                 aria-modal="true"
-                aria-label={t("play.module.mediaPreview", { name: record.name })}
+                aria-label={t("play.module.mediaPreview", { name: displayName })}
                 onClick={(event) => event.stopPropagation()}
               >
                 <button
@@ -84,8 +89,11 @@ function ModuleMediaImage({ record }: { record: ModuleMediaRecord }) {
                 >
                   ×
                 </button>
-                <img className="module-image-lightbox-image" src={src} alt={record.name} />
-                <p className="module-image-lightbox-caption">{record.name}</p>
+                <img className="module-image-lightbox-image" src={src} alt={displayName} />
+                <p className="module-image-lightbox-caption">
+                  {subject || fallbackLabel ? <strong className="module-media-subject">{displayName}</strong> : null}
+                  <span className="module-media-filename">{record.name}</span>
+                </p>
               </section>
             </div>,
             document.body,
@@ -160,9 +168,15 @@ function PackDetailView({
               <section className={`module-detail-subsection module-detail-subsection--${kind}`} key={kind}>
                 <SectionHeader title={t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })} />
                 <ul className="module-media-grid">
-                  {(mediaGroups.get(kind) ?? []).map((record) => (
+                  {(mediaGroups.get(kind) ?? []).map((record, index) => (
                     <li key={record.hash}>
-                      <ModuleMediaImage record={record} />
+                      <ModuleMediaImage
+                        record={record}
+                        fallbackLabel={t("play.module.mediaFallback", {
+                          kind: t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind }),
+                          index: index + 1,
+                        })}
+                      />
                     </li>
                   ))}
                 </ul>
@@ -194,14 +208,20 @@ function PackDetailView({
         >
           <SectionHeader titleId="pack-pregens-title" title={t("play.module.packPregens")} />
           <ul className="play-list module-source-list">
-            {detail.pregens.map((pregen) => (
-              <li className="module-source-row" key={pregen.name}>
-                <div className="module-source-select">
-                  <strong>{pregen.name}</strong>
-                  {pregen.concept ? <span className="studio-hint">{pregen.concept}</span> : null}
-                </div>
-              </li>
-            ))}
+            {detail.pregens.map((pregen) => {
+              const portrait = detail.media?.find(
+                (m) => m.kind === "pregens" && m.name === pregen.avatar,
+              )
+              return (
+                <li className="module-source-row" key={pregen.name}>
+                  <div className="module-source-select">
+                    {portrait ? <ModuleMediaImage record={portrait} fallbackLabel={pregen.name} /> : null}
+                    <strong>{pregen.name}</strong>
+                    {pregen.concept ? <span className="studio-hint">{pregen.concept}</span> : null}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         </Surface>
       ) : null}

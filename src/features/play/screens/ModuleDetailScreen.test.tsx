@@ -167,6 +167,7 @@ describe("ModuleDetailScreen", () => {
             hash: "a".repeat(64),
             mime: "image/jpeg",
             size: 123,
+            subject: "恒昌照相馆",
             data: "aGVsbG8=",
           },
         ],
@@ -190,11 +191,12 @@ describe("ModuleDetailScreen", () => {
     expect(screen.getByText("Photo Mystery")).toBeInTheDocument()
     expect(screen.getByText(/names: \[photo-mystery\]/)).toBeInTheDocument()
     expect(screen.getByText("旧照魅影技能")).toBeInTheDocument()
-    // Media grid renders the image hash entry.
+    // Media grid renders the subject as the primary label and keeps the file name as metadata.
+    expect(screen.getByText("恒昌照相馆")).toBeInTheDocument()
     expect(screen.getByText(/module-1930npc-cover-1/)).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "Enlarge module-1930npc-cover-1.jpg" }))
-    expect(screen.getByRole("dialog", { name: "Image preview for module-1930npc-cover-1.jpg" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Enlarge 恒昌照相馆" }))
+    expect(screen.getByRole("dialog", { name: "Image preview for 恒昌照相馆" })).toBeInTheDocument()
     await user.keyboard("{Escape}")
     expect(screen.queryByRole("dialog", { name: "Image preview for module-1930npc-cover-1.jpg" })).toBeNull()
   })

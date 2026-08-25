@@ -12,6 +12,8 @@ import type {
   AdminGenerateStartedFrame,
   AdminKeyInfo,
   AdminKeyPurpose,
+  AdminLLMConfigDocument,
+  AdminLLMExportFrame,
   AdminResetScope,
   AdminRoomConfigFrame,
   AdminRoomOpFrame,
@@ -35,8 +37,16 @@ export interface ModuleSource {
   modified: number
   current: boolean
   importing?: boolean
-  /** `"text"` for a Markdown source file, `"pack"` for an installed .lwpack content pack. */
-  sourceKind: "text" | "pack"
+  /** `"text"` for a Markdown source file, `"pack"` for an installed .lwpack content pack,
+   * `"generating"` for a module currently being forged in this room (a live placeholder). */
+  sourceKind: "text" | "pack" | "generating"
+  /** True for the in-flight forge placeholder row merged into the library by the backend. */
+  generating?: boolean
+  /** The requested forge output kind, retained while the source is generating. */
+  generationKind?: "module" | "pack"
+  /** In-flight generation stage (`authoring`/`media`/…), when `generating`. */
+  stage?: string
+  detail?: string
   /** Pack: number of lore entries. */
   entryCount?: number
   /** Pack: number of claimable pregen cards. */
@@ -58,6 +68,8 @@ export interface ModuleMediaRecord {
   size: number
   /** Illustration kind (cover/scenes/npcs/items/asset) from the provenance name. */
   kind?: string
+  /** The scene, NPC, item, or other subject depicted by the illustration. */
+  subject?: string
   /** Inline base64 payload when the media is a pack asset not reachable via the room channel. */
   data?: string
 }
@@ -76,8 +88,9 @@ export interface ModuleDetail {
   sourceKind?: "text" | "pack"
   /** A pack's worldbook entries (its lore). */
   worldbookEntries?: { title: string; content: string; secret: boolean }[]
-  /** A pack's claimable pregen cast. */
-  pregens?: { name: string; concept?: string }[]
+  /** A pack's claimable pregen cast. `avatar` (when present) is the pack asset filename of the
+   * investigator's generated portrait. */
+  pregens?: { name: string; concept?: string; avatar?: string }[]
   /** A pack's bundled rule systems. */
   rulepacks?: { name: string; title: string; content: string }[]
   /** A pack's bundled KP skills. */
@@ -162,7 +175,12 @@ function parseModuleSources(value: unknown): ModuleSource[] {
     ) {
       return []
     }
-    const sourceKind = item.source_kind === "pack" || item.sourceKind === "pack" ? "pack" : "text"
+    const generating = item.generating === true || item.source_kind === "generating" || item.sourceKind === "generating"
+    const sourceKind = generating
+      ? "generating"
+      : item.source_kind === "pack" || item.sourceKind === "pack"
+        ? "pack"
+        : "text"
     const entryCount = item.entry_count ?? item.entryCount
     const pregenCount = item.pregen_count ?? item.pregenCount
     return [
@@ -176,9 +194,46 @@ function parseModuleSources(value: unknown): ModuleSource[] {
         entryCount: typeof entryCount === "number" ? entryCount : undefined,
         pregenCount: typeof pregenCount === "number" ? pregenCount : undefined,
         ...(item.importing === true ? { importing: true } : {}),
+        ...(generating
+          ? {
+            generating: true,
+            stage: typeof item.stage === "string" ? item.stage : "",
+            detail: typeof item.detail === "string" ? item.detail : "",
+          }
+          : {}),
       },
     ]
   })
+}
+
+function updateGeneratingSource(
+  sources: ModuleSource[],
+  kind: "module" | "pack",
+  stage: string,
+  detail: string,
+): ModuleSource[] {
+  let found = false
+  const updated = sources.map((source) => {
+    if (!source.generating && source.sourceKind !== "generating") return source
+    found = true
+    return { ...source, sourceKind: "generating" as const, generating: true, generationKind: kind, stage, detail }
+  })
+  if (found) return updated
+  return [
+    {
+      name: "__generating__",
+      title: "",
+      size: 0,
+      modified: 0,
+      current: false,
+      sourceKind: "generating",
+      generating: true,
+      generationKind: kind,
+      stage,
+      detail,
+    },
+    ...sources,
+  ]
 }
 
 function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | null {
@@ -221,61 +276,69 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
     sourceKind: value.source_kind === "pack" ? "pack" : value.source_kind === "text" ? "text" : undefined,
     worldbookEntries: Array.isArray(value.worldbook_entries)
       ? value.worldbook_entries.filter(
-          (item): item is { title: string; content: string; secret: boolean } =>
-            typeof item === "object" && item !== null && "title" in item && "content" in item,
-        )
+        (item): item is { title: string; content: string; secret: boolean } =>
+          typeof item === "object" && item !== null && "title" in item && "content" in item,
+      )
       : undefined,
     pregens: Array.isArray(value.pregens)
       ? value.pregens
-          .filter(
-            (item): item is { name: string; concept?: string } => typeof item === "object" && item !== null,
-          )
-          .map((item) => ({
-            name: String((item as { name?: unknown }).name ?? ""),
-            concept:
-              typeof (item as { concept?: unknown }).concept === "string"
-                ? String((item as { concept?: unknown }).concept)
-                : undefined,
-          }))
+        .filter(
+          (item): item is { name: string; concept?: string } => typeof item === "object" && item !== null,
+        )
+        .map((item) => ({
+          name: String((item as { name?: unknown }).name ?? ""),
+          concept:
+            typeof (item as { concept?: unknown }).concept === "string"
+              ? String((item as { concept?: unknown }).concept)
+              : undefined,
+          avatar:
+            typeof (item as { avatar?: unknown }).avatar === "string"
+              ? String((item as { avatar?: unknown }).avatar)
+              : undefined,
+        }))
       : undefined,
     rulepacks: Array.isArray(value.rulepacks)
       ? value.rulepacks.filter(
-          (item): item is { name: string; title: string; content: string } =>
-            typeof item === "object" && item !== null && "name" in item,
-        )
+        (item): item is { name: string; title: string; content: string } =>
+          typeof item === "object" && item !== null && "name" in item,
+      )
       : undefined,
     skills: Array.isArray(value.skills)
       ? value.skills.filter(
-          (item): item is { name: string; content: string } =>
-            typeof item === "object" && item !== null && "name" in item,
-        )
+        (item): item is { name: string; content: string } =>
+          typeof item === "object" && item !== null && "name" in item,
+      )
       : undefined,
     pool,
     media: Array.isArray(value.media)
       ? value.media
-          .filter(
-            (item): item is ModuleMediaRecord =>
-              typeof item === "object" &&
-              item !== null &&
-              typeof (item as ModuleMediaRecord).name === "string" &&
-              typeof (item as ModuleMediaRecord).hash === "string" &&
-              typeof (item as ModuleMediaRecord).mime === "string" &&
-              typeof (item as ModuleMediaRecord).size === "number",
-          )
-          .map((item) => ({
-            name: item.name,
-            hash: item.hash,
-            mime: item.mime,
-            size: item.size,
-            kind:
-              typeof (item as { kind?: unknown }).kind === "string"
-                ? String((item as { kind?: unknown }).kind)
-                : undefined,
-            data:
-              typeof (item as { data?: unknown }).data === "string"
-                ? String((item as { data?: unknown }).data)
-                : undefined,
-          }))
+        .filter(
+          (item): item is ModuleMediaRecord =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as ModuleMediaRecord).name === "string" &&
+            typeof (item as ModuleMediaRecord).hash === "string" &&
+            typeof (item as ModuleMediaRecord).mime === "string" &&
+            typeof (item as ModuleMediaRecord).size === "number",
+        )
+        .map((item) => ({
+          name: item.name,
+          hash: item.hash,
+          mime: item.mime,
+          size: item.size,
+          kind:
+            typeof (item as { kind?: unknown }).kind === "string"
+              ? String((item as { kind?: unknown }).kind)
+              : undefined,
+          subject:
+            typeof (item as { subject?: unknown }).subject === "string"
+              ? String((item as { subject?: unknown }).subject)
+              : undefined,
+          data:
+            typeof (item as { data?: unknown }).data === "string"
+              ? String((item as { data?: unknown }).data)
+              : undefined,
+        }))
       : [],
   }
 }
@@ -341,13 +404,13 @@ function parseWorldbookDetailValue(value: Record<string, unknown>): WorldbookDet
       const record = Object.fromEntries(Object.entries(entry))
       return typeof record.title === "string" && typeof record.content === "string"
         ? [
-            {
-              title: record.title,
-              content: record.content,
-              keys: record.keys ?? [],
-              secret: record.secret === true,
-            },
-          ]
+          {
+            title: record.title,
+            content: record.content,
+            keys: record.keys ?? [],
+            secret: record.secret === true,
+          },
+        ]
         : []
     }),
   }
@@ -361,6 +424,9 @@ interface AdminState {
   models: string[]
   /** THIS room's LLM override state (null until the first admin_room_config). */
   roomConfig: AdminRoomConfigFrame | null
+  /** The last LLM-config export document (null until one arrives). Carries
+   * PLAINTEXT keys; the Model screen downloads it as a JSON file. */
+  llmExport: AdminLLMConfigDocument | null
   keys: AdminKeyInfo[]
   /** The freshly minted key — cleartext arrives exactly once; show + let copy. */
   minted: MintedKey | null
@@ -369,6 +435,7 @@ interface AdminState {
   generated: AdminGeneratedFrame | null
   generationStage: string | null
   generationDetail: string
+  generationKind: "module" | "pack" | null
   moduleSources: ModuleSource[]
   moduleDetail: ModuleDetail | null
   moduleOperation: ModuleOperation | null
@@ -387,11 +454,18 @@ interface AdminState {
   lastError: string | null
   busy: boolean
   ingest: (
-    frame: ServerFrame | AdminRoomConfigFrame | AdminGenerateStartedFrame | AdminGenerateProgressFrame,
+    frame:
+      | ServerFrame
+      | AdminRoomConfigFrame
+      | AdminGenerateStartedFrame
+      | AdminGenerateProgressFrame
+      | AdminLLMExportFrame,
   ) => boolean
   refreshConfig: () => void
   setEmbedding: (profileId: string, dimension?: number) => void
   setModel: (provider: string, chatModel?: string, apiKey?: string, baseUrl?: string) => void
+  exportLLMConfig: () => void
+  importLLMConfig: (config: AdminLLMConfigDocument) => void
   listModels: (provider?: string, apiKey?: string, baseUrl?: string, kind?: ModelKind) => void
   saveLlm: (
     provider: string,
@@ -530,6 +604,7 @@ const EMPTY = {
   modelsKind: "",
   models: [],
   roomConfig: null,
+  llmExport: null,
   keys: [],
   minted: null,
   skills: [],
@@ -537,6 +612,7 @@ const EMPTY = {
   generated: null,
   generationStage: null,
   generationDetail: "",
+  generationKind: null,
   moduleSources: [],
   moduleDetail: null,
   moduleOperation: null,
@@ -558,6 +634,11 @@ export const useAdminStore = create<AdminState>((set) => ({
       case "admin_config":
         set({ config: frame, busy: false, lastError: null })
         return true
+      case "admin_llm_export": {
+        const exportFrame = frame as unknown as AdminLLMExportFrame
+        set({ llmExport: exportFrame.config ?? null, busy: false, lastError: null })
+        return true
+      }
       case "admin_models":
         set({
           modelsProvider: frame.provider,
@@ -579,22 +660,40 @@ export const useAdminStore = create<AdminState>((set) => ({
         set({ rules: frame.systems, busy: false, lastError: null })
         return true
       case "admin_generate_started":
-        set({ busy: true, generated: null, lastError: null })
+        set((state) => ({
+          busy: true,
+          generated: null,
+          generationStage: null,
+          generationDetail: "",
+          generationKind: frame.kind,
+          moduleSources: updateGeneratingSource(state.moduleSources, frame.kind, "", ""),
+          lastError: null,
+        }))
         return true
       case "admin_generate_progress":
-        set({ generationStage: frame.stage, generationDetail: frame.detail, busy: true })
+        set((state) => ({
+          generationStage: frame.stage,
+          generationDetail: frame.detail,
+          generationKind: frame.kind,
+          moduleSources: updateGeneratingSource(state.moduleSources, frame.kind, frame.stage, frame.detail),
+          busy: true,
+        }))
         return true
       case "admin_generated": {
         const kind = String(frame.kind)
         if (kind.startsWith("module_")) {
           const detail = parseModuleDetail(frame)
           if (kind === "module_list") {
-            set({
-              moduleSources: parseModuleSources(detail.modules),
+            const nextSources = parseModuleSources(detail.modules)
+            set((state) => ({
+              moduleSources: nextSources,
               moduleDetail: null,
+              generationKind:
+                nextSources.find((source) => source.generating)?.generationKind ??
+                (nextSources.some((source) => source.generating) ? state.generationKind : null),
               busy: false,
               lastError: null,
-            })
+            }))
           } else if (kind === "module_detail") {
             set({
               moduleDetail: parseModuleDetailValue(detail),
@@ -612,8 +711,8 @@ export const useAdminStore = create<AdminState>((set) => ({
                 status: typeof detail.status === "string" ? detail.status : undefined,
                 choices: Array.isArray(detail.choices)
                   ? detail.choices.filter(
-                      (choice): choice is string => typeof choice === "string" && !!choice,
-                    )
+                    (choice): choice is string => typeof choice === "string" && !!choice,
+                  )
                   : undefined,
               },
               ...(kind === "module_import" ? { moduleImporting: null } : {}),
@@ -653,7 +752,7 @@ export const useAdminStore = create<AdminState>((set) => ({
           }
           return true
         }
-        set({ generated: frame, busy: false, generationStage: null, generationDetail: "" })
+        set({ generated: frame, busy: false, generationStage: null, generationDetail: "", generationKind: null })
         return true
       }
       case "admin_room_op":
@@ -705,6 +804,9 @@ export const useAdminStore = create<AdminState>((set) => ({
       set,
     ),
   deleteLlm: (profileId) => send({ type: "admin_delete_llm", id: profileId } as unknown as ClientFrame, set),
+  exportLLMConfig: () => send({ type: "admin_export_llm" } as unknown as ClientFrame, set),
+  importLLMConfig: (config) =>
+    send({ type: "admin_import_llm", config } as unknown as ClientFrame, set),
   setLlmLane: (lane, patch) =>
     send(
       {

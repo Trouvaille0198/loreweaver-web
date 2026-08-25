@@ -282,6 +282,11 @@
       "configured": "Configured",
       "notConfigured": "Not configured",
       "demoActive": "The offline sample Keeper is running — applying a model switches the room to it.",
+      "exportLlm": "Export config",
+      "importLlm": "Import config",
+      "exportLlmHint": "Download every saved chat/embedding/image model configuration (including keys) as a JSON file for backup or migration to another server.",
+      "importLlmHint": "Restore model configurations from a JSON file. Replaces all currently saved configurations; importing an export that includes keys makes them usable immediately.",
+      "importLlmConfirm": "Importing replaces all currently saved model configurations (including keys). Continue?",
       "roomSection": "This room's model",
       "roomHint": "Pin this room's own provider/key/models. Empty fields follow the global config below; a room override wins for every turn in this room.",
       "roomInherit": "inherit",
@@ -337,25 +342,29 @@
           "cover": "Cover",
           "scenes": "Scenes",
           "npcs": "NPC portraits",
-          "items": "Items & clues"
+          "items": "Items & clues",
+          "pregens": "Investigators"
         },
         "mediaHints": {
           "cover": "One opening image for the module.",
           "scenes": "One atmospheric image per key scene.",
           "npcs": "One portrait per key NPC.",
-          "items": "One image per key item or clue."
+          "items": "One image per key item or clue.",
+          "pregens": "Portraits for the module's claimable investigators — each becomes the avatar of the player who claims them."
         },
         "mediaCaps": {
           "cover": "1",
           "scenes": "up to 6",
           "npcs": "up to 6",
-          "items": "up to 6"
+          "items": "up to 6",
+          "pregens": "≤ 6"
         },
-        "extendsTitle": "Rule system",
+        "extendsTitle": "Rule strategy",
         "extendsNone": "Follow room system (default)",
+        "standalone": "Generate a standalone rule system",
         "useGroup": "Directly use a built-in system",
         "patchGroup": "Generate a patch on a base system",
-        "extendsHint": "Choose how the module runs its rules. \"Directly use\" pins the module to a built-in system (no rulepack generated, cheapest). \"Generate a patch\" authors a rulepack that extends a base system, adding only the module's own mechanics (extra LLM call).",
+        "extendsHint": "Choose one rule strategy: the default adds no extra rules, while a standalone rule system is authored from scratch. Complete packs can also use a built-in system directly or generate a patch on one.",
         "use": {
           "coc7": "Call of Cthulhu (coc7)",
           "dnd5e": "Dungeons & Dragons (dnd5e)",
@@ -427,11 +436,13 @@
         "scenes": "Scenes",
         "npcs": "NPC portraits",
         "items": "Items & clues",
-        "asset": "Assets"
+        "asset": "Assets",
+        "pregens": "Investigators"
       },
       "mediaOpen": "Enlarge {{name}}",
       "mediaPreview": "Image preview for {{name}}",
       "mediaClose": "Close image preview",
+      "mediaFallback": "{{kind}} {{index}}",
       "packNotImported": "This pack has no lore entries.",
       "imported": "Imported into this room.",
       "saved": "Saved",
@@ -479,7 +490,8 @@
         "timeline": "Timeline",
         "truthsThreats": "Truths & threats",
         "media": "Illustrations"
-      }
+      },
+      "generating": "Generating…"
     },
     "worldbook": {
       "library": "Worldbook library",

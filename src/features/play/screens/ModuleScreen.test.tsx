@@ -53,7 +53,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("sends the reference as an ordinary .pack install command", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     const field = screen.getByLabelText("Pack reference")
     const button = screen.getByRole("button", { name: "Install (.pack install)" })
     // Nothing to install yet.
@@ -67,7 +67,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("says the pack went out only once the send has actually resolved", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     await user.type(screen.getByLabelText("Pack reference"), "gh:1A7432/antu@v1.0.0")
     await user.click(screen.getByRole("button", { name: "Install (.pack install)" }))
     await waitFor(() => expect(screen.getByText(/result lands as a system line/)).toBeInTheDocument())
@@ -79,7 +79,7 @@ describe("ModuleScreen — community packs", () => {
     const user = userEvent.setup()
     transportSend.mockResolvedValueOnce(undefined)
     transportSend.mockRejectedValueOnce(new Error("offline"))
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     const field = screen.getByLabelText("Pack reference")
     await user.type(field, "gh:1A7432/antu@v1.0.0")
     await user.click(screen.getByRole("button", { name: "Install (.pack install)" }))
@@ -90,7 +90,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("sends the reference as a .pack fetch command that imports nothing", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     const field = screen.getByLabelText("Pack reference")
     const button = screen.getByRole("button", { name: "Fetch only (.pack fetch)" })
     // Nothing to fetch yet.
@@ -104,7 +104,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("says the fetch went out once the send has resolved", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     await user.type(screen.getByLabelText("Pack reference"), "gh:1A7432/antu@v1.0.0")
     await user.click(screen.getByRole("button", { name: "Fetch only (.pack fetch)" }))
     await waitFor(() => expect(screen.getByText(/lands on the server only/)).toBeInTheDocument())
@@ -114,7 +114,7 @@ describe("ModuleScreen — community packs", () => {
     const user = userEvent.setup()
     transportSend.mockResolvedValueOnce(undefined)
     transportSend.mockRejectedValueOnce(new Error("offline"))
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     const field = screen.getByLabelText("Pack reference")
     await user.type(field, "gh:1A7432/antu@v1.0.0")
     await user.click(screen.getByRole("button", { name: "Fetch only (.pack fetch)" }))
@@ -127,7 +127,7 @@ describe("ModuleScreen — community packs", () => {
     const user = userEvent.setup()
     transportSend.mockResolvedValueOnce(undefined)
     transportSend.mockRejectedValueOnce(new Error("offline"))
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     const field = screen.getByLabelText("Module path on the server")
     await user.type(field, "packs/blackpool.lwpack")
     await user.click(screen.getByRole("button", { name: "Install (.module)" }))
@@ -137,7 +137,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("is not offered to a player seat", () => {
     seat("player")
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     expect(screen.queryByLabelText("Pack reference")).toBeNull()
   })
 
@@ -147,7 +147,7 @@ describe("ModuleScreen — community packs", () => {
       moduleSources: [{ name: "scene.md", size: 42, modified: 1, current: false, sourceKind: "text" }],
       moduleDetail: null,
     })
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
 
     expect(screen.queryByText("A foggy scene")).toBeNull()
     await user.click(screen.getByRole("button", { name: /scene\.md/ }))
@@ -187,7 +187,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("renders a multi-world pack choice and imports the exact selected card", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     act(() => {
       useAdminStore.setState({
         busy: false,
@@ -213,7 +213,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("renders both generation option groups unchecked, with coming-soon boxes disabled", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     await user.click(screen.getByRole("tab", { name: "AI creation" }))
     expect(screen.getByText("Media")).toBeInTheDocument()
     expect(screen.getByText("Companion content")).toBeInTheDocument()
@@ -230,7 +230,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("sends only the checked options with module generation", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     await user.click(screen.getByRole("tab", { name: "AI creation" }))
     // The mount-time listModules() leaves the store busy until a reply lands;
     // no server answers here, so clear it the way an ingested reply would.
@@ -251,9 +251,34 @@ describe("ModuleScreen — community packs", () => {
     })
   })
 
+  it("refreshes the library after forge completion", async () => {
+    render(<ModuleScreen onBack={() => { }} />)
+    sent.length = 0
+    act(() => {
+      useAdminStore.setState({
+        generated: {
+          type: "admin_generated",
+          kind: "module",
+          ok: true,
+          id: "fog-harbor",
+          name: "fog-harbor.md",
+          error: "",
+          detail: "installed",
+        } as never,
+      })
+    })
+    await waitFor(() =>
+      expect(sent.at(-1)).toEqual({
+        type: "admin_generate",
+        kind: "module_list",
+        description: "{}",
+      }),
+    )
+  })
+
   it("pack mode keeps companion options and sends kind:pack with media+companion", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     await user.click(screen.getByRole("tab", { name: "AI creation" }))
     act(() => useAdminStore.setState({ busy: false }))
     await user.type(
@@ -277,7 +302,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("pack mode with no options sends no options field", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     await user.click(screen.getByRole("tab", { name: "AI creation" }))
     act(() => useAdminStore.setState({ busy: false }))
     await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a quiet wood")
@@ -291,9 +316,26 @@ describe("ModuleScreen — community packs", () => {
     })
   })
 
+  it("standalone rule strategy sends a rulepack companion", async () => {
+    const user = userEvent.setup()
+    render(<ModuleScreen onBack={() => { }} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    act(() => useAdminStore.setState({ busy: false }))
+    await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a quiet wood")
+    await user.selectOptions(screen.getByRole("combobox"), "standalone")
+    await user.click(screen.getByRole("button", { name: "Generate & install" }))
+    expect(sent.at(-1)).toEqual({
+      type: "admin_generate",
+      kind: "module",
+      description: "a quiet wood",
+      locale: "en",
+      options: { companion: ["rulepacks"] },
+    })
+  })
+
   it("directly using a built-in system sends system and no rulepack companion", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     await user.click(screen.getByRole("tab", { name: "AI creation" }))
     act(() => useAdminStore.setState({ busy: false }))
     await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a dungeon crawl")
@@ -311,7 +353,7 @@ describe("ModuleScreen — community packs", () => {
 
   it("generating a patch on a base system auto-enables the rulepack companion and sends extends", async () => {
     const user = userEvent.setup()
-    render(<ModuleScreen onBack={() => {}} />)
+    render(<ModuleScreen onBack={() => { }} />)
     await user.click(screen.getByRole("tab", { name: "AI creation" }))
     act(() => useAdminStore.setState({ busy: false }))
     await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a coastal horror")

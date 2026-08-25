@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react"
-import type { ModelKind, ProviderMetadata } from "@loreweaver/protocol"
+import type { AdminLLMConfigDocument, ModelKind, ProviderMetadata } from "@loreweaver/protocol"
 import { useTranslation } from "react-i18next"
 import { Button, Field, Notice, SectionHeader, Surface } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
@@ -90,23 +90,20 @@ function ProfileCard({
           </>
         ) : (
           <>
-            {profile.kind === "chat" ? (
-              isDefault ? (
-                <span className="play-model-status is-active">{t("play.model.defaultBadge")}</span>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="quiet"
-                  loading={actionPending && action?.kind === "default"}
-                  disabled={action !== null}
-                  onClick={onSetDefault}
-                >
-                  {t("play.model.setDefault")}
-                </Button>
-              )
+            <span className="play-model-status is-inherited">{t(`play.model.kind.${profile.kind}`)}</span>
+            {isDefault ? (
+              <span className="play-model-status is-active">{t("play.model.defaultBadge")}</span>
             ) : (
-              <span className="play-model-status is-inherited">{t(`play.model.kind.${profile.kind}`)}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="quiet"
+                loading={actionPending && action?.kind === "default"}
+                disabled={action !== null}
+                onClick={onSetDefault}
+              >
+                {t("play.model.setDefault")}
+              </Button>
             )}
             <Button
               type="button"
@@ -223,9 +220,13 @@ export default function ModelScreen({
   const saveLlm = useAdminStore((state) => state.saveLlm)
   const deleteLlm = useAdminStore((state) => state.deleteLlm)
   const setModel = useAdminStore((state) => state.setModel)
+  const setImagegen = useAdminStore((state) => state.setImagegen)
   const setRoomModel = useAdminStore((state) => state.setRoomModel)
   const clearRoomModel = useAdminStore((state) => state.clearRoomModel)
   const listModels = useAdminStore((state) => state.listModels)
+  const exportLLMConfig = useAdminStore((state) => state.exportLLMConfig)
+  const importLLMConfig = useAdminStore((state) => state.importLLMConfig)
+  const llmExport = useAdminStore((state) => state.llmExport)
   const modelsProvider = useAdminStore((state) => state.modelsProvider)
   const modelsKind = useAdminStore((state) => state.modelsKind)
   const models = useAdminStore((state) => state.models)
@@ -339,6 +340,37 @@ export default function ModelScreen({
     refreshConfig()
     refreshRoomConfig()
   }, [refreshConfig, refreshRoomConfig])
+
+  // Download the freshly arrived export document as a JSON file. The store keeps
+  // the last export; a re-request replaces it, so only react when it changes.
+  useEffect(() => {
+    if (!llmExport) return
+    const blob = new Blob([JSON.stringify(llmExport, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = `loreweaver-llm-config-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
+  }, [llmExport])
+
+  const importFileRef = useRef<HTMLInputElement>(null)
+  const handleImportFile = (file: File | undefined) => {
+    if (!file) return
+    if (!window.confirm(t("play.model.importLlmConfirm"))) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result ?? ""))
+        importLLMConfig(parsed as AdminLLMConfigDocument)
+      } catch {
+        // The server validates shape too; a malformed JSON fails the parse here.
+      }
+    }
+    reader.readAsText(file)
+  }
 
   useEffect(() => {
     if (embeddingSaving) return
@@ -458,11 +490,33 @@ export default function ModelScreen({
     setProfileAction({ kind: "save", profileId: selectedProfileId || undefined })
   }
   const setDefaultProfile = (profile: LLMProfile) => {
-    if (profileAction || profile.kind !== "chat") return
+    if (profileAction) return
     setDeleteCandidateId("")
     profileRequestConfig.current = config
-    setModel(profile.provider, profile.chat_model, undefined, profile.base_url)
+    if (profile.kind === "chat") {
+      setModel(profile.provider, profile.chat_model, undefined, profile.base_url)
+    } else if (profile.kind === "image") {
+      setImagegen(profile.provider, profile.chat_model, undefined, profile.base_url)
+    } else if (profile.kind === "embedding") {
+      setEmbedding(profile.id, profile.embedding_dim || config?.embedding_dim)
+    }
     setProfileAction({ kind: "default", profileId: profile.id })
+  }
+
+  /** Whether `profile` is the CURRENT global default for its kind — chat matches
+   * the active model, image the global image generator, embedding the selected
+   * embedding profile. */
+  const isDefaultProfile = (profile: LLMProfile): boolean => {
+    if (profile.kind === "chat") {
+      return config?.provider === profile.provider && config.chat_model === profile.chat_model
+    }
+    if (profile.kind === "image") {
+      return config?.imagegen?.provider === profile.provider && config.imagegen?.model === profile.chat_model
+    }
+    if (profile.kind === "embedding") {
+      return config?.embedding_profile === profile.id
+    }
+    return false
   }
 
   const removeProfile = (profileId: string) => {
@@ -519,9 +573,39 @@ export default function ModelScreen({
           title={t("play.model.globalSection")}
           description={t("play.model.globalHint")}
           actions={
-            <Button type="button" variant="quiet" disabled={profileAction !== null} onClick={startNewProfile}>
-              {t("play.model.newLlm")}
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={profileAction !== null}
+                onClick={exportLLMConfig}
+                title={t("play.model.exportLlmHint")}
+              >
+                {t("play.model.exportLlm")}
+              </Button>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={profileAction !== null}
+                onClick={() => importFileRef.current?.click()}
+                title={t("play.model.importLlmHint")}
+              >
+                {t("play.model.importLlm")}
+              </Button>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept="application/json,.json"
+                style={{ display: "none" }}
+                onChange={(event) => {
+                  handleImportFile(event.target.files?.[0])
+                  event.target.value = ""
+                }}
+              />
+              <Button type="button" variant="quiet" disabled={profileAction !== null} onClick={startNewProfile}>
+                {t("play.model.newLlm")}
+              </Button>
+            </>
           }
         />
 
@@ -548,11 +632,7 @@ export default function ModelScreen({
                         key={profile.id}
                         profile={profile}
                         selected={selectedProfileId === profile.id}
-                        isDefault={
-                          profile.kind === "chat" &&
-                          config?.provider === profile.provider &&
-                          config.chat_model === profile.chat_model
-                        }
+                        isDefault={isDefaultProfile(profile)}
                         action={profileAction}
                         deleteConfirming={deleteCandidateId === profile.id}
                         onSetDefault={() => setDefaultProfile(profile)}

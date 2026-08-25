@@ -180,6 +180,16 @@ declare module "@loreweaver/protocol" {
     llms?: LLMProfile[]
     scribe?: LLMLaneStatus
     director?: LLMLaneStatus
+    /** The global default image generator (`_imagegen_status`): the profile the
+     * engine uses for rooms with no image override. */
+    imagegen?: {
+      provider?: string
+      model?: string
+      size?: string
+      base_url?: string
+      has_key?: boolean
+      configured?: boolean
+    }
   }
   interface AdminSetEmbeddingFrame {
     type: "admin_set_embedding"
@@ -202,5 +212,40 @@ declare module "@loreweaver/protocol" {
     kind: "module" | "pack"
     stage: string
     detail: string
+  }
+
+  // --- v2.5 wire: portable LLM-config export/import (admin_export_llm /
+  // admin_import_llm, answered by the engine's `admin_llm_export` /
+  // `admin_config` frames). The published npm package does not type these yet;
+  // ClientFrame/ServerFrame are type aliases and cannot be augmented — callers
+  // cast at the transport boundary.
+  interface AdminLLMConfigDocument {
+    format: string
+    version: number
+    llm_profiles: Record<string, Record<string, string>>
+    llm_credentials: Record<string, Record<string, string>>
+    runtime: Record<string, string>
+    imagegen_credentials: Record<string, Record<string, string>>
+  }
+
+  /** Client → server: ask for a portable snapshot of every saved LLM/embedding/
+   * imagegen profile plus the live runtime selection. The reply carries
+   * PLAINTEXT keys and is only sent to the requesting keeper connection. */
+  interface AdminExportLLMFrame {
+    type: "admin_export_llm"
+  }
+
+  /** Client → server: replace the saved profiles with a previously exported
+   * document, then hot-swap the live runtime selection. Answer is `admin_config`. */
+  interface AdminImportLLMFrame {
+    type: "admin_import_llm"
+    config: AdminLLMConfigDocument
+  }
+
+  /** Server → keeper: the exported LLM configuration document. */
+  interface AdminLLMExportFrame {
+    type: "admin_llm_export"
+    ok: boolean
+    config: AdminLLMConfigDocument
   }
 }

@@ -338,6 +338,53 @@ describe("admin model requests", () => {
     })
   })
 
+  it("keeps and updates an in-flight module generation source", () => {
+    const ingest = useAdminStore.getState().ingest
+    ingest({
+      type: "admin_generated",
+      kind: "module_list",
+      ok: true,
+      id: "",
+      name: "",
+      error: "",
+      detail: JSON.stringify({
+        modules: [
+          {
+            name: "__generating__",
+            title: "",
+            size: 0,
+            modified: 0,
+            current: false,
+            source_kind: "generating",
+            generating: true,
+            stage: "authoring",
+            detail: "writing source",
+          },
+        ],
+      }),
+    } as never)
+    expect(useAdminStore.getState().moduleSources[0]).toMatchObject({
+      name: "__generating__",
+      sourceKind: "generating",
+      generating: true,
+      stage: "authoring",
+      detail: "writing source",
+    })
+
+    ingest({
+      type: "admin_generate_progress",
+      kind: "module",
+      stage: "media",
+      detail: "rendering cover",
+    } as never)
+    expect(useAdminStore.getState().moduleSources[0]).toMatchObject({
+      sourceKind: "generating",
+      generating: true,
+      stage: "media",
+      detail: "rendering cover",
+    })
+  })
+
   it("preserves exact world-card choices from a multi-card import reply", () => {
     useAdminStore.getState().ingest({
       type: "admin_generated",
