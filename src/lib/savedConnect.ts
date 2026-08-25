@@ -15,7 +15,6 @@ import { guardedLocalStorage } from "./persistStorage"
 export interface SavedConnect {
   url: string
   key: string
-  name?: string
 }
 
 const STORAGE_KEY = "loreweaver-web.connect"
@@ -29,7 +28,7 @@ export function loadSavedConnect(): SavedConnect | null {
     if (typeof state !== "object" || state === null) return null
     if (typeof state.url !== "string" || state.url.length === 0) return null
     if (typeof state.key !== "string" || state.key.length === 0) return null
-    return { url: state.url, key: state.key, name: typeof state.name === "string" ? state.name : undefined }
+    return { url: state.url, key: state.key }
   } catch {
     // A corrupt entry is "nothing stored", same as a first launch.
     return null

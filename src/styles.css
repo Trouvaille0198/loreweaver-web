@@ -2644,6 +2644,26 @@ body {
   font-size: 12px;
 }
 
+/* Inline rename in the keys table: name + button (or input + save/cancel). */
+.play-rename-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.play-rename-cell input {
+  width: 9em;
+  padding: 3px 6px;
+  font-size: 13px;
+}
+
+.play-rename-button {
+  margin-left: 2px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
 .play-minted {
   border: 1px solid var(--ok);
   border-radius: 8px;

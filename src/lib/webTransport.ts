@@ -162,13 +162,12 @@ export interface WebConnectParams {
   /** `ws://host:port` (or `wss://` behind TLS). */
   url: string
   key: string
-  name?: string
 }
 
 export async function webConnect(params: WebConnectParams): Promise<void> {
   const ws = webClient()
   await ws.connect(params.url)
-  ws.join(params.key, params.name)
+  ws.join(params.key)
 }
 
 export async function webDisconnect(): Promise<void> {

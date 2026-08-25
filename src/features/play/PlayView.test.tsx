@@ -56,7 +56,7 @@ describe("PlayView", () => {
     await user.type(urlField, "  ws://localhost:8787  ")
     await user.type(screen.getByLabelText(/access key/i), " k-1 ")
     await user.click(screen.getByRole("button", { name: "Connect" }))
-    expect(connect).toHaveBeenCalledWith({ ticket: "ws://localhost:8787", key: "k-1", name: undefined })
+    expect(connect).toHaveBeenCalledWith({ ticket: "ws://localhost:8787", key: "k-1" })
   })
 
   it("lands directly in the chronicle while online — the game IS the home screen", async () => {
@@ -140,7 +140,7 @@ describe("PlayView", () => {
     // The page is freshly built (a discarded mobile tab): the app dials the
     // remembered connection right away instead of stranding on the form.
     render(<PlayView />)
-    expect(connect).toHaveBeenCalledWith({ ticket: "ws://localhost:8787", key: "k-saved", name: "Nyx" })
+    expect(connect).toHaveBeenCalledWith({ ticket: "ws://localhost:8787", key: "k-saved" })
     // And again when the tab returns after a later drop.
     connect.mockClear()
     document.dispatchEvent(new Event("visibilitychange"))
@@ -242,7 +242,6 @@ describe("PlayView", () => {
     render(<PlayView />)
     expect(screen.getByLabelText(/server url/i)).toHaveValue("ws://localhost:8787")
     expect(screen.getByLabelText(/access key/i)).toHaveValue("k-saved")
-    expect(screen.getByLabelText(/display name/i)).toHaveValue("Nyx")
     // One click rejoins: the submit is already enabled.
     expect(screen.getByRole("button", { name: "Connect" })).toBeEnabled()
 
@@ -262,12 +261,11 @@ describe("PlayView", () => {
     await user.clear(screen.getByLabelText(/server url/i))
     await user.type(screen.getByLabelText(/server url/i), "ws://localhost:8787")
     await user.type(screen.getByLabelText(/access key/i), " k-1 ")
-    await user.type(screen.getByLabelText(/display name/i), " Nyx ")
     await user.click(screen.getByRole("button", { name: "Connect" }))
     // The welcome turned the store online; the effect then persisted the
     // trimmed values that actually worked.
     expect(localStorage.getItem("loreweaver-web.connect")).toBe(
-      JSON.stringify({ state: { url: "ws://localhost:8787", key: "k-1", name: "Nyx" }, version: 1 }),
+      JSON.stringify({ state: { url: "ws://localhost:8787", key: "k-1" }, version: 1 }),
     )
   })
 

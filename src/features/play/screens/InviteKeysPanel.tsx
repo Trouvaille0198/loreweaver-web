@@ -26,6 +26,19 @@ export default function InviteKeysPanel() {
   const [role, setRole] = useState<PlayerRole>("player")
   const [copied, setCopied] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+
+  const startRename = (key: AdminKeyInfo) => {
+    setRenameValue(key.name)
+    setRenamingId(key.id)
+  }
+
+  const saveRename = (id: string) => {
+    const next = renameValue.trim()
+    if (next) updateKey(id, { name: next })
+    setRenamingId(null)
+  }
 
   useEffect(() => {
     listKeys()
@@ -102,7 +115,42 @@ export default function InviteKeysPanel() {
           <tbody>
             {keys.map((key) => (
               <tr key={key.id}>
-                <td data-label={t("play.keys.name")}>{key.name}</td>
+                <td data-label={t("play.keys.name")}>
+                  {renamingId === key.id ? (
+                    <div className="play-rename-cell">
+                      <input
+                        value={renameValue}
+                        autoFocus
+                        placeholder={t("play.keys.renamePlaceholder")}
+                        aria-label={t("play.keys.rename")}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveRename(key.id)
+                          if (e.key === "Escape") setRenamingId(null)
+                        }}
+                      />
+                      <Button type="button" size="sm" variant="primary" onClick={() => saveRename(key.id)}>
+                        {t("play.keys.save")}
+                      </Button>
+                      <Button type="button" size="sm" variant="quiet" onClick={() => setRenamingId(null)}>
+                        {t("play.keys.cancel")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="play-rename-cell">
+                      <span>{key.name}</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="quiet"
+                        className="play-rename-button"
+                        onClick={() => startRename(key)}
+                      >
+                        {t("play.keys.rename")}
+                      </Button>
+                    </div>
+                  )}
+                </td>
                 <td data-label={t("play.keys.room")}>{key.room}</td>
                 <td data-label={t("play.keys.role")}>
                   <select

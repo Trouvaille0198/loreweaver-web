@@ -297,7 +297,6 @@ export default function PlayView() {
   // pre-fill only in the browser.
   const [ticket, setTicket] = useState(saved?.url ?? (isTauri() ? "" : defaultServerUrl()))
   const [key, setKey] = useState(saved?.key ?? "")
-  const [name, setName] = useState(saved?.name ?? "")
 
   // The browser cannot spawn or reach a local server process, and it cannot
   // dial an Iroh p2p ticket — it connects to a WebSocket endpoint instead.
@@ -316,9 +315,9 @@ export default function PlayView() {
   // render — the component stays mounted — so this reads the submitted values.
   useEffect(() => {
     if (status !== "online" || !web) return
-    saveConnect({ url: ticket.trim(), key: key.trim(), name: name.trim() || undefined })
+    saveConnect({ url: ticket.trim(), key: key.trim() })
     setRemembered(true)
-  }, [status, web, ticket, key, name])
+  }, [status, web, ticket, key])
 
   // Auto-rejoin on tab return. Mobile browsers freeze or discard background
   // tabs (iOS especially): the WS drops AND the page's JS heap may be rebuilt
@@ -336,7 +335,7 @@ export default function PlayView() {
       const saved = loadSavedConnect()
       if (saved === null) return
       setAutoDial(true)
-      void connect({ ticket: saved.url, key: saved.key, name: saved.name })
+      void connect({ ticket: saved.url, key: saved.key })
     }
     const onVisibility = () => {
       if (document.visibilityState === "visible") rejoin()
@@ -393,7 +392,6 @@ export default function PlayView() {
     void connect({
       ticket: ticket.trim(),
       key: key.trim(),
-      name: name.trim() ? name.trim() : undefined,
     })
   }
 
@@ -402,7 +400,6 @@ export default function PlayView() {
     setRemembered(false)
     setTicket(isTauri() ? "" : defaultServerUrl())
     setKey("")
-    setName("")
   }
 
   return (
@@ -442,19 +439,6 @@ export default function PlayView() {
                   onChange={(e) => setKey(e.target.value)}
                   placeholder={t("connect.keyPlaceholder")}
                   spellCheck={false}
-                  disabled={!offline}
-                />
-              )}
-            </Field>
-            <Field label={t("connect.name")}>
-              {({ id, describedBy, invalid }) => (
-                <input
-                  id={id}
-                  aria-describedby={describedBy}
-                  aria-invalid={invalid}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t("connect.namePlaceholder")}
                   disabled={!offline}
                 />
               )}

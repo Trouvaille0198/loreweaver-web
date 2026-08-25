@@ -22,7 +22,6 @@ export interface TransportConnectParams {
   /** An Iroh ticket (native app) or a `ws(s)://` server URL (browser). */
   ticket: string
   key: string
-  name?: string
 }
 
 /** True when running inside the Tauri shell (false in vitest / plain browser). */
@@ -32,7 +31,7 @@ export function isTauri(): boolean {
 
 export async function transportConnect(params: TransportConnectParams): Promise<void> {
   if (isTauri()) return invoke("transport_connect", { ...params })
-  return webConnect({ url: params.ticket, key: params.key, name: params.name })
+  return webConnect({ url: params.ticket, key: params.key })
 }
 
 export async function transportDisconnect(): Promise<void> {
