@@ -347,14 +347,14 @@
           "cover": "封面/海报",
           "scenes": "场景图",
           "npcs": "NPC 立绘",
-          "items": "物品/线索图",
+          "items": "线索",
           "pregens": "调查员"
         },
         "mediaHints": {
           "cover": "为剧本生成一张开场封面图。",
           "scenes": "为每个关键场景生成一张气氛图。",
           "npcs": "为主要 NPC 各生成一张肖像（每人一张）。",
-          "items": "为关键物品/线索各生成一张图。",
+          "items": "为关键线索各生成一张图。",
           "pregens": "可认领调查员的立绘——每张会成为认领该调查员的玩家的角色头像。"
         },
         "mediaCaps": {
@@ -436,7 +436,7 @@
       "packPregens": "可认领调查员",
       "packRulepacks": "规则体系",
       "packSkills": "KP 技能",
-      "packItems": "设计物品",
+      "packItems": "线索",
       "itemScopeUniversal": "通用",
       "itemScopeModule": "剧情",
       "itemOrigin": "来源",
@@ -447,7 +447,7 @@
         "cover": "封面",
         "scenes": "场景图",
         "npcs": "NPC 立绘",
-        "items": "物品/线索图",
+        "items": "线索",
         "asset": "素材",
         "pregens": "调查员"
       },
@@ -472,7 +472,7 @@
         "summary": "摘要",
         "threats": "威胁",
         "opening_facts": "开场事实",
-        "items": "物品"
+        "items": "线索"
       },
       "poolFields": {
         "name": "名称",
@@ -503,7 +503,7 @@
         "timeline": "时间线",
         "truthsThreats": "真相与威胁",
         "media": "配图",
-        "items": "物品"
+        "items": "线索"
       },
       "generating": "正在生成…"
     },
@@ -780,7 +780,7 @@
     "imageArgs": {
       "scene": "生成当前场景图",
       "portrait": "生成当前角色肖像图",
-      "clue": "生成线索/物品图",
+      "clue": "生成线索图",
       "combat": "生成当前战斗图",
       "last": "根据守秘人最近的叙述生成"
     },
@@ -813,7 +813,7 @@
       "image": "生成图片发到房间",
       "image.scene": "生成当前场景图",
       "image.portrait": "生成当前角色肖像图",
-      "image.item": "生成物品图",
+      "image.item": "生成线索图",
       "image.combat": "生成当前战斗图",
       "import": "导入卡牌",
       "init": "先攻",

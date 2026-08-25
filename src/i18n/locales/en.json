@@ -347,14 +347,14 @@
           "cover": "Cover",
           "scenes": "Scenes",
           "npcs": "NPC portraits",
-          "items": "Items & clues",
+          "items": "Clues",
           "pregens": "Investigators"
         },
         "mediaHints": {
           "cover": "One opening image for the module.",
           "scenes": "One atmospheric image per key scene.",
           "npcs": "One portrait per key NPC.",
-          "items": "One image per key item or clue.",
+          "items": "One image per key clue.",
           "pregens": "Portraits for the module's claimable investigators — each becomes the avatar of the player who claims them."
         },
         "mediaCaps": {
@@ -436,7 +436,7 @@
       "packPregens": "Claimable investigators",
       "packRulepacks": "Rule systems",
       "packSkills": "KP skills",
-      "packItems": "Designed items",
+      "packItems": "Clues",
       "itemScopeUniversal": "Universal",
       "itemScopeModule": "Module-bound",
       "itemOrigin": "Origin",
@@ -447,7 +447,7 @@
         "cover": "Cover",
         "scenes": "Scenes",
         "npcs": "NPC portraits",
-        "items": "Items & clues",
+        "items": "Clues",
         "asset": "Assets",
         "pregens": "Investigators"
       },
@@ -472,7 +472,7 @@
         "summary": "Summary",
         "threats": "Threats",
         "opening_facts": "Opening facts",
-        "items": "Items"
+        "items": "Clues"
       },
       "poolFields": {
         "name": "Name",
@@ -503,7 +503,7 @@
         "timeline": "Timeline",
         "truthsThreats": "Truths & threats",
         "media": "Illustrations",
-        "items": "Items"
+        "items": "Clues"
       },
       "generating": "Generating…"
     },
@@ -780,7 +780,7 @@
     "imageArgs": {
       "scene": "Current scene",
       "portrait": "Current character's portrait",
-      "clue": "A clue/item in play",
+      "clue": "A clue in play",
       "combat": "Current combat scene",
       "last": "From the Keeper's latest narration"
     },
@@ -813,7 +813,7 @@
       "image": "Generate an image to the room",
       "image.scene": "Generate the current scene image",
       "image.portrait": "Generate the current character portrait",
-      "image.item": "Generate an item image",
+      "image.item": "Generate a clue image",
       "image.combat": "Generate the current combat image",
       "import": "Import a card",
       "init": "Initiative",
