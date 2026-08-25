@@ -321,6 +321,25 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
           typeof item === "object" && item !== null && "name" in item,
       )
       : undefined,
+    items: Array.isArray(value.items)
+      ? value.items
+        .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+        .map((item) => ({
+          name: String(item.name ?? ""),
+          kind: typeof item.kind === "string" ? item.kind : undefined,
+          slot: typeof item.slot === "string" ? item.slot : undefined,
+          description: typeof item.description === "string" ? item.description : undefined,
+          effect: typeof item.effect === "string" ? item.effect : undefined,
+          lore: typeof item.lore === "string" ? item.lore : undefined,
+          origin: typeof item.origin === "string" ? item.origin : undefined,
+          quantity: typeof item.quantity === "number" ? item.quantity : undefined,
+          bonus:
+            typeof item.bonus === "object" && item.bonus !== null && !Array.isArray(item.bonus)
+              ? (item.bonus as Record<string, number>)
+              : undefined,
+        }))
+        .filter((item) => item.name.length > 0)
+      : undefined,
     pool,
     media: Array.isArray(value.media)
       ? value.media
