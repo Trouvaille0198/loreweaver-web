@@ -685,13 +685,18 @@ export const useAdminStore = create<AdminState>((set) => ({
           const detail = parseModuleDetail(frame)
           if (kind === "module_list") {
             const nextSources = parseModuleSources(detail.modules)
+            const generating = nextSources.find((source) => source.generating)
             set((state) => ({
               moduleSources: nextSources,
               moduleDetail: null,
               generationKind:
-                nextSources.find((source) => source.generating)?.generationKind ??
-                (nextSources.some((source) => source.generating) ? state.generationKind : null),
-              busy: false,
+                generating?.generationKind ?? (generating ? state.generationKind : null),
+              // Restore the in-flight progress from the persisted generating entry so a fresh
+              // connection (or a reload) still sees "正在生成…" — progress frames are unicast to
+              // the connection that triggered the generation and never reach another tab.
+              busy: Boolean(generating),
+              generationStage: generating ? (generating.stage ?? state.generationStage) : state.generationStage,
+              generationDetail: generating ? (generating.detail ?? state.generationDetail) : state.generationDetail,
               lastError: null,
             }))
           } else if (kind === "module_detail") {

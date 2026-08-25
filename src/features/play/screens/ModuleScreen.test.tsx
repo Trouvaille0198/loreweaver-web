@@ -20,6 +20,7 @@ vi.mock("../../../lib/transport", () => ({
 import "../../../i18n"
 import { useAdminStore } from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
+import { useSessionStore } from "../../../store/session"
 import ModuleScreen from "./ModuleScreen"
 
 function seat(role: PlayerRole) {
@@ -39,11 +40,13 @@ function seat(role: PlayerRole) {
 describe("ModuleScreen — community packs", () => {
   beforeEach(() => {
     sent.length = 0
+    localStorage.clear()
     transportSend.mockClear()
     transportSend.mockImplementation(async (frame: unknown) => {
       sent.push(frame)
     })
     seat("keeper")
+    useSessionStore.getState().clear()
   })
 
   afterEach(() => {
@@ -185,6 +188,31 @@ describe("ModuleScreen — community packs", () => {
     })
   })
 
+  it("hides the import button while a source is generating", async () => {
+    act(() => {
+      useAdminStore.setState({
+        moduleSources: [
+          {
+            name: "neon-dreams-caf",
+            size: 0,
+            modified: 1,
+            current: false,
+            sourceKind: "generating",
+            generating: true,
+            generationKind: "pack",
+            stage: "media",
+          },
+        ],
+        moduleDetail: null,
+      })
+    })
+    render(<ModuleScreen onBack={() => { }} />)
+    // Flush the mount-time `listModules` call so its frame cannot leak into later tests.
+    await act(async () => {})
+
+    expect(screen.queryByRole("button", { name: /Import into this room/ })).toBeNull()
+  })
+
   it("renders a multi-world pack choice and imports the exact selected card", async () => {
     const user = userEvent.setup()
     render(<ModuleScreen onBack={() => { }} />)
@@ -249,6 +277,24 @@ describe("ModuleScreen — community packs", () => {
       locale: "en",
       options: { media: ["cover"], companion: ["skills"] },
     })
+  })
+
+  it("names the room system in the follow option", async () => {
+    const user = userEvent.setup()
+    useSessionStore.setState({
+      game: {
+        type: "state",
+        party: [],
+        initiative: [],
+        online: 1,
+        room_system: "coc7",
+      },
+    })
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    expect(
+      screen.getByRole("option", { name: "Follow room system (default: Call of Cthulhu (coc7))" }),
+    ).toBeInTheDocument()
   })
 
   it("refreshes the library after forge completion", async () => {
@@ -367,5 +413,23 @@ describe("ModuleScreen — community packs", () => {
       locale: "en",
       options: { companion: ["rulepacks"], extends: "coc7" },
     })
+  })
+
+  it("remembers AI-creation media selections across reloads via localStorage", async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    await user.click(screen.getAllByRole("checkbox")[0]) // 封面/cover
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem("loreweaver-web.module-forge-options")!) as {
+        mediaOptions: string[]
+      }
+      expect(saved.mediaOptions).toEqual(["cover"])
+    })
+    unmount()
+    // A fresh mount (as after a reload) restores the selection.
+    render(<ModuleScreen onBack={() => {}} />)
+    await user.click(screen.getByRole("tab", { name: "AI creation" }))
+    expect(screen.getAllByRole("checkbox")[0]).toBeChecked()
   })
 })

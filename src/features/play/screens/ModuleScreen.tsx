@@ -13,6 +13,7 @@ import {
   type ModuleSource,
 } from "../../../store/admin"
 import { useConnectionStore } from "../../../store/connection"
+import { useSessionStore } from "../../../store/session"
 import ScreenShell from "./ScreenShell"
 
 type SendStatus = "idle" | "sent" | "failed"
@@ -22,6 +23,10 @@ type SendStatus = "idle" | "sent" | "failed"
 // the intended scope stays visible.
 const MEDIA_OPTIONS = ["cover", "scenes", "npcs", "items", "pregens"] as const
 const COMPANION_OPTIONS = ["skills", "cards"] as const
+
+/** localStorage key for the AI-creation forge selections (media / companion / rule strategy /
+ * pack mode), so a keeper's usual choices survive navigation and reloads. */
+const FORGE_OPTIONS_KEY = "loreweaver-web.module-forge-options"
 const COMPANION_SOON_OPTIONS = ["worldbook", "presets", "presentation", "panels"] as const
 
 // Base rule systems a generated module's rulepack may `extends: <base>` — reuse a
@@ -359,6 +364,10 @@ export default function ModuleScreen({
   const importModule = useAdminStore((s) => s.importModule)
   const deleteModule = useAdminStore((s) => s.deleteModule)
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
+  const roomSystemId = useSessionStore((s) => s.game?.room_system ?? "")
+  const roomSystemLabel = roomSystemId
+    ? t(`play.module.options.use.${roomSystemId}`, { defaultValue: roomSystemId })
+    : t("play.module.options.roomSystemUnknown")
 
   const [selectedName, setSelectedName] = useState("")
   const [description, setDescription] = useState("")
@@ -374,6 +383,34 @@ export default function ModuleScreen({
   const [packFetchStatus, setPackFetchStatus] = useState<SendStatus>("idle")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const bundleInputRef = useRef<HTMLInputElement | null>(null)
+  // Remember the last AI-creation selections (media / companion / rule strategy / pack mode) so
+  // a keeper's forge defaults survive navigation and reloads.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FORGE_OPTIONS_KEY)
+      if (!raw) return
+      const saved: unknown = JSON.parse(raw)
+      if (typeof saved !== "object" || saved === null || Array.isArray(saved)) return
+      const s = saved as Record<string, unknown>
+      if (Array.isArray(s.mediaOptions)) setMediaOptions(s.mediaOptions as string[])
+      if (Array.isArray(s.companionOptions)) setCompanionOptions(s.companionOptions as string[])
+      if (typeof s.ruleStrategy === "string") setRuleStrategy(s.ruleStrategy as RuleStrategy)
+      if (typeof s.packMode === "boolean") setPackMode(s.packMode as boolean)
+    } catch {
+      /* a corrupt/oversized entry just resets to defaults */
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        FORGE_OPTIONS_KEY,
+        JSON.stringify({ mediaOptions, companionOptions, ruleStrategy, packMode }),
+      )
+    } catch {
+      /* quota — persisting the forge prefs is best-effort */
+    }
+  }, [mediaOptions, companionOptions, ruleStrategy, packMode])
   useEffect(() => {
     listModules()
   }, [listModules])
@@ -558,51 +595,59 @@ export default function ModuleScreen({
                       setSelectedName(source.name)
                     }}
                   >
-                    <strong>{source.generating ? t("play.module.generating") : (source.title ?? source.name)}</strong>
-                    <span
-                      className={`chip ${
-                        (source.generating ? source.generationKind ?? generationKind : source.sourceKind) === "pack"
-                          ? "chip-warn"
-                          : ""
-                      }`}
-                    >
-                      {(source.generating ? source.generationKind ?? generationKind : source.sourceKind) === "pack"
-                        ? t("play.module.kindPack")
-                        : t("play.module.kindText")}
+                    <span className="module-source-copy">
+                      <span className="module-source-heading">
+                        <strong>
+                          {source.generating ? t("play.module.generating") : (source.title ?? source.name)}
+                        </strong>
+                        <span
+                          className={`chip ${
+                            (source.generating ? source.generationKind ?? generationKind : source.sourceKind) === "pack"
+                              ? "chip-warn"
+                              : ""
+                          }`}
+                        >
+                          {(source.generating ? source.generationKind ?? generationKind : source.sourceKind) === "pack"
+                            ? t("play.module.kindPack")
+                            : t("play.module.kindText")}
+                        </span>
+                        {source.current && !source.importing ? (
+                          <span className="chip chip-on">{t("play.module.current")}</span>
+                        ) : null}
+                        {source.importing || moduleImporting === source.name ? (
+                          <span className="chip chip-warn">{t("play.module.importing")}</span>
+                        ) : null}
+                      </span>
+                      {source.generating ? (
+                        <span className="studio-hint">
+                          {t(`play.module.stages.${source.stage ?? ""}`, { defaultValue: source.stage || "" })}
+                          {source.detail ? ` — ${source.detail}` : ""}
+                        </span>
+                      ) : (
+                        <span className="studio-hint">
+                          {source.size} {t("play.module.bytes")}
+                          {source.sourceKind === "pack" && source.entryCount !== undefined
+                            ? ` · ${source.entryCount} ${t("play.module.entries")}`
+                            : ""}
+                          {source.sourceKind === "pack" && source.pregenCount !== undefined
+                            ? ` · ${source.pregenCount} ${t("play.module.packPregens")}`
+                            : ""}
+                        </span>
+                      )}
                     </span>
-                    {source.generating ? (
-                      <span className="studio-hint">
-                        {t(`play.module.stages.${source.stage ?? ""}`, { defaultValue: source.stage || "" })}
-                        {source.detail ? ` — ${source.detail}` : ""}
-                      </span>
-                    ) : (
-                      <span className="studio-hint">
-                        {source.size} {t("play.module.bytes")}
-                        {source.sourceKind === "pack" && source.entryCount !== undefined
-                          ? ` · ${source.entryCount} ${t("play.module.entries")}`
-                          : ""}
-                        {source.sourceKind === "pack" && source.pregenCount !== undefined
-                          ? ` · ${source.pregenCount} ${t("play.module.packPregens")}`
-                          : ""}
-                      </span>
-                    )}
-                    {source.current && !source.importing ? (
-                      <span className="chip chip-on">{t("play.module.current")}</span>
-                    ) : null}
-                    {source.importing || moduleImporting === source.name ? (
-                      <span className="chip chip-warn">{t("play.module.importing")}</span>
-                    ) : null}
                   </Button>
                   <div className="module-source-actions">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="quiet"
-                      onClick={() => importModule(source.name)}
-                      disabled={busy || source.importing || moduleImporting === source.name}
-                    >
-                      {t("play.module.importRoom")}
-                    </Button>
+                    {!source.generating ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="quiet"
+                        onClick={() => importModule(source.name)}
+                        disabled={busy || source.importing || moduleImporting === source.name}
+                      >
+                        {t("play.module.importRoom")}
+                      </Button>
+                    ) : null}
                   </div>
                 </li>
               ))}
@@ -793,7 +838,9 @@ export default function ModuleScreen({
                 onChange={(e) => setRuleStrategy(e.target.value as RuleStrategy)}
                 aria-describedby={describedBy}
               >
-                <option value="">{t("play.module.options.extendsNone")}</option>
+                <option value="">
+                  {t("play.module.options.extendsNone", { system: roomSystemLabel })}
+                </option>
                 <option value="standalone">{t("play.module.options.standalone")}</option>
                 {packMode ? (
                   <>

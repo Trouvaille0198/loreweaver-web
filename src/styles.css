@@ -2768,6 +2768,42 @@ body {
   text-align: left;
 }
 
+.module-source-select > .ui-button-label {
+  align-items: stretch;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  white-space: normal;
+}
+
+.module-source-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.module-source-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.module-source-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.module-source-copy .studio-hint {
+  max-width: none;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .module-source-select strong {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3839,6 +3875,19 @@ code {
    INPUT dock (the thumb's home) — never the top header; the menu desk simply
    stacks under the menu list. */
 @media (max-width: 760px) {
+  .module-source-row {
+    flex-wrap: wrap;
+  }
+
+  .module-source-row .module-source-select {
+    flex-basis: 100%;
+  }
+
+  .module-source-row .module-source-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .room-info-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-1);

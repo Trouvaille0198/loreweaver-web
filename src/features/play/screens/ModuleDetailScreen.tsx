@@ -214,10 +214,12 @@ function PackDetailView({
               )
               return (
                 <li className="module-source-row" key={pregen.name}>
-                  <div className="module-source-select">
+                  <div className={`module-source-select${portrait ? " has-portrait" : ""}`}>
                     {portrait ? <ModuleMediaImage record={portrait} fallbackLabel={pregen.name} /> : null}
-                    <strong>{pregen.name}</strong>
-                    {pregen.concept ? <span className="studio-hint">{pregen.concept}</span> : null}
+                    <div className="module-source-copy">
+                      <strong>{pregen.name}</strong>
+                      {pregen.concept ? <span className="studio-hint">{pregen.concept}</span> : null}
+                    </div>
                   </div>
                 </li>
               )

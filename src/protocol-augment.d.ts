@@ -14,6 +14,8 @@ declare module "@loreweaver/protocol" {
   }
 
   interface StateFrame {
+    /** The room's resolved rule system, distinct from the complete systems list. */
+    room_system?: string
     /** Player-visible noun lists for `.image` completions (NPC/clue names). */
     image_names?: { npcs?: string[]; clues?: string[] }
   }

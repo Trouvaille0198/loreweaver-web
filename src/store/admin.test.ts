@@ -275,6 +275,7 @@ describe("admin model requests", () => {
 
   it("parses module source lists and keeper details from generated replies", () => {
     const ingest = useAdminStore.getState().ingest
+    useAdminStore.setState({ busy: true })
     ingest({
       type: "admin_generated",
       kind: "module_list",
@@ -311,6 +312,7 @@ describe("admin model requests", () => {
         pregenCount: 3,
       },
     ])
+    expect(useAdminStore.getState().busy).toBe(false)
 
     ingest({
       type: "admin_generated",
