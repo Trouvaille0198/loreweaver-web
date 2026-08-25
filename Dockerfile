@@ -14,7 +14,14 @@
 FROM oven/bun:1 AS web
 WORKDIR /src
 COPY . /src
-RUN bun install --frozen-lockfile && bun run build
+# BuildKit cache mounts: the dependency download cache and node_modules live
+# OUTSIDE the image layers, so a --no-cache rebuild re-runs install/build but
+# reuses cached downloads instead of hitting the network for every dependency.
+# node_modules is not part of the final image anyway (only dist/ is copied on),
+# so keeping it out of the layers loses nothing.
+RUN --mount=type=cache,target=/bun-cache,id=web-bun \
+    --mount=type=cache,target=/src/node_modules,id=web-modules \
+    BUN_INSTALL_CACHE_DIR=/bun-cache bun install --frozen-lockfile && bun run build
 
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
@@ -28,7 +35,12 @@ WORKDIR /srv
 # `vector` extra = sqlite-vec (RAG search); iroh rides the base deps as a
 # py3-none wheel. No compiler needed for either.
 COPY --from=engine / /repo
-RUN pip install --no-cache-dir "/repo[vector]" && rm -rf /repo
+# pip's wheel cache rides a cache mount (id=engine-pip), so a --no-cache
+# rebuild re-installs from the repo but reuses previously downloaded wheels
+# instead of re-fetching them. The cache mount never lands in the image layer;
+# dropping --no-cache-dir only moves the cache out of the layer, not into it.
+RUN --mount=type=cache,target=/root/.cache/pip,id=engine-pip \
+    pip install "/repo[vector]" && rm -rf /repo
 # The combined runner is bind-mounted from the web checkout, while its
 # web-only engine extension lives in the sibling engine checkout.
 COPY --from=engine /module_admin.py /srv/module_admin.py
