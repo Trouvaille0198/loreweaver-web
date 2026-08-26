@@ -44,13 +44,19 @@ export default function MessageNotifier() {
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
     canNotify() ? Notification.permission : "unsupported",
   )
-  const lastSeq = useRef(0)
+  const notifiedIds = useRef<Set<string>>(new Set())
   const flashTimer = useRef<number | null>(null)
 
   useEffect(() => {
     const last = entries[entries.length - 1]
-    if (!last || last.kind !== "narrative" || last.draft || last.seq <= lastSeq.current) return
-    lastSeq.current = last.seq
+    // A streamed reply replaces its draft bubble in place keeping the SAME seq,
+    // so seq comparison would skip every finished stream — key the dedupe on
+    // the frame id instead: the draft stage (draft:true) never notifies, the
+    // closing narrative with that id notifies exactly once.
+    if (!last || last.kind !== "narrative" || last.draft) return
+    const id = last.frame.id
+    if (!id || notifiedIds.current.has(id)) return
+    notifiedIds.current.add(id)
     if (!enabled || !document.hidden) return
 
     // Taskbar/tab nudge: flash the title like a poke does.
