@@ -23,19 +23,26 @@ function speakerLabel(frame: NarrativeFrame, systemLabel: string, playerLabel: s
   return stripControlChars(frame.name?.trim() || playerLabel)
 }
 
+/** Wall-clock time of a line, in the reader's own locale ("HH:MM"). */
+function formatTime(at: number, locale: string): string {
+  return new Date(at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
+}
+
 function NarrativeEntry({
-  frame,
+    frame,
+  at,
   draft,
   discardedDraft,
   onOpenDraft,
 }: {
-  frame: NarrativeFrame
+    frame: NarrativeFrame
+  at: number
   draft?: boolean
   /** Keeper-only: the narration a tool round discarded before the dice settled. */
   discardedDraft?: string
   onOpenDraft: (text: string) => void
 }) {
-  const { t } = useTranslation()
+      const { t, i18n } = useTranslation()
   const text = stripControlChars(frame.text)
   const hasDiscardedDraft = Boolean(discardedDraft)
   return (
@@ -52,7 +59,10 @@ function NarrativeEntry({
       title={hasDiscardedDraft ? t("log.draftHint") : undefined}
     >
       <header className="entry-speaker">
-        {speakerLabel(frame, t("log.system"), t("log.player"))}
+                {speakerLabel(frame, t("log.system"), t("log.player"))}
+        <time className="entry-time" dateTime={new Date(at).toISOString()}>
+          {formatTime(at, i18n.language)}
+        </time>
         {hasDiscardedDraft ? <span className="draft-mark" aria-hidden="true">{"◆"}</span> : null}
       </header>
       <div className="entry-body">
@@ -69,10 +79,15 @@ function NarrativeEntry({
 
 /** A line this client sent, dimmed until the table reflects it back. */
 function PendingEntry({ pending }: { pending: PendingEcho }) {
-  const { t } = useTranslation()
+      const { t, i18n } = useTranslation()
   return (
     <article className={`log-entry speaker-player pending${pending.failed ? " failed" : ""}`}>
-      <header className="entry-speaker">{stripControlChars(pending.speaker)}</header>
+            <header className="entry-speaker">
+        {stripControlChars(pending.speaker)}
+        <time className="entry-time" dateTime={new Date(pending.at).toISOString()}>
+          {formatTime(pending.at, i18n.language)}
+        </time>
+      </header>
       <div className="entry-body">
         <p className="entry-plain">{stripControlChars(pending.text)}</p>
         <span className="pending-mark">
@@ -158,7 +173,8 @@ function Entry({
     case "narrative":
       return (
         <NarrativeEntry
-          frame={entry.frame}
+                    frame={entry.frame}
+          at={entry.at}
           draft={entry.draft}
           discardedDraft={isKeeper ? entry.discardedDraft : undefined}
           onOpenDraft={onOpenDraft}

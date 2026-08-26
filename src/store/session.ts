@@ -55,6 +55,8 @@ export interface PendingEcho {
 export type LogEntry =
   | {
       seq: number
+      /** Epoch ms when this client ingested the line (replays stamp at replay time). */
+      at: number
       kind: "narrative"
       frame: NarrativeFrame
       /** True while this bubble is an OPEN streaming draft. */
@@ -63,12 +65,12 @@ export type LogEntry =
        * attached by the server to this reply's id. Players never receive it. */
       discardedDraft?: string
     }
-  | { seq: number; kind: "dice"; frame: DiceFrame }
-  | { seq: number; kind: "system"; frame: SystemFrame }
-  | { seq: number; kind: "ui"; frame: UiFrame }
-  | { seq: number; kind: "media"; frame: MediaFrame }
-  | { seq: number; kind: "error"; frame: ErrorFrame }
-  | { seq: number; kind: "pending"; pending: PendingEcho }
+  | { seq: number; at: number; kind: "dice"; frame: DiceFrame }
+  | { seq: number; at: number; kind: "system"; frame: SystemFrame }
+  | { seq: number; at: number; kind: "ui"; frame: UiFrame }
+  | { seq: number; at: number; kind: "media"; frame: MediaFrame }
+  | { seq: number; at: number; kind: "error"; frame: ErrorFrame }
+  | { seq: number; at: number; kind: "pending"; pending: PendingEcho }
 
 /** One named sidebar region fed by `ui` frames (later same-key frames replace it). */
 export interface UiPanelRegion {
@@ -143,8 +145,12 @@ const IDLE_TURN: TurnState = { busy: false, actor: null, since: 0, activity: nul
 /** `Omit` that distributes over a union, so variant-only keys (like `draft`) survive. */
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
 
-function pushEntry(entries: LogEntry[], entry: DistributiveOmit<LogEntry, "seq">): LogEntry[] {
-  return [...entries, { ...entry, seq: nextSeq++ } as LogEntry].slice(-MAX_LOG_ENTRIES)
+function pushEntry(
+  entries: LogEntry[],
+  entry: DistributiveOmit<LogEntry, "seq" | "at">,
+  at: number,
+): LogEntry[] {
+  return [...entries, { ...entry, at, seq: nextSeq++ } as LogEntry].slice(-MAX_LOG_ENTRIES)
 }
 
 /**
@@ -159,7 +165,7 @@ function pushEntry(entries: LogEntry[], entry: DistributiveOmit<LogEntry, "seq">
  *   in place — same id, same text, same slot;
  * - anything else is a fresh line.
  */
-function ingestNarrative(entries: LogEntry[], frame: NarrativeFrame): LogEntry[] {
+function ingestNarrative(entries: LogEntry[], frame: NarrativeFrame, at: number): LogEntry[] {
   const index = entries.findIndex((e) => e.kind === "narrative" && e.frame.id === frame.id)
   if (index !== -1) {
     if (!frame.text) return entries.filter((_, i) => i !== index)
@@ -167,6 +173,7 @@ function ingestNarrative(entries: LogEntry[], frame: NarrativeFrame): LogEntry[]
     const prior = entries[index]
     next[index] = {
       seq: prior.seq,
+      at: prior.at,
       kind: "narrative",
       frame,
       draft: false,
@@ -177,7 +184,7 @@ function ingestNarrative(entries: LogEntry[], frame: NarrativeFrame): LogEntry[]
     return next
   }
   if (!frame.text) return entries
-  return pushEntry(entries, { kind: "narrative", frame, draft: false })
+  return pushEntry(entries, { kind: "narrative", frame, draft: false }, at)
 }
 
 /** Keeper-only: attach a discarded streaming draft to the reply bubble it belongs to. */
@@ -192,7 +199,7 @@ function ingestDraft(entries: LogEntry[], frame: NarrativeDraftFrame): LogEntry[
 }
 
 /** One streaming text delta, accumulated into the draft bubble for its id. */
-function ingestDelta(entries: LogEntry[], frame: NarrativeDeltaFrame): LogEntry[] {
+function ingestDelta(entries: LogEntry[], frame: NarrativeDeltaFrame, at: number): LogEntry[] {
   const index = entries.findIndex((e) => e.kind === "narrative" && e.frame.id === frame.id)
   if (index === -1) {
     const draft: NarrativeFrame = {
@@ -203,7 +210,7 @@ function ingestDelta(entries: LogEntry[], frame: NarrativeDeltaFrame): LogEntry[
       text: frame.text.slice(0, MAX_STREAM_TEXT),
       format: "markdown",
     }
-    return pushEntry(entries, { kind: "narrative", frame: draft, draft: true })
+    return pushEntry(entries, { kind: "narrative", frame: draft, draft: true }, at)
   }
   const existing = entries[index] as Extract<LogEntry, { kind: "narrative" }>
   const merged: NarrativeFrame = {
@@ -222,19 +229,19 @@ function ingestDelta(entries: LogEntry[], frame: NarrativeDeltaFrame): LogEntry[
  */
 /** A media frame lands in the chronicle as its own image line — the generated
  * handout (`.image …`) shows up in the message stream, not only the deck. */
-function ingestMedia(entries: LogEntry[], frame: MediaFrame): LogEntry[] {
-  return pushEntry(entries, { kind: "media", frame })
+function ingestMedia(entries: LogEntry[], frame: MediaFrame, at: number): LogEntry[] {
+  return pushEntry(entries, { kind: "media", frame }, at)
 }
 
-function ingestInlineUi(entries: LogEntry[], frame: UiFrame): LogEntry[] {  if (frame.replace && frame.id) {
+function ingestInlineUi(entries: LogEntry[], frame: UiFrame, at: number): LogEntry[] {  if (frame.replace && frame.id) {
     const index = entries.findIndex((e) => e.kind === "ui" && e.frame.id === frame.id)
     if (index !== -1) {
       const next = [...entries]
-      next[index] = { seq: next[index].seq, kind: "ui", frame }
+      next[index] = { seq: next[index].seq, at: next[index].at, kind: "ui", frame }
       return next
     }
   }
-  return pushEntry(entries, { kind: "ui", frame })
+  return pushEntry(entries, { kind: "ui", frame }, at)
 }
 
 /**
@@ -316,14 +323,14 @@ export const useSessionStore = create<SessionState>((set) => ({
         if (frame.panel === "sidebar") {
           set((s) => ({ uiPanels: upsertUiPanel(s.uiPanels, frame) }))
         } else {
-          set((s) => ({ entries: ingestInlineUi(s.entries, frame) }))
+                    set((s) => ({ entries: ingestInlineUi(s.entries, frame, now) }))
         }
         return
       case "narrative":
-        set((s) => ({ entries: ingestNarrative(retireEcho(s.entries, frame), frame) }))
+        set((s) => ({ entries: ingestNarrative(retireEcho(s.entries, frame), frame, now) }))
         return
       case "narrative_delta":
-        set((s) => ({ entries: ingestDelta(s.entries, frame) }))
+        set((s) => ({ entries: ingestDelta(s.entries, frame, now) }))
         return
       case "narrative_draft":
         // Keeper-only: attach the discarded draft to its reply bubble (no-op for
@@ -331,10 +338,10 @@ export const useSessionStore = create<SessionState>((set) => ({
         set((s) => ({ entries: ingestDraft(s.entries, frame) }))
         return
       case "dice":
-        set((s) => ({ entries: pushEntry(s.entries, { kind: "dice", frame }) }))
+        set((s) => ({ entries: pushEntry(s.entries, { kind: "dice", frame }, now) }))
         return
       case "media":
-        set((s) => ({ entries: ingestMedia(s.entries, frame) }))
+        set((s) => ({ entries: ingestMedia(s.entries, frame, now) }))
         return
       case "system":
         // A spinner line is retired by a later frame with the SAME text and
@@ -348,21 +355,25 @@ export const useSessionStore = create<SessionState>((set) => ({
           if (idx !== -1) {
             const i = entries.length - 1 - idx
             const next = [...entries]
-            next[i] = { seq: next[i].seq, kind: "system", frame }
+            next[i] = { seq: next[i].seq, at: next[i].at, kind: "system", frame }
             set({ entries: next })
             return
           }
         }
-        set((s) => ({ entries: pushEntry(s.entries, { kind: "system", frame }) }))
+        set((s) => ({ entries: pushEntry(s.entries, { kind: "system", frame }, now) }))
         return
       case "error":
         // The refusal belongs in the chronicle beside every other thing the
         // player is told, and it settles the line it refused straight away.
         set((s) => ({
-          entries: pushEntry(answersTypedInput(frame.code) ? failOldestPending(s.entries) : s.entries, {
-            kind: "error",
-            frame,
-          }),
+          entries: pushEntry(
+            answersTypedInput(frame.code) ? failOldestPending(s.entries) : s.entries,
+            {
+              kind: "error",
+              frame,
+            },
+            now,
+          ),
         }))
         return
       case "state":
@@ -409,10 +420,14 @@ export const useSessionStore = create<SessionState>((set) => ({
   echoLocalInput: (text, speaker, now = Date.now()) => {
     const seq = nextSeq
     set((s) => ({
-      entries: pushEntry(s.entries, {
-        kind: "pending",
-        pending: { speaker, text, at: now },
-      }),
+      entries: pushEntry(
+        s.entries,
+        {
+          kind: "pending",
+          pending: { speaker, text, at: now },
+        },
+        now,
+      ),
     }))
     return seq
   },

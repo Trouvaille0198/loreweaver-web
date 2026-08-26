@@ -632,6 +632,16 @@ body {
   margin-bottom: 4px;
 }
 
+/* The send time of a chronicle line — smaller, non-uppercase, pushed right. */
+.log-entry .entry-time {
+  margin-left: auto;
+  font: 400 10px/1 var(--font-ui);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ink-faint, var(--ink-dim));
+  white-space: nowrap;
+}
+
 /* Keeper-only: a reply carrying a discarded pre-tool narration draft. Right-click
  * opens it (players never see the flag — the server never sends them the draft). */
 .log-entry.has-draft .entry-speaker .draft-mark {
