@@ -210,6 +210,36 @@ function PackDetailView({
           </div>
         </Surface>
       ) : null}
+      {detail.variables && detail.variables.length > 0 ? (
+        <Surface className="module-detail-card module-detail-content-card" labelledBy="pack-variables-title">
+          <SectionHeader titleId="pack-variables-title" title={t("play.module.packVariables")} />
+          <ul className="module-variable-list">
+            {detail.variables.map((variable) => {
+              const label = variable.labels?.zh || variable.labels?.en || variable.id
+              const bounds =
+                typeof variable.minimum === "number" || typeof variable.maximum === "number"
+                  ? [variable.minimum, variable.maximum].filter((v) => typeof v === "number").join(" – ")
+                  : ""
+              const options = variable.options && variable.options.length > 0 ? variable.options.join(" / ") : ""
+              return (
+                <li className="module-variable-item" key={variable.id}>
+                  <div className="module-variable-head">
+                    <strong>{label}</strong>
+                    <span className="chip">
+                      {variable.kind || t("play.module.variableKindUnknown")}
+                      {typeof variable.default !== "undefined"
+                        ? ` · ${t("play.module.variableDefault")}: ${String(variable.default)}`
+                        : ""}
+                    </span>
+                  </div>
+                  {bounds ? <p className="studio-hint">{bounds}</p> : null}
+                  {options ? <p className="studio-hint">{options}</p> : null}
+                </li>
+              )
+            })}
+          </ul>
+        </Surface>
+      ) : null}
 
       {detail.pregens && detail.pregens.length > 0 ? (
         <Surface

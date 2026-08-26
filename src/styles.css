@@ -1965,34 +1965,6 @@ body {
   white-space: normal;
 }
 
-.pregen-blurb {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 6px);
-  z-index: 20;
-  width: min(320px, calc(100vw - 48px));
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--bg-raised);
-  color: var(--ink-dim);
-  font: 12px/1.5 var(--font-ui);
-  box-shadow: 0 10px 28px rgb(0 0 0 / 0.35);
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(4px);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
-}
-
-.pregen-row:hover .pregen-blurb,
-.pregen-row:focus .pregen-blurb,
-.pregen-row:focus-within .pregen-blurb {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* The pregen row's context menu (switching between claimed characters) — the
    same raised surface as the app's other popovers, positioned at the pointer
    (fixed: the desk pane scrolls, the menu must not ride along). */
@@ -3315,6 +3287,34 @@ body {
   margin-top: 8px;
   color: var(--ink-faint);
 }
+.module-variable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.module-variable-item {
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-inset);
+}
+
+.module-variable-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.module-variable-item p {
+  margin: 8px 0 0;
+  color: var(--ink-faint);
+}
+
+.module-variable-item strong {
+  margin-right: 8px;
+}
 
 .module-pool-item {
   display: flex;
@@ -3465,17 +3465,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.character-modal-blurb {
-  margin: 0;
-  color: var(--ink-dim);
-  line-height: 1.6;
-}
-
-.character-modal-blurb-label {
-  color: var(--ink-dim);
-  font-weight: 600;
 }
 
 .play-character-detail-table {

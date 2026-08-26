@@ -420,14 +420,12 @@ function PartyDetailGrid({
 function PartyCharacterModal({
   member,
   ownCharacter,
-  blurb,
   onSwitch,
   onRelease,
   onClose,
 }: {
   member: PartyCharacterInfo
   ownCharacter: CharacterState | null
-  blurb?: string
   /** Set when the shown character is a pregen this seat holds but is not
    * playing — one tap re-points the active-character slot to it. */
   onSwitch?: () => void
@@ -503,12 +501,6 @@ function PartyCharacterModal({
             ×
           </button>
         </header>
-        {blurb ? (
-          <p className="character-modal-blurb" id="character-modal-blurb">
-            <span className="character-modal-blurb-label">{t("play.character.concept")}: </span>
-            {stripControlChars(blurb)}
-          </p>
-        ) : null}
         {info.status_effects && info.status_effects.length > 0 ? (
           <div className="chip-row">
             {info.status_effects.map((effect) => (
@@ -520,6 +512,12 @@ function PartyCharacterModal({
         ) : null}
         <div className="character-modal-body">
           <div className="character-modal-col character-modal-col-main">
+            {info.background ? (
+              <section className="character-modal-section">
+                <h3>{t("play.character.background")}</h3>
+                <p className="play-character-prose">{stripControlChars(info.background)}</p>
+              </section>
+            ) : null}
             {fields.length > 0 ? (
               <section className="character-modal-section">
                 <h3>{t("play.character.fields")}</h3>
@@ -648,19 +646,13 @@ function PartyCharacterModal({
             ) : null}
           </div>
         </div>
-        {info.background ? (
-          <section className="character-modal-section">
-            <h3>{t("play.character.background")}</h3>
-            <p className="play-character-prose">{stripControlChars(info.background)}</p>
-          </section>
-        ) : null}
         {ownCharacter && info.notes ? (
           <section className="character-modal-section">
             <h3>{t("play.character.notes")}</h3>
             <p className="play-character-prose">{stripControlChars(info.notes)}</p>
           </section>
         ) : null}
-        {!hasExtra && !info.background && !(ownCharacter && info.notes) && !blurb ? (
+        {!hasExtra && !info.background && !(ownCharacter && info.notes) ? (
           <p className="studio-hint">{t("play.character.noDetails")}</p>
         ) : null}
         {onSwitch || onRelease ? (
@@ -862,7 +854,6 @@ export function PartyCard({ game }: { game: StateFrame }) {
         <PartyCharacterModal
           member={selected}
           ownCharacter={ownCharacter}
-          blurb={selectedPregen?.blurb}
           onSwitch={
             selectedPregen && selectedPregen.claimed_by.trim() === you && online && game.character?.name !== selected.name
               ? () => void transportSend({ type: "input", text: `.pc claim ${selected.name}` }).catch(() => { })
@@ -1058,12 +1049,33 @@ export function PregenCard({ game }: { game: StateFrame }) {
   const actions = menu ? menuActions(menu.name) : null
   const viewMember = viewName ? (partyByName.get(viewName) as PartyCharacterInfo | undefined) : undefined
   const viewPregen = viewName ? pregens.find((pregen) => pregen.name === viewName) : undefined
+  // An UNCLAIMED pregen has no party member to show — build the dialog's
+  // member view from the roster's public sheet fields (same shape as a party
+  // member: attributes/skills/background; no equipment/items/notes, which are
+  // claim-time copies). A claimed one already resolves from the party.
+  const viewInfo: PartyCharacterInfo | undefined =
+    viewMember ??
+    (viewName && viewPregen
+      ? {
+          name: viewPregen.name,
+          online: true,
+          active: false,
+          system: viewPregen.system,
+          attributes: viewPregen.attributes,
+          secondary_attributes: viewPregen.secondary_attributes,
+          skills: viewPregen.skills,
+          fields: viewPregen.fields,
+          background: viewPregen.background,
+          avatar: viewPregen.avatar,
+          resources: [],
+        }
+      : undefined)
 
   return (
     <section className="desk-card">
       <header className="desk-title">{t("session.pregens")}</header>
       <ul className="party-list">
-        {pregens.map((pregen, index) => {
+        {pregens.map((pregen) => {
           const claimedBy = pregen.claimed_by.trim()
           const mine = claimedBy !== "" && claimedBy === you
           const active = mine && activeName !== "" && pregen.name === activeName
@@ -1071,17 +1083,11 @@ export function PregenCard({ game }: { game: StateFrame }) {
             <li
               key={pregen.name}
               className={`party-row pregen-row${claimedBy ? " is-offline" : ""}${active ? " is-active" : ""}`}
-              tabIndex={pregen.blurb ? 0 : undefined}
-              aria-describedby={pregen.blurb ? `pregen-blurb-${index}` : undefined}
+              onDoubleClick={() => setViewName(pregen.name)}
               onContextMenu={(event) => openMenu(event, pregen.name)}
             >
               <div className="pregen-copy">
                 <span className="party-name">{stripControlChars(pregen.name)}</span>
-                {pregen.blurb ? (
-                  <span className="pregen-blurb" id={`pregen-blurb-${index}`} role="tooltip">
-                    {stripControlChars(pregen.blurb)}
-                  </span>
-                ) : null}
               </div>
               {!claimedBy ? (
                 <Button
@@ -1206,19 +1212,18 @@ export function PregenCard({ game }: { game: StateFrame }) {
           )}
         </div>
       ) : null}
-      {viewMember ? (
+      {viewInfo ? (
         <PartyCharacterModal
-          member={viewMember}
-          ownCharacter={game.character?.name === viewMember.name ? game.character : null}
-          blurb={viewPregen?.blurb}
+          member={viewInfo}
+          ownCharacter={game.character?.name === viewInfo.name ? game.character : null}
           onSwitch={
-            viewPregen && viewPregen.claimed_by.trim() === you && online && viewMember.name !== activeName
-              ? () => send(`.pc claim ${viewMember.name}`)
+            viewPregen && viewPregen.claimed_by.trim() === you && online && viewInfo.name !== activeName
+              ? () => send(`.pc claim ${viewInfo.name}`)
               : undefined
           }
           onRelease={
             viewPregen && viewPregen.claimed_by.trim() === you && online
-              ? () => send(`.pc release ${viewMember.name}`)
+              ? () => send(`.pc release ${viewInfo.name}`)
               : undefined
           }
           onClose={() => setViewName(null)}

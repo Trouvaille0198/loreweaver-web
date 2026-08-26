@@ -155,6 +155,10 @@ describe("ModuleDetailScreen", () => {
           { title: "老照相馆", content: "法租界的老照相馆，夜晚打烊后仍有光。", secret: false },
           { title: "失踪摄影师", content: "摄影师失踪前留下了一卷未冲洗的胶卷。", secret: true },
         ],
+        variables: [
+          { id: "fear", kind: "number", labels: { zh: "恐惧", en: "Fear" }, default: 0, minimum: 0, maximum: 10 },
+          { id: "photo_ritual", kind: "bool", labels: { zh: "显影仪式" }, default: false },
+        ],
         pregens: [
           { name: "沈默之", concept: "报社记者" },
           { name: "艾莉丝·陈", concept: "混血侦探" },
@@ -184,6 +188,12 @@ describe("ModuleDetailScreen", () => {
     expect(screen.getByText("老照相馆")).toBeInTheDocument()
     expect(screen.getByText("失踪摄影师")).toBeInTheDocument()
     expect(screen.getAllByText(/法租界的老照相馆/).length).toBeGreaterThan(0)
+    // Module trackers (typed variables) render with their labels, kind, and default.
+    expect(screen.getByText("Module trackers")).toBeInTheDocument()
+    expect(screen.getByText("恐惧")).toBeInTheDocument()
+    expect(screen.getByText("显影仪式")).toBeInTheDocument()
+    expect(screen.getByText(/number/)).toBeInTheDocument()
+    expect(screen.getByText(/default: 0/)).toBeInTheDocument()
     // Claimable cast.
     expect(screen.getByText("沈默之")).toBeInTheDocument()
     expect(screen.getByText("艾莉丝·陈")).toBeInTheDocument()

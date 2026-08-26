@@ -92,6 +92,16 @@ export interface ModuleDetail {
   sourceKind?: "text" | "pack"
   /** A pack's worldbook entries (its lore). */
   worldbookEntries?: { title: string; content: string; secret: boolean }[]
+  /** A pack's typed variable specs (its module trackers). */
+  variables?: {
+    id: string
+    kind?: string
+    labels?: { en?: string; zh?: string }
+    default?: number | string | boolean
+    minimum?: number
+    maximum?: number
+    options?: string[]
+  }[]
   /** A pack's claimable pregen cast. `avatar` (when present) is the pack asset filename of the
    * investigator's generated portrait. */
   pregens?: { name: string; concept?: string; avatar?: string }[]
@@ -297,6 +307,30 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
         (item): item is { title: string; content: string; secret: boolean } =>
           typeof item === "object" && item !== null && "title" in item && "content" in item,
       )
+      : undefined,
+    variables: Array.isArray(value.variables)
+      ? value.variables
+        .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+        .map((item) => ({
+          id: String(item.id ?? ""),
+          kind: typeof item.kind === "string" ? item.kind : undefined,
+          labels:
+            typeof item.labels === "object" && item.labels !== null && !Array.isArray(item.labels)
+              ? Object.fromEntries(
+                Object.entries(item.labels).filter(([, v]) => typeof v === "string"),
+              )
+              : undefined,
+          default:
+            typeof item.default === "number" || typeof item.default === "string" || typeof item.default === "boolean"
+              ? item.default
+              : undefined,
+          minimum: typeof item.minimum === "number" ? item.minimum : undefined,
+          maximum: typeof item.maximum === "number" ? item.maximum : undefined,
+          options: Array.isArray(item.options)
+            ? item.options.map((o) => String(o)).filter((o) => o.length > 0)
+            : undefined,
+        }))
+        .filter((item) => item.id.length > 0)
       : undefined,
     pregens: Array.isArray(value.pregens)
       ? value.pregens

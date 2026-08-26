@@ -95,8 +95,9 @@ describe("CharacterScreen — owned roster", () => {
       ...SHEET,
       source: "forge-module:snow-villa",
       memory: {
+        // A legacy summary field is ignored — only playthrough memories render.
         summary: "The surveyor closed the mirror case.",
-        entries: ["Found the bronze mirror in the well."],
+        entries: ["【雪鬼山庄】The surveyor closed the mirror case."],
       },
       relationships: [{ target: "阿雪", tracks: [{ track: "affection", value: 15 }] }],
     }
@@ -109,14 +110,15 @@ describe("CharacterScreen — owned roster", () => {
     render(<CharacterScreen onBack={() => {}} />)
 
     expect(screen.getByText(/snow-villa/)).toBeInTheDocument()
-    expect(screen.getByText("The surveyor closed the mirror case.")).toBeInTheDocument()
-    expect(screen.getByText("Found the bronze mirror in the well.")).toBeInTheDocument()
+    // The legacy folded life-summary is NOT rendered anymore.
+    expect(screen.queryByText("The surveyor closed the mirror case.")).not.toBeInTheDocument()
+    expect(screen.getByText("【雪鬼山庄】The surveyor closed the mirror case.")).toBeInTheDocument()
     expect(screen.getByText("阿雪")).toBeInTheDocument()
     expect(screen.getByText(/Affection \+15/)).toBeInTheDocument()
-    // The two memory parts are labeled distinctly: the folded life summary vs
-    // the recent per-turn entries — no more ambiguous prose blocks.
-    expect(screen.getByText("Life summary")).toBeInTheDocument()
-    expect(screen.getByText("Recent memory")).toBeInTheDocument()
+    // The scenario-level playthrough memories ("剧本回忆") are the one memory
+    // surface — the folded life summary is gone.
+    expect(screen.queryByText("Life summary")).not.toBeInTheDocument()
+    expect(screen.getByText("Playthrough memories")).toBeInTheDocument()
   })
 })
 

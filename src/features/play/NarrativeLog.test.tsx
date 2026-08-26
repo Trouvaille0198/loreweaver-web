@@ -210,6 +210,46 @@ describe("NarrativeLog discarded draft (keeper-only)", () => {
     // No draft marker on the bubble either.
     expect(document.querySelector(".draft-mark")).toBeNull()
   })
+
+  it("does not crash when entries shrink under a stale window (reconnect replay / draft removal)", () => {
+    // A long session builds a windowed log; the reader's window state points at
+    // the old, longer list. A reconnect then clears the log and replays a few
+    // lines from zero — the next render used to read `entries[i].seq` past the
+    // short array and crash the whole page (no error boundary = blank screen).
+    for (let i = 0; i < 100; i++) {
+      ingest({ type: "narrative", id: `n${i}`, speaker: "kp", text: `line ${i}`, format: "plain" })
+    }
+    render(<NarrativeLog />)
+    expect(screen.getByText("line 99")).toBeInTheDocument()
+
+    // Reconnect: the session clears, then the server replays a couple of lines.
+    // The component's windowRange still points at the pre-clear list.
+    act(() => useSessionStore.getState().clear())
+    expect(screen.queryByText(/line \d/)).not.toBeInTheDocument()
+    act(() => {
+      ingest({ type: "narrative", id: "r0", speaker: "kp", text: "replay 0", format: "plain" })
+      ingest({ type: "narrative", id: "r1", speaker: "kp", text: "replay 1", format: "plain" })
+    })
+
+    expect(screen.getByText("replay 0")).toBeInTheDocument()
+    expect(screen.getByText("replay 1")).toBeInTheDocument()
+  })
+
+  it("survives a discarded draft bubble removed under a frozen window", () => {
+    for (let i = 0; i < 100; i++) {
+      ingest({ type: "narrative", id: `m${i}`, speaker: "kp", text: `beat ${i}`, format: "plain" })
+    }
+    render(<NarrativeLog />)
+
+    // A tool round streams a draft (appends a bubble), then drops it with an
+    // empty closing narrative (removes it) — entries.length returns to the
+    // pre-draft value while the window was computed against the longer list.
+    ingest({ type: "narrative_delta", id: "d1", speaker: "kp", text: "刀光一闪。" })
+    ingest({ type: "narrative", id: "d1", speaker: "kp", text: "", format: "markdown" })
+
+    expect(screen.getByText("beat 99")).toBeInTheDocument()
+    expect(document.querySelector(".stream-cursor")).toBeNull()
+  })
 })
 
 

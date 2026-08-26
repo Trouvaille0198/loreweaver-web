@@ -592,26 +592,16 @@ function CharacterDetailsView({
           <p className="play-character-prose">{stripControlChars(notes)}</p>
         </CharacterDetailSection>
       ) : null}
-      {memory && (memory.summary || (memory.entries?.length ?? 0) > 0) ? (
+      {memory && memory.entries && memory.entries.length > 0 ? (
         <CharacterDetailSection title={t("play.character.memory")}>
-          {memory.summary ? (
-            <>
-              <h5 className="play-character-subsection">{t("play.character.lifeSummary")}</h5>
-              <p className="play-character-prose">{stripControlChars(memory.summary)}</p>
-            </>
-          ) : null}
-          {memory.entries && memory.entries.length > 0 ? (
-            <>
-              <h5 className="play-character-subsection">{t("play.character.recentEntries")}</h5>
-              <ul className="play-character-memory">
-                {memory.entries.map((entry, index) => (
-                  <li key={index} className="play-character-memory-line">
-                    {stripControlChars(entry)}
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
+          <h5 className="play-character-subsection">{t("play.character.recentEntries")}</h5>
+          <ul className="play-character-memory">
+            {memory.entries.map((entry, index) => (
+              <li key={index} className="play-character-memory-line">
+                {stripControlChars(entry)}
+              </li>
+            ))}
+          </ul>
         </CharacterDetailSection>
       ) : null}
       {relationships.length > 0 ? (

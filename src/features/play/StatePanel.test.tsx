@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -86,7 +86,7 @@ describe("StatePanel", () => {
         status_effects: [],
         notes: "Private clue",
       },
-      pregens: [{ name: "Bo", claimed_by: "Ash", blurb: "A careful observer." }],
+      pregens: [{ name: "Bo", claimed_by: "Ash" }],
       party: [
         {
           name: "Bo",
@@ -108,12 +108,49 @@ describe("StatePanel", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Bo" })).toBeInTheDocument()
-    expect(
-      screen.getByText("A careful observer.", { selector: ".character-modal-blurb" }),
-    ).toBeInTheDocument()
+    // The modal shows the FULL background once; the roster one-liner (blurb) is
+    // a list affordance and must not be repeated in the dialog.
+    expect(screen.queryByText("A careful observer.", { selector: ".character-modal-blurb" })).not.toBeInTheDocument()
     expect(screen.getByText("A quiet scout.")).toBeInTheDocument()
     expect(screen.getByText("Stealth")).toBeInTheDocument()
     expect(screen.queryByText("Private clue")).not.toBeInTheDocument()
+    fireEvent.keyDown(window, { key: "Escape" })
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
+  it("opens an UNCLAIMED pregen's detail dialog on double-click, from its public sheet fields", async () => {
+    useSessionStore.setState({
+      game: {
+        type: "state",
+        party: [],
+        initiative: [],
+        online: 1,
+        pregens: [
+          {
+            name: "林晚",
+            claimed_by: "",
+            system: "coc7",
+            attributes: { STR: 45 },
+            skills: { 聆听: 40 },
+            background: "本地客家山民，熟悉丛林草药与兽径。",
+          },
+        ],
+      },
+    })
+    render(<StatePanel />)
+
+    fireEvent.doubleClick(screen.getByText("林晚", { selector: ".party-name" }))
+
+    // The dialog renders the pregen's own public details — background first,
+    // then the sheet fields — with no claim-time copies (no equipment/items).
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "林晚" })).toBeInTheDocument()
+    expect(screen.getByText("本地客家山民，熟悉丛林草药与兽径。")).toBeInTheDocument()
+    expect(screen.getByText("聆听")).toBeInTheDocument()
+    const background = screen.getByText("本地客家山民，熟悉丛林草药与兽径。")
+    const attributesHeading = screen.getByRole("heading", { name: "Attributes" })
+    // The persona paragraph sits ABOVE the sheet attributes, not below them.
+    expect(background.compareDocumentPosition(attributesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     fireEvent.keyDown(window, { key: "Escape" })
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
@@ -285,7 +322,7 @@ describe("PregenCard", () => {
       game: {
         ...BASE,
         pregens: [
-          { name: "林晚", claimed_by: "", blurb: "A careful observer." },
+          { name: "林晚", claimed_by: "" },
           { name: "陈九鲤", claimed_by: "Ash" },
           { name: "白榆生", claimed_by: "Nyx" },
         ],
@@ -294,7 +331,8 @@ describe("PregenCard", () => {
     render(<StatePanel />)
 
     expect(screen.getByText("林晚")).toBeInTheDocument()
-    expect(screen.getByText("A careful observer.")).toHaveClass("pregen-blurb")
+    // The derived one-liner is not rendered anywhere — names + claim state only.
+    expect(screen.queryByText("A careful observer.")).not.toBeInTheDocument()
     expect(screen.getByText("claimed by Ash")).toBeInTheDocument()
     // Your own claim reads as yours, not as somebody else's name.
     expect(screen.getByText("yours")).toBeInTheDocument()
@@ -410,7 +448,7 @@ describe("PregenCard", () => {
         character: { name: "白榆生", system: "coc7", resources: [], attributes: {}, status_effects: [] },
         pregens: [
           { name: "白榆生", claimed_by: "Nyx" },
-          { name: "陈九鲤", claimed_by: "Nyx", blurb: "A careful observer." },
+          { name: "陈九鲤", claimed_by: "Nyx" },
         ],
       },
     })
@@ -420,7 +458,9 @@ describe("PregenCard", () => {
     fireEvent.contextMenu(within(card).getByText("陈九鲤", { selector: ".party-name" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "View sheet" }))
     expect(screen.getByRole("dialog")).toHaveTextContent("陈九鲤")
-    expect(screen.getByRole("dialog")).toHaveTextContent("A careful observer.")
+    // The roster one-liner is a LIST affordance — the sheet dialog shows the
+    // full background instead, never the derived blurb again.
+    expect(within(screen.getByRole("dialog")).queryByText("A careful observer.")).not.toBeInTheDocument()
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
   })
 
@@ -435,7 +475,7 @@ describe("PregenCard", () => {
         character: { name: "白榆生", system: "coc7", resources: [], attributes: {}, status_effects: [] },
         pregens: [
           { name: "白榆生", claimed_by: "Nyx" },
-          { name: "陈九鲤", claimed_by: "Nyx", blurb: "A careful observer." },
+          { name: "陈九鲤", claimed_by: "Nyx" },
         ],
       },
     })

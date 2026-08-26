@@ -9,8 +9,15 @@ import "@loreweaver/protocol"
 
 declare module "@loreweaver/protocol" {
   interface PregenEntry {
-    /** Public persona summary from a module's pre-generated character card. */
-    blurb?: string
+    /** Public sheet fields riding the roster (same shape as `PartyMember`):
+     * enough for the detail dialog without a claim. Absent when empty. */
+    system?: string
+    attributes?: Record<string, unknown>
+    secondary_attributes?: Record<string, unknown>
+    skills?: Record<string, unknown>
+    fields?: Record<string, unknown>
+    background?: string
+    avatar?: MediaRef
   }
 
   interface DiceFrame {

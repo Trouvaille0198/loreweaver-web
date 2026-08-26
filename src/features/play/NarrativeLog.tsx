@@ -712,9 +712,17 @@ export default function NarrativeLog() {
   }, [openDraft])
 
   const [windowStart, windowEnd] = windowRange
+  // The window is a stale snapshot and `entries` can shrink beneath it: the
+  // scrollback cap truncates the tail on every push, a discarded draft bubble
+  // is removed mid-stream, and a reconnect clears the log and replays it from
+  // zero. `positionOf` walks `entries[i]` up to the index, so an unclamped
+  // window reads past the array (`undefined.seq`) and crashes the render into
+  // a blank page — this app has no error boundary. Clamp before pads/slice.
+  const safeStart = Math.max(0, Math.min(windowStart, entries.length))
+  const safeEnd = Math.max(safeStart, Math.min(windowEnd, entries.length))
   const gap = logGap(scroller.current)
-  const topPad = positionOf(windowStart, entries, heightsRef.current, gap)
-  const bottomPad = positionOf(entries.length, entries, heightsRef.current, gap) - positionOf(windowEnd, entries, heightsRef.current, gap)
+  const topPad = positionOf(safeStart, entries, heightsRef.current, gap)
+  const bottomPad = positionOf(entries.length, entries, heightsRef.current, gap) - positionOf(safeEnd, entries, heightsRef.current, gap)
 
   // Roving focus inside the open contents: arrows walk the chapters (a menu's
   // contract), Home/End jump to the ends. Buttons stay tabbable as fallback.
@@ -775,7 +783,7 @@ export default function NarrativeLog() {
       ) : null}
       {entries.length === 0 ? <p className="log-empty">{t("session.empty")}</p> : null}
       <div className="log-pad" style={{ height: topPad }} aria-hidden="true" />
-      {entries.slice(windowStart, windowEnd).map((entry) => (
+      {entries.slice(safeStart, safeEnd).map((entry) => (
         <Entry
           key={entry.seq}
           entry={entry}
