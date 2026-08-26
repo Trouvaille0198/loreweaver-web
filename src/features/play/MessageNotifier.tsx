@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { NarrativeFrame } from "@loreweaver/protocol"
-import { useSessionStore } from "../../store/session"
+import { useSessionStore, type LogEntry } from "../../store/session"
 
 /** Persisted opt-in for new-message nudges. */
 const NOTIFY_STORAGE_KEY = "loreweaver.message-notify"
@@ -10,17 +10,25 @@ const NOTIFY_STORAGE_KEY = "loreweaver.message-notify"
 const TITLE_FLASH_STEPS = 6
 const TITLE_FLASH_MS = 500
 
+/** Ignore messages arriving in the first moments after mount: the join replay
+ * dumps the recent history right after connecting, and none of it is "new". */
+const JOIN_REPLAY_GRACE_MS = 2000
+
 /** Whether this browser supports the system Notification API at all. */
 function canNotify(): boolean {
   return typeof window !== "undefined" && "Notification" in window
 }
 
-/** The speaker's display label for a narrative line: the player's name, the
- * NPC's name, or "KP" for the Keeper. */
-function speakerName(frame: NarrativeFrame, t: (key: string) => string): string {
-  if (frame.speaker === "kp") return t("session.notifyKp")
-  if (frame.speaker === "npc") return frame.name?.trim() || t("session.notifyNpc")
-  return frame.name?.trim() || t("session.notifyPlayer")
+/** The player who triggered the Keeper's reply: the nearest earlier PLAYER
+ * line in the log. Falls back to the generic Keeper label. */
+function triggerName(entries: LogEntry[], t: (key: string) => string): string {
+  for (let i = entries.length - 2; i >= 0; i -= 1) {
+    const entry = entries[i]
+    if (entry.kind === "narrative" && entry.frame.speaker === "player" && entry.frame.name?.trim()) {
+      return entry.frame.name.trim()
+    }
+  }
+  return t("session.notifyKp")
 }
 
 /** A truncated body line for the notification. */
@@ -29,12 +37,12 @@ function summary(text: string, limit = 60): string {
   return flat.length > limit ? `${flat.slice(0, limit)}…` : flat
 }
 
-/** Every finished reply — a player's message, an NPC line, the AI Keeper's
- * scene narration — nudges while the tab is in the background: the document
- * title flashes ("<发消息的人> 的回应生效" ↔ original) exactly like a poke,
- * and once the notification permission is granted a system notification
- * fires too. Toggleable from the header bell. Streaming drafts, the join
- * replay and foreground messages never nudge. */
+/** The nudge for the ONE thing the player cares about: the AI Keeper's reply
+ * to someone. While the tab is in the background (or even in the foreground,
+ * matching the poke) the document title flashes "<触发玩家> 的回应生效" and,
+ * once the permission is granted, a system notification fires. Only the
+ * Keeper's finished narration nudges; player chatter, NPC lines, the join
+ * replay and streaming drafts never do. Toggleable from the header bell. */
 export default function MessageNotifier() {
   const { t } = useTranslation()
   const entries = useSessionStore((s) => s.entries)
@@ -46,22 +54,23 @@ export default function MessageNotifier() {
   )
   const notifiedIds = useRef<Set<string>>(new Set())
   const flashTimer = useRef<number | null>(null)
+  const mountTime = useRef(Date.now())
 
   useEffect(() => {
     const last = entries[entries.length - 1]
-    // A streamed reply replaces its draft bubble in place keeping the SAME seq,
-    // so seq comparison would skip every finished stream — key the dedupe on
-    // the frame id instead: the draft stage (draft:true) never notifies, the
-    // closing narrative with that id notifies exactly once.
     if (!last || last.kind !== "narrative" || last.draft) return
     const id = last.frame.id
     if (!id || notifiedIds.current.has(id)) return
     notifiedIds.current.add(id)
     if (!enabled) return
+    // The join replay dumps history right after mount — not new, never nudge.
+    if (Date.now() - mountTime.current < JOIN_REPLAY_GRACE_MS) return
+    // ONLY the AI Keeper's finished reply nudges.
+    if (last.frame.speaker !== "kp") return
 
-    // Taskbar/tab nudge: flash the title like a poke does — at ANY visibility,
-    // so it matches the poke behavior the player already knows.
-    const label = t("session.messageNotifyTitle", { name: speakerName(last.frame, t) })
+    // Taskbar/tab nudge: flash the title, named for the player who triggered
+    // the reply (like a poke).
+    const label = t("session.messageNotifyTitle", { name: triggerName(entries, t) })
     const original = document.title
     let step = 0
     const flash = window.setInterval(() => {
