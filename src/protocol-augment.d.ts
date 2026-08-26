@@ -84,6 +84,15 @@ declare module "@loreweaver/protocol" {
     items?: ItemView[]
     background?: string
     notes?: string
+    /** The module a claimed pregen came from (e.g. "forge-module:…"). Absent
+     * for player-made characters. */
+    source?: string
+    /** Character memory (player projection): settled life-summary + a bounded
+     * tail of experience lines, newest first. Absent when none yet. */
+    memory?: { summary?: string; entries?: string[] }
+    /** Relationship tracks this character holds toward each named entity
+     * (non-default values only). Absent when none. */
+    relationships?: { target: string; tracks: { track: string; value: number }[] }[]
   }
 
   interface PartyMember {
@@ -116,6 +125,8 @@ declare module "@loreweaver/protocol" {
     bonus?: Record<string, number>
     /** v2.4 wire: true when the item was improvised on the fly (`.item improvise`). */
     improvised?: boolean
+    /** True when the owner shelved this item (restorable with `.item unarchive`). */
+    archived?: boolean
   }
 
   interface WelcomeFrame {

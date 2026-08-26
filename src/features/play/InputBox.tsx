@@ -4,7 +4,14 @@ import { Button } from "../../components/ui"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
-import { matchCommands, suggestArgs, type ArgSuggestion } from "./commands"
+import {
+  commandAnnotation,
+  matchCommands,
+  suggestArgs,
+  type ArgSuggestion,
+  type CommandAnnotation,
+} from "./commands"
+import CommandTags from "./CommandTags"
 import QuickMenu from "./QuickMenu"
 
 /** How many sent lines are kept for the up-arrow history (in-memory only). */
@@ -18,10 +25,11 @@ interface Hint {
   display: string
   /** The quiet context after it. */
   hint: string
+  /** Reply visibility and data effect for this completion. */
+  annotation: CommandAnnotation
   /** The next text after applying this row. */
   next: string
 }
-
 export default function InputBox() {
   const { t } = useTranslation()
   const status = useConnectionStore((s) => s.status)
@@ -51,14 +59,19 @@ export default function InputBox() {
       // Stage 1: the word itself.
       const prefix = body.toLowerCase()
       if (prefix.length === 0) return []
-      return matchCommands(prefix).map((entry) => ({
-        key: `w-${entry.word}`,
-        display: `.${entry.word}`,
-        hint: entry.example
+      return matchCommands(prefix).map((entry) => {
+        const annotation = commandAnnotation(entry.word)
+        const baseHint = entry.example
           ? `${t(`play.commands.${entry.word}`)} · ${entry.example}`
-          : t(`play.commands.${entry.word}`),
-        next: `.${entry.word} `,
-      }))
+          : t(`play.commands.${entry.word}`)
+        return {
+          key: `w-${entry.word}`,
+          display: `.${entry.word}`,
+          hint: baseHint,
+          annotation,
+          next: `.${entry.word} `,
+        }
+      })
     }
     // Stage 2: the argument token being typed.
     const word = body.slice(0, spaceAt).toLowerCase()
@@ -66,12 +79,16 @@ export default function InputBox() {
     const tokenStart = typed.lastIndexOf(" ") + 1
     const token = typed.slice(tokenStart)
     const before = text.slice(0, text.length - token.length)
-    return suggestArgs(word, token, imageNames).map((arg: ArgSuggestion, index) => ({
-      key: `a-${word}-${arg.text}-${index}`,
-      display: arg.text,
-      hint: arg.hintKey ? t(arg.hintKey) : t(`play.commands.${word}`),
-      next: arg.mode === "append" ? before + token + arg.text : `${before}${arg.text} `,
-    }))
+    return suggestArgs(word, token, imageNames).map((arg: ArgSuggestion, index) => {
+      const baseHint = arg.hintKey ? t(arg.hintKey) : t(`play.commands.${word}`)
+      return {
+        key: `a-${word}-${arg.text}-${index}`,
+        display: arg.text,
+        hint: baseHint,
+        annotation: arg.annotation ?? commandAnnotation(word),
+        next: arg.mode === "append" ? before + token + arg.text : `${before}${arg.text} `,
+      }
+    })
   }, [text, t, imageNames])
 
   // The highlight resets whenever the list changes; typing never keeps one.
@@ -165,12 +182,18 @@ export default function InputBox() {
   return (
     <div className="input-wrap">
       {hints.length > 0 ? (
-        <div className="command-hints" role="listbox" aria-label={t("session.commandHints")}>
+        <div
+          className="command-hints"
+          role="listbox"
+          id="command-hints-list"
+          aria-label={t("session.commandHints")}
+        >
           {hints.map((hint, index) => (
             <Button
               key={hint.key}
               type="button"
               role="option"
+              id={`command-hint-${hint.key}`}
               variant="quiet"
               aria-selected={index === hintIndex}
               className={`command-hint${index === hintIndex ? " is-active" : ""}`}
@@ -180,6 +203,7 @@ export default function InputBox() {
             >
               <span className="command-hint-word">{hint.display}</span>
               <span className="command-hint-hint">{hint.hint}</span>
+              <CommandTags annotation={hint.annotation} />
             </Button>
           ))}
         </div>
@@ -197,6 +221,13 @@ export default function InputBox() {
           onKeyDown={onKeyDown}
           placeholder={t("session.inputPlaceholder")}
           aria-label={t("session.inputPlaceholder")}
+          role="combobox"
+          aria-expanded={hints.length > 0}
+          aria-controls={hints.length > 0 ? "command-hints-list" : undefined}
+          aria-activedescendant={
+            activeHint !== null ? `command-hint-${activeHint.key}` : undefined
+          }
+          aria-autocomplete="list"
           disabled={!online}
           spellCheck={false}
         />

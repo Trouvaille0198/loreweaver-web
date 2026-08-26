@@ -90,7 +90,14 @@ export default function RoomLifecycle() {
   const { t } = useTranslation()
   const welcome = useConnectionStore((s) => s.welcome)
   const room = welcome?.room ?? ""
-  const admin = useAdminStore()
+  // Field-level subscriptions only: progress frames stream through this store
+  // in bursts, and a whole-store subscription would re-render this form tree
+  // for every one of them. The actions are stable store methods.
+  const roomOp = useAdminStore((s) => s.roomOp)
+  const serverUpdate = useAdminStore((s) => s.serverUpdate)
+  const busy = useAdminStore((s) => s.busy)
+  const { clearRoomOp, exportRoom, importRoom, resetRoom, deleteRoomData, deleteRoom, updateServer } =
+    useAdminStore.getState()
 
   const [exportPath, setExportPath] = useState("")
   const [importPath, setImportPath] = useState("")
@@ -105,27 +112,27 @@ export default function RoomLifecycle() {
       <h3>{t("play.rooms.title")}</h3>
       <p className="studio-hint">{t("play.rooms.hint", { room })}</p>
 
-      {admin.roomOp !== null ? (
+      {roomOp !== null ? (
         <Notice tone="success" role="status">
-          {t(`play.rooms.done.${admin.roomOp.action}`, {
-            room: admin.roomOp.room,
-            keys: admin.roomOp.keys,
-            rows: admin.roomOp.store_rows,
-            points: admin.roomOp.vector_points,
-            media: admin.roomOp.media_files ?? 0,
-            scope: admin.roomOp.scope ?? "",
-            path: admin.roomOp.path ?? "",
+          {t(`play.rooms.done.${roomOp.action}`, {
+            room: roomOp.room,
+            keys: roomOp.keys,
+            rows: roomOp.store_rows,
+            points: roomOp.vector_points,
+            media: roomOp.media_files ?? 0,
+            scope: roomOp.scope ?? "",
+            path: roomOp.path ?? "",
           })}{" "}
-          <Button type="button" size="sm" variant="quiet" onClick={() => admin.clearRoomOp()}>
+          <Button type="button" size="sm" variant="quiet" onClick={() => clearRoomOp()}>
             {t("play.rooms.dismiss")}
           </Button>
         </Notice>
       ) : null}
-      {admin.serverUpdate !== null ? (
-        <Notice tone={admin.serverUpdate.status === "restarting" ? "warning" : "danger"} role="status">
-          {admin.serverUpdate.status === "restarting"
+      {serverUpdate !== null ? (
+        <Notice tone={serverUpdate.status === "restarting" ? "warning" : "danger"} role="status">
+          {serverUpdate.status === "restarting"
             ? t("play.rooms.updateRestarting")
-            : t("play.rooms.updateFailed", { output: admin.serverUpdate.output ?? "" })}
+            : t("play.rooms.updateFailed", { output: serverUpdate.output ?? "" })}
         </Notice>
       ) : null}
 
@@ -149,8 +156,8 @@ export default function RoomLifecycle() {
             <Button
               type="button"
               variant="quiet"
-              disabled={admin.busy || !room}
-              onClick={() => admin.exportRoom(room, exportPath.trim() || undefined)}
+              disabled={busy || !room}
+              onClick={() => exportRoom(room, exportPath.trim() || undefined)}
             >
               {t("play.rooms.export")}
             </Button>
@@ -162,7 +169,7 @@ export default function RoomLifecycle() {
           label={t("play.rooms.restore")}
           hint={t("play.rooms.restoreHint")}
           confirmLabel={t("play.rooms.restoreConfirm")}
-          onConfirm={() => admin.importRoom(importPath.trim())}
+          onConfirm={() => importRoom(importPath.trim())}
         >
           <div className="dialog-row">
             <Field label={t("play.rooms.path")}>
@@ -184,7 +191,7 @@ export default function RoomLifecycle() {
           label={t("play.rooms.reset")}
           hint={t(`play.rooms.resetHint.${scope}`)}
           confirmLabel={t("play.rooms.resetConfirm")}
-          onConfirm={() => admin.resetRoom(room, scope)}
+          onConfirm={() => resetRoom(room, scope)}
         >
           <Field label={t("play.rooms.scope")} className="field-narrow">
             {({ id }) => (
@@ -205,7 +212,7 @@ export default function RoomLifecycle() {
           label={t("play.rooms.deleteData")}
           hint={t("play.rooms.deleteDataHint")}
           confirmLabel={t("play.rooms.deleteDataConfirm")}
-          onConfirm={() => admin.deleteRoomData(room, backupBeforeDelete)}
+          onConfirm={() => deleteRoomData(room, backupBeforeDelete)}
         >
           <label className="pack-checkbox">
             <input
@@ -225,7 +232,7 @@ export default function RoomLifecycle() {
           label={t("play.rooms.deleteKeys")}
           hint={t("play.rooms.deleteKeysHint")}
           confirmLabel={t("play.rooms.deleteKeysConfirm")}
-          onConfirm={() => admin.deleteRoom(room)}
+          onConfirm={() => deleteRoom(room)}
         />
 
         <Surface className="room-action" tone="subtle" ariaLabel={t("play.rooms.selfUpdate")}>
@@ -239,10 +246,10 @@ export default function RoomLifecycle() {
               <Button
                 type="button"
                 variant="primary"
-                disabled={admin.busy}
+                disabled={busy}
                 onClick={() => {
                   setArmUpdate(false)
-                  admin.updateServer()
+                  updateServer()
                 }}
               >
                 {t("play.rooms.selfUpdateRun")}
@@ -255,7 +262,7 @@ export default function RoomLifecycle() {
             <Button
               type="button"
               variant="quiet"
-              disabled={!canUpdate || admin.busy}
+              disabled={!canUpdate || busy}
               onClick={() => setArmUpdate(true)}
             >
               {t("play.rooms.selfUpdateRun")}

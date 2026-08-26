@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react"
+import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
 import {
   stripControlChars,
@@ -458,7 +459,10 @@ function PartyCharacterModal({
   const hasExtra =
     attributes.length + secondary.length + fields.length + skills.length + equipment.length + items.length > 0
 
-  return (
+  // Portaled to the body like the avatar lightbox: the desk pane carries a
+  // transform (its slide animation), and a `position: fixed` dialog inside a
+  // transformed ancestor is fixed to that ancestor's box, not the viewport.
+  return createPortal(
     <div className="character-modal-backdrop" onClick={onClose}>
       <section
         className="character-modal"
@@ -468,12 +472,27 @@ function PartyCharacterModal({
         onClick={(event) => event.stopPropagation()}
       >
         <header className="character-modal-head">
-          <div className="character-modal-identity">
-            <Avatar ref={info.avatar} name={info.name} />
-            <div>
-              <h2 id="character-modal-title">{stripControlChars(info.name)}</h2>
-              {info.system ? <span className="desk-tag">{stripControlChars(info.system)}</span> : null}
+          <div className="character-profile-summary character-modal-summary">
+            <div className="character-profile-identity">
+              <Avatar ref={info.avatar} name={info.name} />
+              <div className="character-profile-copy">
+                <h2 id="character-modal-title" className="character-profile-name">
+                  {stripControlChars(info.name)}
+                </h2>
+                {info.system ? (
+                  <div className="character-profile-meta">
+                    <span className="desk-tag">{stripControlChars(info.system)}</span>
+                  </div>
+                ) : null}
+              </div>
             </div>
+            {(info.resources ?? []).length > 0 ? (
+              <div className="character-profile-resources">
+                {(info.resources ?? []).map((resource) => (
+                  <ResourceRow key={resource.id} resource={resource} />
+                ))}
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
@@ -486,15 +505,9 @@ function PartyCharacterModal({
         </header>
         {blurb ? (
           <p className="character-modal-blurb" id="character-modal-blurb">
+            <span className="character-modal-blurb-label">{t("play.character.concept")}: </span>
             {stripControlChars(blurb)}
           </p>
-        ) : null}
-        {(info.resources ?? []).length > 0 ? (
-          <div className="character-modal-resources">
-            {(info.resources ?? []).map((resource) => (
-              <ResourceRow key={resource.id} resource={resource} />
-            ))}
-          </div>
         ) : null}
         {info.status_effects && info.status_effects.length > 0 ? (
           <div className="chip-row">
@@ -507,107 +520,132 @@ function PartyCharacterModal({
         ) : null}
         <div className="character-modal-body">
           <div className="character-modal-col character-modal-col-main">
-        {fields.length > 0 ? (
-          <section className="character-modal-section">
-            <h3>{t("play.character.fields")}</h3>
-            <PartyDetailTable entries={fields} t={t} />
-          </section>
-        ) : null}
-        {attributes.length > 0 ? (
-          <section className="character-modal-section">
-            <h3>{t("session.attributes")}</h3>
-            <PartyDetailGrid
-              entries={attributes}
-              t={t}
-              className="character-modal-detail-grid--attributes"
-              bonusFor={hintFor}
-              bonusTotalFor={bonusTotalFor}
-            />
-          </section>
-        ) : null}
-        {secondary.length > 0 ? (
-          <section className="character-modal-section">
-            <h3>{t("play.character.secondary")}</h3>
-            <PartyDetailGrid
-              entries={secondary}
-              t={t}
-              bonusFor={hintFor}
-              bonusTotalFor={bonusTotalFor}
-            />
-          </section>
-        ) : null}
-        {skills.length > 0 ? (
-          <section className="character-modal-section">
-            <h3>{t("session.skills", { n: skills.length })}</h3>
-            <PartyDetailGrid
-              entries={skills}
-              t={t}
-              className="character-modal-detail-grid--skills"
-              bonusFor={hintFor}
-              bonusTotalFor={bonusTotalFor}
-            />
-          </section>
-        ) : null}
+            {fields.length > 0 ? (
+              <section className="character-modal-section">
+                <h3>{t("play.character.fields")}</h3>
+                <PartyDetailTable entries={fields} t={t} />
+              </section>
+            ) : null}
+            {attributes.length > 0 ? (
+              <section className="character-modal-section">
+                <h3>{t("session.attributes")}</h3>
+                <PartyDetailGrid
+                  entries={attributes}
+                  t={t}
+                  className="character-modal-detail-grid--attributes"
+                  bonusFor={hintFor}
+                  bonusTotalFor={bonusTotalFor}
+                />
+              </section>
+            ) : null}
+            {secondary.length > 0 ? (
+              <section className="character-modal-section">
+                <h3>{t("play.character.secondary")}</h3>
+                <PartyDetailGrid
+                  entries={secondary}
+                  t={t}
+                  bonusFor={hintFor}
+                  bonusTotalFor={bonusTotalFor}
+                />
+              </section>
+            ) : null}
+            {skills.length > 0 ? (
+              <section className="character-modal-section">
+                <h3>{t("session.skills", { n: skills.length })}</h3>
+                <PartyDetailGrid
+                  entries={skills}
+                  t={t}
+                  className="character-modal-detail-grid--skills"
+                  bonusFor={hintFor}
+                  bonusTotalFor={bonusTotalFor}
+                />
+              </section>
+            ) : null}
           </div>
           <div className="character-modal-col character-modal-col-gear">
-        {equipment.length > 0 ? (
-          <section className="character-modal-section">
-            <h3>{t("play.character.equipment")}</h3>
-            <ul className="play-character-equipment">
-              {equipment.map((item, index) => (
-                <li key={`${index}-${detailText(item)}`}>{detailText(item)}</li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-        {items.length > 0 ? (
-          <section className="character-modal-section">
-            <h3>{t("play.character.items")}</h3>
-            <ul className="play-character-items">
-              {items.map((item, index) => (
-                <li key={`${index}-${String(item.name ?? "")}`} className="play-character-item">
-                  <div className="play-character-item-head">
-                    <strong>{stripControlChars(String(item.name ?? ""))}</strong>
-                    {item.improvised ? (
-                      <span className="chip chip-improv">{t("play.character.itemsImprov")}</span>
-                    ) : (
-                      <span className="chip chip-module">{t("play.character.itemsModule")}</span>
-                    )}
-                    {item.equipped_slot ? (
-                      <span className="chip">
-                        {t("play.character.equipped")} · {stripControlChars(String(item.equipped_slot))}
-                      </span>
-                    ) : null}
-                    {item.quantity && Number(item.quantity) > 1 ? (
-                      <span className="chip">×{Number(item.quantity)}</span>
-                    ) : null}
-                  </div>
-                  {item.kind ? (
-                    <span className="play-character-item-kind">
-                      {t("play.character.itemsKind")}: {stripControlChars(String(item.kind))}
-                    </span>
-                  ) : null}
-                  {item.description ? <p>{stripControlChars(String(item.description))}</p> : null}
-                  {item.effect ? <p>{stripControlChars(String(item.effect))}</p> : null}
-                  {item.bonus && Object.keys(item.bonus).length > 0 ? (
-                    <p className="play-character-item-bonus">
-                      {t("play.character.itemsBonus")}:{" "}
-                      {Object.entries(item.bonus)
-                        .map(([canon, delta]) => `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`)
-                        .join(" · ")}
-                    </p>
-                  ) : null}
-                  {item.lore ? <p className="play-character-item-lore">{stripControlChars(String(item.lore))}</p> : null}
-                  {item.origin ? (
-                    <p className="play-character-item-origin">
-                      {t("play.character.itemsOrigin")}: {stripControlChars(String(item.origin))}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+            {equipment.length > 0 && items.length === 0 ? (
+              <section className="character-modal-section">
+                <h3>{t("play.character.equipment")}</h3>
+                <ul className="play-character-equipment">
+                  {equipment.map((item, index) => (
+                    <li key={`${index}-${detailText(item)}`}>{detailText(item)}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+            {items.length > 0 ? (
+              <section className="character-modal-section">
+                <h3>{t("play.character.equipmentDetails")}</h3>
+                <ul className="play-character-items">
+                  {items.map((item, index) => (
+                    <li key={`${index}-${String(item.name ?? "")}`} className="play-character-item">
+                      <div className="play-character-item-head">
+                        <strong>{stripControlChars(String(item.name ?? ""))}</strong>
+                        {item.improvised ? (
+                          <span className="chip chip-improv">{t("play.character.itemsImprov")}</span>
+                        ) : (
+                          <span className="chip chip-module">{t("play.character.itemsModule")}</span>
+                        )}
+                        {item.equipped_slot ? (
+                          <span className="chip">
+                            {t("play.character.equipped")} · {stripControlChars(String(item.equipped_slot))}
+                          </span>
+                        ) : null}
+                        {item.slot && item.slot !== item.equipped_slot ? (
+                          <span className="chip">
+                            {t("play.module.itemSlot")}: {stripControlChars(String(item.slot))}
+                          </span>
+                        ) : null}
+                        {item.quantity && Number(item.quantity) > 1 ? (
+                          <span className="chip">×{Number(item.quantity)}</span>
+                        ) : null}
+                      </div>
+                      {item.kind ? (
+                        <span className="play-character-item-kind">
+                          {t("play.character.itemsKind")}: {stripControlChars(String(item.kind))}
+                        </span>
+                      ) : null}
+                      {item.description ? (
+                        <p>
+                          <span className="play-character-item-label">{t("play.character.itemsDescription")}:</span>{" "}
+                          <span>{stripControlChars(String(item.description))}</span>
+                        </p>
+                      ) : null}
+                      {item.effect ? (
+                        <p>
+                          <span className="play-character-item-label">{t("play.character.itemsEffect")}:</span>{" "}
+                          <span>{stripControlChars(String(item.effect))}</span>
+                        </p>
+                      ) : null}
+                      {item.bonus && Object.keys(item.bonus).length > 0 ? (
+                        <p className="play-character-item-bonus">
+                          {t("play.character.itemsBonus")}:{" "}
+                          {Object.entries(item.bonus)
+                            .map(([canon, delta]) => `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`)
+                            .join(" · ")}
+                        </p>
+                      ) : null}
+                      {item.lore ? (
+                        <p className="play-character-item-lore">
+                          <span className="play-character-item-label">{t("play.character.itemsLore")}:</span>{" "}
+                          <span>{stripControlChars(String(item.lore))}</span>
+                        </p>
+                      ) : null}
+                      {item.origin ? (
+                        <p className="play-character-item-origin">
+                          {t("play.character.itemsOrigin")}: {stripControlChars(String(item.origin))}
+                        </p>
+                      ) : null}
+                      {item.original_holder ? (
+                        <p className="play-character-item-origin">
+                          {t("play.module.itemHolder")}: {stripControlChars(String(item.original_holder))}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </div>
         </div>
         {info.background ? (
@@ -675,7 +713,8 @@ function PartyCharacterModal({
           </footer>
         ) : null}
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

@@ -18,10 +18,13 @@ function OpposedRow({ side, won }: { side: OpposedSide; won: boolean }) {
 
 export default function DiceLine({
   frame,
+  repeats,
   seq,
   isJumpTarget,
 }: {
   frame: DiceFrame
+  /** How many consecutive identical rolls this row folds; ≥2 shows ×N. */
+  repeats?: number
   /** Chronicle seq, surfaced as `data-seq` for the log's height measurement. */
   seq?: number
   /** Set while the table of contents has just jumped to this line. */
@@ -53,6 +56,11 @@ export default function DiceLine({
         {outcome ? ` → ${stripControlChars(outcome.label)}` : ""}
       </span>
       {frame.rolls.length > 0 ? <span className="dice-rolls">[{frame.rolls.join(", ")}]</span> : null}
+      {(repeats ?? 0) > 1 ? (
+        <span className="dice-repeats" title={t("play.dice.repeats", { count: repeats })}>
+          ×{repeats}
+        </span>
+      ) : null}
       {opposed !== null ? (
         <span className="dice-opposed">
           <OpposedRow side={opposed.left} won={opposed.winner === "left"} />

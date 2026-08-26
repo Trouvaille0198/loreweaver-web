@@ -35,7 +35,7 @@ describe("InputBox", () => {
   it("sends the typed text as an input frame and clears the field", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     await user.type(field, "look around{Enter}")
     expect(transportSend).toHaveBeenCalledWith({ type: "input", text: "look around" })
     expect(field).toHaveValue("")
@@ -44,7 +44,7 @@ describe("InputBox", () => {
   it("echoes the line locally the moment it is sent", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    await user.type(screen.getByRole("textbox"), "I check the ledger.{Enter}")
+    await user.type(screen.getByRole("combobox"), "I check the ledger.{Enter}")
     const entries = useSessionStore.getState().entries
     expect(entries).toHaveLength(1)
     expect(entries[0]).toMatchObject({
@@ -57,7 +57,7 @@ describe("InputBox", () => {
     const user = userEvent.setup()
     vi.mocked(transportSend).mockRejectedValueOnce(new Error("offline"))
     render(<InputBox />)
-    await user.type(screen.getByRole("textbox"), ".ra spot hidden{Enter}")
+    await user.type(screen.getByRole("combobox"), ".ra spot hidden{Enter}")
     await waitFor(() => {
       const entry = useSessionStore.getState().entries[0]
       if (!(entry.kind === "pending" && entry.pending.failed)) throw new Error("not failed yet")
@@ -69,24 +69,25 @@ describe("InputBox", () => {
   it("does not send blank input", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    await user.type(screen.getByRole("textbox"), "   {Enter}")
+    await user.type(screen.getByRole("combobox"), "   {Enter}")
     expect(transportSend).not.toHaveBeenCalled()
   })
 
   it("is disabled unless the connection is online", () => {
     useConnectionStore.setState({ status: "reconnecting" })
     render(<InputBox />)
-    expect(screen.getByRole("textbox")).toBeDisabled()
+    expect(screen.getByRole("combobox")).toBeDisabled()
   })
 
   it("uses Tab to select a command hint and Enter to apply it", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     await user.type(field, ".ra")
     // The hint list is a listbox with matching commands; `.ra` is the first match.
     const listbox = screen.getByRole("listbox", { name: "Commands" })
     expect(listbox).toBeInTheDocument()
+    expect(screen.getAllByRole("option")[0]).toHaveTextContent(/Shared.*Writes/i)
     await user.keyboard("{Tab}")
     expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true")
     expect(field).toHaveValue(".ra")
@@ -100,7 +101,7 @@ describe("InputBox", () => {
   it("recalls sent lines with the up arrow", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     await user.type(field, "first line{Enter}")
     await user.type(field, "second line{Enter}")
     await user.keyboard("{ArrowUp}")
@@ -134,7 +135,7 @@ describe("InputBox quick commands", () => {
   it("opens the quick menu from the ⚡ button and inserts the line into the box", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     expect(screen.queryByRole("menu")).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: /quick commands/i }))
@@ -153,7 +154,7 @@ describe("InputBox quick commands", () => {
   it("offers the story hint in completion and the quick-command menu", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
 
     await user.type(field, ".hin")
     expect(screen.getByRole("option", { name: /\.hint/i })).toBeInTheDocument()
@@ -168,7 +169,7 @@ describe("InputBox quick commands", () => {
   it("closes the quick menu with Escape without touching the box", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     await user.click(screen.getByRole("button", { name: /quick commands/i }))
     expect(screen.getByRole("menu")).toBeInTheDocument()
     await user.keyboard("{Escape}")
@@ -198,7 +199,7 @@ describe("InputBox quick commands sub-menus", () => {
   it("drills no more: the palette lists commands, arguments complete inline", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
 
     await user.click(screen.getByRole("button", { name: /quick commands/i }))
     // One row per command — example data is NOT a palette row any more.
@@ -207,14 +208,13 @@ describe("InputBox quick commands sub-menus", () => {
     await user.click(screen.getByRole("menuitem", { name: /^\.pc/i }))
     // Picking `.pc` leaves the cursor in argument territory…
     expect(field).toHaveValue(".pc ")
-    // …where the inline completions immediately suggest the subcommands.
-    expect(screen.getByRole("option", { name: /claim/i })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: /claim.*Shared.*Writes/i })).toBeInTheDocument()
   })
 
   it("arrow keys walk the command hints and Enter inserts the highlighted word", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     await user.type(field, ".r")
     // No highlight yet — Enter would send. Walk
     // down past the dice family (roll, rd, rh) to .ra.
@@ -231,7 +231,7 @@ describe("InputBox quick commands sub-menus", () => {
   it("cycles command hints with Tab and Shift+Tab without applying them", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     await user.type(field, ".r")
     const options = screen.getAllByRole("option")
 
@@ -254,7 +254,7 @@ describe("InputBox quick commands sub-menus", () => {
   it("suggests only dice-grammar glue, never concrete numbers", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     // Cold start: nothing — the numbers are the player's to type.
     await user.type(field, ".r ")
     expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
@@ -275,22 +275,26 @@ describe("InputBox quick commands sub-menus", () => {
   it("suggests only sanity-formula glue, never example formulas", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     // Cold start: nothing — the formula is the player's to type.
     await user.type(field, ".sc ")
     expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
     // `1` → `d` or the `/` separator; `1d6` (a complete side) → `/`.
     await user.type(field, "1")
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
-      "dSanity check (alias)",
-      "/Sanity check (alias)",
+      "dSanity check (alias) Shared Writes",
+      "/Sanity check (alias) Shared Writes",
     ])
     await user.type(field, "d6")
-    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["/Sanity check (alias)"])
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "/Sanity check (alias) Shared Writes",
+    ])
     // After the slash the same digit → d rule applies; complete → silence.
     await user.keyboard("{Tab}{Enter}")
     await user.type(field, "1")
-    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["dSanity check (alias)"])
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "dSanity check (alias) Shared Writes",
+    ])
     await user.type(field, "d6")
     expect(screen.queryByRole("listbox", { name: "Commands" })).not.toBeInTheDocument()
   })
@@ -298,7 +302,7 @@ describe("InputBox quick commands sub-menus", () => {
   it("suggests fixed argument tokens, filtered by the typed prefix", async () => {
     const user = userEvent.setup()
     render(<InputBox />)
-    const field = screen.getByRole("textbox")
+    const field = screen.getByRole("combobox")
     await user.type(field, ".pc cl")
     expect(screen.getByRole("option", { name: /claim/i })).toBeInTheDocument()
     expect(screen.queryByRole("option", { name: /release/i })).not.toBeInTheDocument()
@@ -307,6 +311,23 @@ describe("InputBox quick commands sub-menus", () => {
     await user.keyboard("{Enter}")
     expect(field).toHaveValue(".pc claim ")
     expect(transportSend).not.toHaveBeenCalled()
+  })
+
+  it("marks read and write subcommands separately", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("combobox")
+
+    await user.type(field, ".characters li")
+    const listOption = screen.getByRole("option", { name: /list.*Private.*Read/i })
+    expect(listOption.querySelector(".command-tag--reply-private")).not.toBeNull()
+    expect(listOption.querySelector(".command-tag--data-read")).not.toBeNull()
+
+    await user.clear(field)
+    await user.type(field, ".characters sw")
+    const switchOption = screen.getByRole("option", { name: /switch.*Private.*Writes/i })
+    expect(switchOption.querySelector(".command-tag--reply-private")).not.toBeNull()
+    expect(switchOption.querySelector(".command-tag--data-write")).not.toBeNull()
   })
 
   it("filters the palette as you type, and shows the empty state on no match", async () => {
@@ -333,6 +354,8 @@ describe("InputBox quick commands sub-menus", () => {
     expect(lines).toContain(".sc ")
     expect(lines).toContain(".recap")
     expect(lines).toContain(".help")
+    expect(lines).toContain(".mem ")
+    expect(lines).toContain(".settle")
     // The full command surface, player + keeper.
     expect(lines.length).toBeGreaterThan(14)
   })

@@ -21,7 +21,10 @@ export default function App() {
   }, [])
 
   return (
-    <div className="app">
+    // `data-online` lets the phone layout fold the brand row away while a
+    // session runs — that row holds nothing an online player can use (the
+    // language picker only shows offline), and 60px of story is worth more.
+    <div className="app" data-online={online ? "true" : undefined}>
       <header className="app-header">
         <div className="app-brand">
           <span className="app-mark" aria-hidden="true">

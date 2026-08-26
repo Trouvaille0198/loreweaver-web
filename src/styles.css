@@ -171,6 +171,16 @@ body {
   cursor: pointer;
 }
 
+/* On a phone an online session folds the brand row away. The row's only
+   live control — the language picker — shows when offline only, so while
+   playing it is pure chrome; the session bar (menu, room, status) already
+   holds everything a player at the table needs. */
+@media (max-width: 760px) {
+  .app[data-online="true"] .app-header {
+    display: none;
+  }
+}
+
 .app-main {
   flex: 1;
   display: flex;
@@ -746,7 +756,12 @@ body {
   color: var(--ink-dim);
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--bg-raised) 86%, transparent);
+  /* The toggle floats over whatever story text scrolled beneath it — the
+     backdrop blur keeps the covered words from bleeding through and turning
+     both illegible. */
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   cursor: pointer;
 }
 
@@ -995,6 +1010,17 @@ body {
 .dice-rolls {
   color: var(--ink-faint);
   font-size: 11px;
+}
+
+/* The ×N on a folded run of identical rolls — same check, same faces, one
+   row instead of N. Sized to read as part of the result line it extends. */
+.dice-repeats {
+  font: 700 11px/1 var(--font-ui);
+  color: var(--ink-dim);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px 7px;
+  background: var(--bg-inset);
 }
 
 .rank-fumble {
@@ -1380,6 +1406,69 @@ body {
   white-space: nowrap;
 }
 
+.command-tags {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.command-tag {
+  display: inline-flex;
+  min-height: 17px;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid;
+  border-radius: 999px;
+  font: 600 10px/1 var(--font-mono);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.command-tag--reply-private {
+  color: var(--lw-system);
+  border-color: color-mix(in srgb, var(--lw-system) 48%, transparent);
+  background: color-mix(in srgb, var(--lw-system) 12%, transparent);
+}
+
+.command-tag--reply-shared {
+  color: var(--accent-strong);
+  border-color: color-mix(in srgb, var(--accent-strong) 48%, transparent);
+  background: color-mix(in srgb, var(--accent-strong) 10%, transparent);
+}
+
+.command-tag--data-read {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 48%, transparent);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+}
+
+.command-tag--data-write {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 52%, transparent);
+  background: color-mix(in srgb, var(--warn) 11%, transparent);
+}
+
+.command-tag--data-mixed {
+  color: var(--lw-player);
+  border-color: color-mix(in srgb, var(--lw-player) 48%, transparent);
+  background: color-mix(in srgb, var(--lw-player) 10%, transparent);
+}
+
+.command-hint .command-tags {
+  margin-left: auto;
+}
+
+.quick-menu-row:hover .command-tag,
+.command-hint:hover .command-tag {
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent-ink) 62%, transparent);
+  background: color-mix(in srgb, var(--accent-ink) 12%, transparent);
+}
+
+
 .quick-menu-empty {
   margin: 0;
   padding: 16px 10px;
@@ -1408,7 +1497,7 @@ body {
 .desk-stack {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 /* ---- Desk column: freely reorderable cards ---- */
@@ -1520,11 +1609,11 @@ body {
 .desk-card {
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-3);
 }
 
 .desk-card-dim {
@@ -1535,8 +1624,8 @@ body {
 .usage-breakdown {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px 12px;
-  margin: 6px 0 0;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0 0;
   font: 12px/1.5 var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--ink-faint);
@@ -1546,7 +1635,7 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
   font: 600 13px/1.35 var(--font-ui);
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1567,7 +1656,7 @@ body {
 .attr-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .attr-cell {
@@ -1575,10 +1664,10 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 4px 2px;
+  padding: var(--space-1) var(--space-2);
   background: var(--bg-inset);
   border: 1px solid var(--border-soft);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .attr-key {
@@ -1593,7 +1682,7 @@ body {
 
 .skills-fold {
   border-top: 1px solid var(--border-soft);
-  padding-top: 6px;
+  padding-top: var(--space-2);
 }
 
 .skills-fold-toggle {
@@ -1607,9 +1696,9 @@ body {
   font: 600 12px/1.4 var(--font-ui);
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  padding: 4px 2px;
+  padding: var(--space-1) var(--space-2);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .skills-fold-toggle:hover {
@@ -1634,8 +1723,8 @@ body {
 .skills-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px 12px;
-  padding: 6px 2px 2px;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0 0;
   max-height: 40vh;
   overflow-y: auto;
 }
@@ -1644,16 +1733,16 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
   min-width: 0;
 }
 
+/* Skill names are sheet content — they wrap instead of truncating. */
 .skill-name {
   font-size: 13px;
   color: var(--ink-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .skill-value {
@@ -1675,16 +1764,13 @@ body {
      42px truncated longer labels in the character screen. */
   grid-template-columns: auto minmax(40px, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 13px;
 }
 
 .meter-label {
   color: var(--ink-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 9ch;
 }
 
 .meter-track {
@@ -1725,13 +1811,13 @@ body {
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .chip {
   font-size: 11px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 1px 6px;
   color: var(--ink-dim);
 }
@@ -1752,13 +1838,13 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .party-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 14px;
 }
 
@@ -1775,8 +1861,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 6px 8px;
-  border-left: 2px solid var(--border-soft);
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--bg-inset) 55%, transparent);
+  border-radius: var(--radius-sm);
   font-size: 14px;
 }
 
@@ -1793,7 +1880,7 @@ body {
 .party-member-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-width: 0;
   width: 100%;
   min-height: 24px;
@@ -1943,9 +2030,9 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 6px;
+  gap: var(--space-2);
   min-width: 0;
-  padding-top: 4px;
+  padding-top: var(--space-1);
   border-top: 1px solid var(--border-soft);
   font: 11px/1.2 var(--font-mono);
   color: var(--ink-dim);
@@ -1954,7 +2041,7 @@ body {
 .party-resources {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px 12px;
+  gap: var(--space-1) var(--space-3);
   min-width: 0;
 }
 
@@ -1994,7 +2081,7 @@ body {
 .initiative-list li {
   display: grid;
   grid-template-columns: 30px 1fr;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 13px;
   color: var(--ink-dim);
 }
@@ -2027,14 +2114,14 @@ body {
   margin-inline: auto;
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
 }
 
 .ui-blocks {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .ui-stat,
@@ -2042,7 +2129,7 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-2);
   font-size: 13px;
 }
 
@@ -2062,13 +2149,13 @@ body {
 .var-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .var-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .badge-info {
@@ -2109,8 +2196,8 @@ body {
 .ui-text.is-quote {
   font: italic 14px/1.6 var(--font-story);
   border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
   background: var(--bg-inset);
   color: var(--ink-dim);
 }
@@ -3261,29 +3348,134 @@ body {
   font-size: 13px;
 }
 
-.play-character h3 {
-  display: flex;
+.character-profile-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
   align-items: center;
-  gap: 10px;
-  margin: 0 0 10px;
+  gap: var(--space-6);
+  min-width: 0;
 }
 
-.play-character-heading .member-avatar {
-  width: 58px;
-  height: 58px;
+.character-profile-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.character-profile-identity .member-avatar {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
   border-width: 2px;
 }
 
-.play-character-section {
-  margin-top: 20px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-soft);
+.character-profile-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.character-profile-name {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font: 700 21px/1.2 var(--font-ui);
+}
+
+.character-profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.character-profile-resources {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--bg-inset) 64%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+}
+
+/* The detail surface (`ui-surface`) owns the vertical rhythm between the
+   identity block, every section and the foot — sections never margin or
+   border their way apart. */
+.character-detail {
+  min-width: 0;
 }
 
 .play-character-section h4 {
-  margin: 0 0 10px;
+  margin: 0 0 var(--space-3);
   color: var(--ink);
-  font: 700 15px/1.3 var(--font-ui);
+  font: 600 14px/1.35 var(--font-ui);
+}
+
+.play-character-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--space-3);
+}
+
+.play-character-tab {
+  padding: 6px 12px;
+  color: var(--ink-dim);
+  background: color-mix(in srgb, var(--bg-inset) 60%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  font: 600 13px/1.3 var(--font-ui);
+  cursor: pointer;
+}
+
+.play-character-tab:hover {
+  color: var(--ink);
+}
+
+.play-character-tab.is-active {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.play-character-subsection {
+  margin: var(--space-3) 0 var(--space-2);
+  color: var(--ink-dim);
+  font: 600 12px/1.3 var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.play-character-subsection:first-child {
+  margin-top: 0;
+}
+
+.play-character-prose {
+  margin: 0;
+  color: var(--ink-dim);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.character-detail-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.character-modal-blurb {
+  margin: 0;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+.character-modal-blurb-label {
+  color: var(--ink-dim);
+  font-weight: 600;
 }
 
 .play-character-detail-table {
@@ -3292,25 +3484,24 @@ body {
 
 .play-character-skill-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 6px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-2) var(--space-5);
 }
 
 .play-character-skill {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  padding: 6px 0;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
   border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 55%, transparent);
 }
 
+/* Skill names are sheet content, not chrome — they wrap instead of truncating. */
 .play-character-skill span {
   min-width: 0;
-  overflow: hidden;
   color: var(--ink-dim);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .play-character-skill strong {
@@ -3321,24 +3512,217 @@ body {
 
 .play-character-equipment {
   margin: 0;
-  padding-left: 20px;
+  padding-left: var(--space-5);
   color: var(--ink-dim);
   line-height: 1.65;
 }
 
-.play-character-prose {
+.play-character-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.play-character-item {
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+}
+
+.play-character-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.play-character-item-head strong {
+  color: var(--ink);
+  font: 600 14px/1.3 var(--font-ui);
+}
+
+.play-character-item-kind {
+  display: block;
+  margin-bottom: var(--space-2);
   color: var(--ink-dim);
-  line-height: 1.7;
+  font: 12px/1.3 var(--font-mono);
+}
+
+.play-character-item p {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-dim);
+  line-height: 1.55;
   white-space: pre-wrap;
 }
 
-.play-character-meters {
+.play-character-item-label {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.play-character-item-bonus {
+  color: var(--ok);
+  font-family: var(--font-mono);
+}
+
+.play-character-item-lore {
+  font-style: italic;
+}
+
+.play-character-item-origin {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+
+.play-character-memory {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.play-character-memory-line {
+  margin: 0;
+  padding: var(--space-2) 0;
+  color: var(--ink-dim);
+  line-height: 1.55;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 55%, transparent);
+}
+
+.play-character-memory-line:last-child {
+  border-bottom: 0;
+}
+
+.play-character-relationships {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-width: 420px;
-  margin-bottom: 10px;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.play-character-relationship {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+}
+
+.play-character-relationship strong {
+  color: var(--ink);
+  font: 600 14px/1.3 var(--font-ui);
+}
+
+.character-library {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* Desktop: the picker column stays in reach while the sheet column scrolls long. */
+.character-library-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.character-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.character-roster-row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  color: var(--ink);
+  text-align: left;
+  background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.character-roster-row:hover,
+.character-roster-row:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-inset));
+}
+
+.character-roster-row.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-inset));
+}
+
+.character-roster-row .member-avatar {
+  width: 38px;
+  height: 38px;
+  border-width: 1px;
+}
+
+.character-roster-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Character names must stay fully readable — they wrap, never truncate. */
+.character-roster-copy strong,
+.character-roster-copy span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.character-roster-copy strong {
+  font: 600 14px/1.3 var(--font-ui);
+}
+
+.character-roster-copy span {
+  color: var(--ink-dim);
+  font: 12px/1.3 var(--font-mono);
+}
+
+@media (max-width: 920px) {
+  .character-library {
+    grid-template-columns: minmax(200px, 248px) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .character-library {
+    grid-template-columns: 1fr;
+  }
+
+  .character-library-sidebar {
+    position: static;
+  }
+
+  .character-library .character-profile-summary {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
 }
 
 /* --- One-click local hosting (the TUI's green button) --- */
@@ -4084,6 +4468,8 @@ code {
 }
 
 .command-hint-hint {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4584,17 +4970,14 @@ code {
 
 .session .desk-pane .character-card .desk-title {
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
   font-size: 16px;
   letter-spacing: 0.01em;
   text-transform: none;
   color: var(--ink);
   font-weight: 700;
   gap: 10px;
-}
-
-.session .desk-pane .character-card .desk-tag {
-  margin-left: auto;
 }
 
 .session .desk-pane .character-card .member-avatar {
@@ -4712,10 +5095,10 @@ code {
 /* Party and module cards: quiet, compact. */
 .session .desk-pane .party-card .party-row {
   font-size: 14px;
-  gap: 7px;
-  padding: 8px 6px;
+  gap: var(--space-2);
+  padding: var(--space-2);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--bg-inset) 30%, transparent);
 }
 
@@ -4747,7 +5130,7 @@ code {
   z-index: 1000;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: var(--space-5);
   background: rgb(7 5 2 / 78%);
   backdrop-filter: blur(3px);
 }
@@ -4758,22 +5141,19 @@ code {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 20px 20px;
+  gap: var(--space-4);
+  padding: var(--space-5);
   color: var(--ink);
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 35%),
-    var(--bg-raised);
+  background: var(--bg-raised);
   border: 1px solid var(--border);
-  border-top: 2px solid color-mix(in srgb, var(--accent) 75%, var(--border));
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 24px 80px rgb(0 0 0 / 52%);
 }
 
 .character-modal-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: var(--space-4);
   align-items: start;
   flex: 1;
   min-height: 0;
@@ -4807,13 +5187,29 @@ code {
   background: var(--ink-faint);
 }
 
-@media (max-width: 820px) {
-  .character-modal-body {
-    grid-template-columns: 1fr;
+/* Narrow screens: one scroll context. The modal itself scrolls; the columns and
+   the full-width section flow at natural height instead of competing for the
+   leftover flex space (a fixed-height section starves the flexible body). */
+@media (max-width: 760px) {
+  .character-modal {
     overflow-y: auto;
   }
+
+  .character-modal-body {
+    grid-template-columns: 1fr;
+    flex: none;
+    overflow: visible;
+  }
+
   .character-modal-col {
-    overflow-y: visible;
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* The stacked header is tall; the close control belongs beside the name
+     line, not centered against the whole block. */
+  .character-modal-close {
+    align-self: flex-start;
   }
 }
 
@@ -4821,30 +5217,24 @@ code {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 12px;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--border-soft);
 }
 
-.character-modal-identity {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
+/* The modal header is denser than the character screen's identity block: the
+   resources ride bare (no inset panel) so both halves of the header carry the
+   same visual weight. */
+.character-modal-summary {
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 300px);
+  gap: var(--space-4);
 }
 
-.character-modal-identity h2 {
-  margin: 0 0 5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font: 700 21px/1.15 var(--font-ui);
-  letter-spacing: 0.01em;
-}
-
-.character-modal-identity .member-avatar {
-  width: 62px;
-  height: 62px;
-  border-width: 2px;
+.character-modal-summary .character-profile-resources {
+  padding: 0;
+  background: none;
+  border: 0;
 }
 
 .character-modal-close {
@@ -4854,7 +5244,7 @@ code {
   color: var(--ink-dim);
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
@@ -4866,23 +5256,19 @@ code {
   border-color: var(--accent);
 }
 
-.character-modal-resources {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 2px 0;
-}
-
+/* Sections share one separator rule: the heading carries its own hairline
+   (the module surface pattern), so sibling rhythm comes from the modal's own
+   gap and both body columns start their rules at the same edge. */
 .character-modal-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 11px;
-  border-top: 1px solid var(--border-soft);
+  gap: var(--space-3);
 }
 
 .character-modal-section h3 {
   margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-soft);
   color: var(--ink);
   font: 700 13px/1.3 var(--font-ui);
   letter-spacing: 0.02em;
@@ -4893,8 +5279,8 @@ code {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  padding-top: 11px;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--border-soft);
 }
 
@@ -4936,12 +5322,12 @@ code {
 }
 
 .character-modal-table td {
-  padding: 7px 0;
+  padding: var(--space-2) 0;
   border: 0;
 }
 
 .character-modal-table td:last-child {
-  padding-left: 18px;
+  padding-left: var(--space-4);
   color: var(--ink);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -4951,7 +5337,7 @@ code {
 .character-modal-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .character-modal-detail-grid--attributes {
@@ -4962,12 +5348,12 @@ code {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
   min-width: 0;
-  padding: 8px 9px;
+  padding: var(--space-2) var(--space-3);
   background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
   border: 1px solid var(--border-soft);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .character-modal-detail-cell span {
@@ -4986,9 +5372,9 @@ code {
 }
 
 .chip-improv {
-  color: #e8a33d;
-  border-color: #e8a33d66;
-  background: #e8a33d14;
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
 }
 
 .chip-module {
@@ -4998,8 +5384,8 @@ code {
 }
 
 .character-modal-detail-cell .stat-bonus {
-  margin-left: 6px;
-  color: #4caf7d;
+  margin-left: var(--space-2);
+  color: var(--ok);
   font: 700 11px/1.2 var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
@@ -5011,27 +5397,32 @@ code {
 .character-modal .play-character-equipment {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--space-2);
   padding: 0;
   list-style: none;
 }
 
 .character-modal .play-character-equipment li {
-  padding: 7px 9px;
+  padding: var(--space-2) var(--space-3);
   color: var(--ink-dim);
   background: color-mix(in srgb, var(--bg-inset) 72%, transparent);
   border: 1px solid var(--border-soft);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
-@media (max-width: 520px) {
+@media (max-width: 560px) {
+  .character-profile-summary {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
   .character-modal-backdrop {
-    padding: 10px;
+    padding: var(--space-2);
   }
 
   .character-modal {
     max-height: 92vh;
-    padding: 16px;
+    padding: var(--space-4);
   }
 
   .character-modal-detail-grid--attributes {

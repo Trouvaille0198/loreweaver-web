@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import "../../i18n"
 import { useConnectionStore } from "../../store/connection"
+import { QUICK_COMMANDS } from "./commands"
 import QuickMenu from "./QuickMenu"
 
 function seat(role: "player" | "keeper") {
@@ -47,6 +48,24 @@ describe("QuickMenu keeper surface", () => {
     expect(screen.getByRole("menuitem", { name: /^\.module/i })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /^\.var/i })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /^\.skill/i })).toBeInTheDocument()
+  })
+
+  it("marks every visible command with reply visibility and data effect", async () => {
+    const user = userEvent.setup()
+    seat("keeper")
+    render(<QuickMenu onPick={vi.fn()} />)
+    await user.click(screen.getByRole("button", { name: /quick commands/i }))
+
+    const rows = screen.getAllByRole("menuitem")
+    expect(rows).toHaveLength(QUICK_COMMANDS.length)
+    for (const row of rows) {
+      expect(row).toHaveTextContent(/Private|Shared/)
+      expect(row).toHaveTextContent(/Read|Writes|Read\/Write/)
+      expect(row.querySelector(".command-tag--reply-private, .command-tag--reply-shared")).not.toBeNull()
+      expect(
+        row.querySelector(".command-tag--data-read, .command-tag--data-write, .command-tag--data-mixed"),
+      ).not.toBeNull()
+    }
   })
 
   it("inserts a keeper command's line on pick, ready for arguments", async () => {

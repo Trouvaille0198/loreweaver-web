@@ -16,9 +16,15 @@
 // its budgets and ranges live in a pack's `creation_constraints` and no frame
 // carries them. Rolling, describing and importing all resolve server-side.
 
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
+import type { TFunction } from "i18next"
 import { useTranslation } from "react-i18next"
-import { stripControlChars, type CharacterState, type ItemView, type RuleSystemEntry } from "@loreweaver/protocol"
+import {
+  stripControlChars,
+  type CharacterState,
+  type ItemView,
+  type RuleSystemEntry,
+} from "@loreweaver/protocol"
 import { Button, Field, Notice, SectionHeader, Surface } from "../../../components/ui"
 import { transportSend } from "../../../lib/transport"
 import { useConnectionStore } from "../../../store/connection"
@@ -51,6 +57,8 @@ function send(text: string): void {
  * a zustand selector look changed on every render, which is an infinite re-render, not
  * a style point. */
 const NO_SYSTEMS: RuleSystemEntry[] = []
+
+const NO_CHARACTERS: CharacterState[] = []
 
 type CreateMode = "roll" | "describe" | "import"
 
@@ -206,26 +214,36 @@ function AttributeRow({
   name,
   value,
   bonus,
+  editable = true,
 }: {
   name: string
   value: unknown
   bonus?: ItemBonusContribution[]
+  editable?: boolean
 }) {
   const { t } = useTranslation()
   const online = useConnectionStore((s) => s.status === "online")
   const [draft, setDraft] = useState<string | null>(null)
 
   // Hover over a stat shows which equipped items grant it what (phase 2 item bonuses).
-  const bonusHint = bonus && bonus.length > 0 ? t("play.character.equippedBonus") + ": " + bonus.map((b) => `${b.name} +${b.delta}`).join(", ") : undefined
+  const bonusHint =
+    bonus && bonus.length > 0
+      ? t("play.character.equippedBonus") + ": " + bonus.map((b) => `${b.name} +${b.delta}`).join(", ")
+      : undefined
 
   const bonusTotal = bonus && bonus.length > 0 ? bonus.reduce((s, b) => s + b.delta, 0) : undefined
-  if (!isEditable(value)) {
+  if (!editable || !isEditable(value)) {
     return (
       <tr>
         <td className="play-attr-name">{stripControlChars(name)}</td>
         <td title={bonusHint}>
           {attrText(value)}
-          {bonusTotal ? <span className="stat-bonus">{bonusTotal > 0 ? "+" : ""}{bonusTotal}</span> : null}
+          {bonusTotal ? (
+            <span className="stat-bonus">
+              {bonusTotal > 0 ? "+" : ""}
+              {bonusTotal}
+            </span>
+          ) : null}
         </td>
       </tr>
     )
@@ -281,45 +299,219 @@ function AttributeRow({
   )
 }
 
+function CharacterRosterList({
+  characters,
+  activeName,
+  selectedName,
+  onSelect,
+  t,
+}: {
+  characters: CharacterState[]
+  activeName: string
+  selectedName: string
+  onSelect: (name: string) => void
+  t: TFunction
+}) {
+  return (
+    <Surface className="character-roster-card" labelledBy="character-roster-title">
+      <SectionHeader
+        titleId="character-roster-title"
+        title={t("play.character.listTitle", { count: characters.length })}
+        description={t("play.character.listHint")}
+      />
+      <ul className="character-roster-list">
+        {characters.map((item) => {
+          const active = item.name === activeName
+          const selected = item.name === selectedName
+          return (
+            <li key={item.name}>
+              <button
+                type="button"
+                className={`character-roster-row${selected ? " is-selected" : ""}${active ? " is-active" : ""}`}
+                aria-label={stripControlChars(item.name)}
+                aria-pressed={selected}
+                onClick={() => onSelect(item.name)}
+              >
+                <Avatar ref={item.avatar} name={item.name} />
+                <span className="character-roster-copy">
+                  <strong>{stripControlChars(item.name)}</strong>
+                  <span>{stripControlChars(item.system)}</span>
+                </span>
+                {active ? <span className="chip">{t("play.character.active")}</span> : null}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </Surface>
+  )
+}
+
 export default function CharacterScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation()
-  const character = useSessionStore((s) => s.game?.character ?? null)
+  const game = useSessionStore((s) => s.game)
+  const characters =
+    game?.characters && game.characters.length > 0
+      ? game.characters
+      : game?.character
+        ? [game.character]
+        : NO_CHARACTERS
+  const activeName = game?.character?.name ?? ""
   const online = useConnectionStore((s) => s.status === "online")
+  const [selectedName, setSelectedName] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  useEffect(() => {
+    if (activeName) setSelectedName(activeName)
+  }, [activeName])
+
+  const selected =
+    characters.find((item) => item.name === selectedName) ??
+    characters.find((item) => item.name === activeName) ??
+    characters[0]
+
+  useEffect(() => {
+    setConfirmDelete(false)
+  }, [selected?.name])
+
   return (
-    <ScreenShell title={t("play.menu.character")} onBack={onBack}>
-      {character === null ? (
-        <>
-          <p className="placeholder">{t("play.character.none")}</p>
+    <ScreenShell title={t("play.menu.character")} onBack={onBack} wide>
+      {characters.length === 0 ? <p className="placeholder">{t("play.character.none")}</p> : null}
+      <div className="character-library">
+        <aside className="character-library-sidebar">
+          {characters.length > 0 ? (
+            <CharacterRosterList
+              characters={characters}
+              activeName={activeName}
+              selectedName={selected?.name ?? ""}
+              onSelect={setSelectedName}
+              t={t}
+            />
+          ) : null}
           <CreateCharacter />
-        </>
-      ) : (
-        <CharacterDetailsView
-          character={character}
-          online={online}
-          confirmDelete={confirmDelete}
-          setConfirmDelete={setConfirmDelete}
-          t={t}
-        />
-      )}
+        </aside>
+        {selected ? (
+          <CharacterDetailsView
+            character={selected}
+            active={selected.name === activeName}
+            online={online}
+            onActivate={
+              selected.name !== activeName ? () => send(`.characters switch ${selected.name}`) : undefined
+            }
+            confirmDelete={confirmDelete}
+            setConfirmDelete={setConfirmDelete}
+            t={t}
+          />
+        ) : null}
+      </div>
     </ScreenShell>
+  )
+}
+
+/** One held item card: name + chips, kind, description, effect, bonus, lore,
+ * origin — plus an optional trailing action (archive / restore). Shared by the
+ * active-inventory section and the shelved-items section. */
+function ItemCard({
+  item,
+  index,
+  action,
+  t,
+}: {
+  item: ItemView
+  index: number
+  action?: ReactNode
+  t: TFunction
+}) {
+  return (
+    <li key={`${index}-${String(item.name ?? "")}`} className="play-character-item">
+      <div className="play-character-item-head">
+        <strong>{stripControlChars(String(item.name ?? ""))}</strong>
+        {item.improvised ? (
+          <span className="chip chip-improv">{t("play.character.itemsImprov")}</span>
+        ) : (
+          <span className="chip chip-module">{t("play.character.itemsModule")}</span>
+        )}
+        {item.equipped_slot ? (
+          <span className="chip">
+            {t("play.character.equipped")} · {stripControlChars(String(item.equipped_slot))}
+          </span>
+        ) : null}
+        {item.slot && item.slot !== item.equipped_slot ? (
+          <span className="chip">
+            {t("play.module.itemSlot")}: {stripControlChars(String(item.slot))}
+          </span>
+        ) : null}
+        {item.quantity && Number(item.quantity) > 1 ? (
+          <span className="chip">×{Number(item.quantity)}</span>
+        ) : null}
+        {action}
+      </div>
+      {item.kind ? (
+        <span className="play-character-item-kind">
+          {t("play.character.itemsKind")}: {stripControlChars(String(item.kind))}
+        </span>
+      ) : null}
+      {item.description ? (
+        <p>
+          <span className="play-character-item-label">{t("play.character.itemsDescription")}:</span>{" "}
+          <span>{stripControlChars(String(item.description))}</span>
+        </p>
+      ) : null}
+      {item.effect ? (
+        <p>
+          <span className="play-character-item-label">{t("play.character.itemsEffect")}:</span>{" "}
+          <span>{stripControlChars(String(item.effect))}</span>
+        </p>
+      ) : null}
+      {item.bonus && Object.keys(item.bonus).length > 0 ? (
+        <p className="play-character-item-bonus">
+          {t("play.character.itemsBonus")}:{" "}
+          {Object.entries(item.bonus)
+            .map(
+              ([canon, delta]) =>
+                `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`,
+            )
+            .join(" · ")}
+        </p>
+      ) : null}
+      {item.lore ? (
+        <p className="play-character-item-lore">
+          <span className="play-character-item-label">{t("play.character.itemsLore")}:</span>{" "}
+          <span>{stripControlChars(String(item.lore))}</span>
+        </p>
+      ) : null}
+      {item.origin ? (
+        <p className="play-character-item-origin">
+          {t("play.character.itemsOrigin")}: {stripControlChars(String(item.origin))}
+        </p>
+      ) : null}
+      {item.original_holder ? (
+        <p className="play-character-item-origin">
+          {t("play.module.itemHolder")}: {stripControlChars(String(item.original_holder))}
+        </p>
+      ) : null}
+    </li>
   )
 }
 
 function CharacterDetailsView({
   character,
+  active,
   online,
+  onActivate,
   confirmDelete,
   setConfirmDelete,
   t,
 }: {
   character: CharacterState
+  active: boolean
   online: boolean
+  onActivate?: () => void
   confirmDelete: boolean
   setConfirmDelete: (value: boolean) => void
-  t: ReturnType<typeof useTranslation>["t"]
+  t: TFunction
 }) {
+  const [itemTab, setItemTab] = useState<"active" | "archived">("active")
   if (!character) return null
   const details = asCharacterDetails(character)
   const fieldEntries = Object.entries(details.fields ?? {})
@@ -336,25 +528,45 @@ function CharacterDetailsView({
   const items = details.items ?? []
   const background = details.background?.trim() ?? ""
   const notes = details.notes?.trim() ?? ""
+  const activeItems = items.filter((item) => !item.archived)
+  const archivedItems = items.filter((item) => item.archived)
+  const memory = details.memory
+  const relationships = details.relationships ?? []
   const hasExtra =
     fieldEntries.length > 0 ||
     secondaryEntries.length > 0 ||
     skillEntries.length > 0 ||
     equipment.length > 0 ||
     items.length > 0 ||
-    Boolean(background || notes)
+    Boolean(background || notes) ||
+    Boolean(memory && (memory.summary || (memory.entries?.length ?? 0) > 0)) ||
+    relationships.length > 0
 
   return (
-    <div className="play-character">
-      <h3 className="play-character-heading">
-        <Avatar ref={character.avatar} name={character.name} />
-        <span>{stripControlChars(character.name)}</span>
-        <span className="desk-tag">{stripControlChars(character.system)}</span>
-      </h3>
-      <div className="play-character-meters">
-        {character.resources.map((resource) => (
-          <ResourceRow key={resource.id} resource={resource} />
-        ))}
+    <Surface tone="accent" className="character-detail" labelledBy="character-detail-name">
+      <div className="character-profile-summary">
+        <div className="character-profile-identity">
+          <Avatar ref={character.avatar} name={character.name} />
+          <div className="character-profile-copy">
+            <h3 className="character-profile-name" id="character-detail-name">
+              {stripControlChars(character.name)}
+            </h3>
+            <div className="character-profile-meta">
+              <span className="desk-tag">{stripControlChars(character.system)}</span>
+              {character.source ? (
+                <span className="chip" title={t("play.character.sourceHint")}>
+                  {t("play.character.source")}: {stripControlChars(character.source)}
+                </span>
+              ) : null}
+              {active ? <span className="chip">{t("play.character.active")}</span> : null}
+            </div>
+          </div>
+        </div>
+        <div className="character-profile-resources">
+          {character.resources.map((resource) => (
+            <ResourceRow key={resource.id} resource={resource} />
+          ))}
+        </div>
       </div>
       {character.status_effects.length > 0 ? (
         <div className="chip-row">
@@ -370,11 +582,62 @@ function CharacterDetailsView({
           <DetailTable entries={fieldEntries} />
         </CharacterDetailSection>
       ) : null}
+      {background ? (
+        <CharacterDetailSection title={t("play.character.background")}>
+          <p className="play-character-prose">{stripControlChars(background)}</p>
+        </CharacterDetailSection>
+      ) : null}
+      {notes ? (
+        <CharacterDetailSection title={t("play.character.notes")}>
+          <p className="play-character-prose">{stripControlChars(notes)}</p>
+        </CharacterDetailSection>
+      ) : null}
+      {memory && (memory.summary || (memory.entries?.length ?? 0) > 0) ? (
+        <CharacterDetailSection title={t("play.character.memory")}>
+          {memory.summary ? (
+            <>
+              <h5 className="play-character-subsection">{t("play.character.lifeSummary")}</h5>
+              <p className="play-character-prose">{stripControlChars(memory.summary)}</p>
+            </>
+          ) : null}
+          {memory.entries && memory.entries.length > 0 ? (
+            <>
+              <h5 className="play-character-subsection">{t("play.character.recentEntries")}</h5>
+              <ul className="play-character-memory">
+                {memory.entries.map((entry, index) => (
+                  <li key={index} className="play-character-memory-line">
+                    {stripControlChars(entry)}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </CharacterDetailSection>
+      ) : null}
+      {relationships.length > 0 ? (
+        <CharacterDetailSection title={t("play.character.relationships")}>
+          <ul className="play-character-relationships">
+            {relationships.map((rel) => (
+              <li key={rel.target} className="play-character-relationship">
+                <strong>{stripControlChars(rel.target)}</strong>
+                <span className="chip-row">
+                  {rel.tracks.map((tv) => (
+                    <span key={tv.track} className="chip">
+                      {t(`play.character.track.${tv.track}`)} {tv.value > 0 ? "+" : ""}
+                      {tv.value}
+                    </span>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </CharacterDetailSection>
+      ) : null}
       <CharacterDetailSection title={t("session.attributes")}>
         <table className="play-table">
           <tbody>
             {Object.entries(character.attributes).map(([key, value]) => (
-              <AttributeRow key={key} name={key} value={value} bonus={bonuses[key]} />
+              <AttributeRow key={key} name={key} value={value} bonus={bonuses[key]} editable={active} />
             ))}
           </tbody>
         </table>
@@ -395,7 +658,12 @@ function CharacterDetailsView({
                   <span>{stripControlChars(name)}</span>
                   <strong>
                     {attrText(value)}
-                    {bonus ? <span className="stat-bonus">{bonus > 0 ? "+" : ""}{bonus}</span> : null}
+                    {bonus ? (
+                      <span className="stat-bonus">
+                        {bonus > 0 ? "+" : ""}
+                        {bonus}
+                      </span>
+                    ) : null}
                   </strong>
                 </div>
               )
@@ -403,7 +671,7 @@ function CharacterDetailsView({
           </div>
         </CharacterDetailSection>
       ) : null}
-      {equipment.length > 0 ? (
+      {equipment.length > 0 && items.length === 0 ? (
         <CharacterDetailSection title={t("play.character.equipment")}>
           <ul className="play-character-equipment">
             {equipment.map((item, index) => (
@@ -412,99 +680,141 @@ function CharacterDetailsView({
           </ul>
         </CharacterDetailSection>
       ) : null}
-      {items.length > 0 ? (
-        <CharacterDetailSection title={t("play.character.items")}>
-          <ul className="play-character-items">
-            {items.map((item: ItemView, index) => (
-              <li key={`${index}-${String(item.name ?? "")}`} className="play-character-item">
-                <div className="play-character-item-head">
-                  <strong>{stripControlChars(String(item.name ?? ""))}</strong>
-                  {item.improvised ? (
-                    <span className="chip chip-improv">{t("play.character.itemsImprov")}</span>
-                  ) : (
-                    <span className="chip chip-module">{t("play.character.itemsModule")}</span>
-                  )}
-                  {item.equipped_slot ? (
-                    <span className="chip">
-                      {t("play.character.equipped")} · {stripControlChars(String(item.equipped_slot))}
-                    </span>
-                  ) : null}
-                  {item.quantity && Number(item.quantity) > 1 ? (
-                    <span className="chip">×{Number(item.quantity)}</span>
-                  ) : null}
-                </div>
-                {item.kind ? (
-                  <span className="play-character-item-kind">
-                    {t("play.character.itemsKind")}: {stripControlChars(String(item.kind))}
-                  </span>
-                ) : null}
-                {item.description ? <p>{stripControlChars(String(item.description))}</p> : null}
-                {item.effect ? <p>{stripControlChars(String(item.effect))}</p> : null}
-                {item.bonus && Object.keys(item.bonus).length > 0 ? (
-                  <p className="play-character-item-bonus">
-                    {t("play.character.itemsBonus")}:{" "}
-                    {Object.entries(item.bonus)
-                      .map(([canon, delta]) => `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`)
-                      .join(" · ")}
-                  </p>
-                ) : null}
-                {item.lore ? <p className="play-character-item-lore">{stripControlChars(String(item.lore))}</p> : null}
-                {item.origin ? (
-                  <p className="play-character-item-origin">
-                    {t("play.character.itemsOrigin")}: {stripControlChars(String(item.origin))}
-                  </p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </CharacterDetailSection>
-      ) : null}
-      {background ? (
-        <CharacterDetailSection title={t("play.character.background")}>
-          <p className="play-character-prose">{stripControlChars(background)}</p>
-        </CharacterDetailSection>
-      ) : null}
-      {notes ? (
-        <CharacterDetailSection title={t("play.character.notes")}>
-          <p className="play-character-prose">{stripControlChars(notes)}</p>
+      {activeItems.length > 0 || archivedItems.length > 0 ? (
+        <CharacterDetailSection title={t("play.character.equipmentDetails")}>
+          <div className="play-character-tabs" role="tablist" aria-label={t("play.character.equipmentDetails")}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={itemTab === "active"}
+              className={`play-character-tab${itemTab === "active" ? " is-active" : ""}`}
+              onClick={() => setItemTab("active")}
+            >
+              {t("play.character.equipmentDetails")} ({activeItems.length})
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={itemTab === "archived"}
+              className={`play-character-tab${itemTab === "archived" ? " is-active" : ""}`}
+              onClick={() => setItemTab("archived")}
+            >
+              {t("play.character.archivedItems")} ({archivedItems.length})
+            </button>
+          </div>
+          {itemTab === "active" && activeItems.length > 0 ? (
+            <ul className="play-character-items">
+              {activeItems.map((item, index) => (
+                <ItemCard
+                  key={`${index}-${String(item.name ?? "")}`}
+                  item={item}
+                  index={index}
+                  t={t}
+                  action={
+                    active ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="quiet"
+                        disabled={!online}
+                        onClick={() => send(`.item archive ${item.name ?? ""}`)}
+                      >
+                        {t("play.character.archiveItem")}
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              ))}
+            </ul>
+          ) : null}
+          {itemTab === "archived" && archivedItems.length > 0 ? (
+            <>
+              <p className="studio-hint">{t("play.character.archivedHint")}</p>
+              <ul className="play-character-items">
+                {archivedItems.map((item, index) => (
+                  <ItemCard
+                    key={`${index}-${String(item.name ?? "")}`}
+                    item={item}
+                    index={index}
+                    t={t}
+                    action={
+                      active ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="quiet"
+                          disabled={!online}
+                          onClick={() => send(`.item unarchive ${item.name ?? ""}`)}
+                        >
+                          {t("play.character.unarchiveItem")}
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                ))}
+              </ul>
+            </>
+          ) : null}
         </CharacterDetailSection>
       ) : null}
       {!hasExtra ? <p className="studio-hint">{t("play.character.noDetails")}</p> : null}
-      <p className="studio-hint">{t("play.character.editHint")}</p>
-      <div className="chip-row">
-        <Button
-          type="button"
-          variant="quiet"
-          disabled={!online}
-          title={t("play.character.finalizeHint")}
-          onClick={() => send(".st finalize")}
-        >
-          {t("play.character.finalize")}
-        </Button>
-        {confirmDelete ? (
-          <>
+      <div className="character-detail-foot">
+        <p className="studio-hint">
+          {active ? t("play.character.editHint") : t("play.character.viewOnlyHint")}
+        </p>
+        <div className="chip-row">
+          {active ? (
+            <>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={!online}
+                title={t("play.character.finalizeHint")}
+                onClick={() => send(".st finalize")}
+              >
+                {t("play.character.finalize")}
+              </Button>
+              {confirmDelete ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    disabled={!online}
+                    onClick={() => {
+                      send(".st delete")
+                      setConfirmDelete(false)
+                    }}
+                  >
+                    {t("play.character.deleteConfirm")}
+                  </Button>
+                  <Button type="button" variant="quiet" onClick={() => setConfirmDelete(false)}>
+                    {t("play.character.deleteCancel")}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="danger"
+                  disabled={!online}
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  {t("play.character.delete")}
+                </Button>
+              )}
+            </>
+          ) : (
             <Button
               type="button"
-              variant="danger"
-              disabled={!online}
-              onClick={() => {
-                send(".st delete")
-                setConfirmDelete(false)
-              }}
+              variant="primary"
+              disabled={!online || !onActivate}
+              onClick={onActivate}
             >
-              {t("play.character.deleteConfirm")}
+              {t("play.character.activate")}
             </Button>
-            <Button type="button" variant="quiet" onClick={() => setConfirmDelete(false)}>
-              {t("play.character.deleteCancel")}
-            </Button>
-          </>
-        ) : (
-          <Button type="button" variant="danger" disabled={!online} onClick={() => setConfirmDelete(true)}>
-            {t("play.character.delete")}
-          </Button>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </Surface>
   )
 }
 

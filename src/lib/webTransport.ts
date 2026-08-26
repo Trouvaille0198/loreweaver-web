@@ -172,7 +172,17 @@ function makeSocket(url: string): WebSocketLike {
 /** The singleton `WsClient`. Reconnects and re-joins are handled inside the
  * library (exponential backoff, `lastJoin` replay); the app only observes the
  * `status`/`frame` events. */
-export function webClient(): WsClient {
+let reconnectAttempts = 0
+
+/** The live connection's coordinates, kept so the radio can be followed: when
+ * the device goes offline mid-session the redial loop is torn down, and these
+ * are what dial it again when connectivity returns. */
+let activeParams: WebConnectParams | null = null
+
+/** True between an offline-triggered teardown and the matching online redial. */
+let suspendedForOffline = false
+
+function webClient(): WsClient {
   if (client === null) {
     client = new WsClient({
       // The app refuses a protocol-major mismatch itself on the `welcome`
@@ -189,16 +199,21 @@ export function webClient(): WsClient {
       setTimeoutFn: (handler, timeout, ...args) => setTimeout(handler, timeout, ...args),
       clearTimeoutFn: (handle) => clearTimeout(handle),
     })
-    client.onStatus((status) =>
+    client.onStatus((status) => {
+      // The library counts nothing; its own status carries no retry ordinal,
+      // so count the transitions here — reset by reaching online, bumped per
+      // reconnecting — and let the status pill say which try this is.
+      if (status === "online") reconnectAttempts = 0
+      else if (status === "reconnecting") reconnectAttempts += 1
       emit({
         kind: "status",
         status,
-        attempt: 0,
+        attempt: status === "reconnecting" ? reconnectAttempts : 0,
         // `reconnecting` is the one status the app shows verbatim; the
         // library gives no reason, so supply the generic line.
         error: status === "reconnecting" ? "connection lost" : null,
-      }),
-    )
+      })
+    })
     client.onMessage((frame) => emit({ kind: "frame", frame }))
   }
   return client
@@ -210,17 +225,53 @@ export interface WebConnectParams {
   key: string
 }
 
-export async function webConnect(params: WebConnectParams): Promise<void> {
+async function doWebConnect(params: WebConnectParams): Promise<void> {
   const ws = webClient()
   await ws.connect(params.url)
   ws.join(params.key)
+}
+
+export async function webConnect(params: WebConnectParams): Promise<void> {
+  activeParams = params
+  await doWebConnect(params)
 }
 
 export async function webDisconnect(): Promise<void> {
   if (client === null) return
   client.close()
   client = null
+  activeParams = null
+  suspendedForOffline = false
 }
+
+// The browser knows when the radio dies before any socket error says so. A
+// device going offline mid-session would otherwise leave the library dialing
+// into the void every few seconds for as long as the outage lasts; instead the
+// loop is torn down with the connection it was serving, and the remembered
+// credentials dial again the moment the navigator reports the network back.
+function installNetworkGates(): void {
+  if (typeof window === "undefined") return
+  window.addEventListener("offline", () => {
+    // Only a live or already-retrying session suspends — a deliberate
+    // disconnect has neither a client nor remembered params to hold.
+    if (client === null || activeParams === null) return
+    suspendedForOffline = true
+    client.close()
+    client = null
+  })
+  window.addEventListener("online", () => {
+    if (!suspendedForOffline || activeParams === null) return
+    suspendedForOffline = false
+    const params = activeParams
+    // The store hears the whole status ladder again (connecting → …), so the
+    // table rides this dial exactly like any other reconnect.
+    doWebConnect(params).catch(() =>
+      emit({ kind: "status", status: "offline", attempt: 0, error: null }),
+    )
+  })
+}
+
+installNetworkGates()
 
 export async function webSend(frame: ClientFrame): Promise<void> {
   webClient().send(frame)

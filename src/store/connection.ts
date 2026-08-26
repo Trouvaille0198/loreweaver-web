@@ -119,7 +119,21 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     try {
       await transportConnect({ ...params, ticket: sanitizeTicket(params.ticket), key: params.key.trim() })
     } catch (err) {
-      set({ status: "offline", lastError: String(err) })
+      // A dead dial still has to tear the client down: the protocol client
+      // only stops redialing once closed, and left alone it would knock on the
+      // unreachable door every few seconds — then silently come online with
+      // the remembered key the moment the server reappears, stranding the
+      // operator on a form they already failed. Closing here (not `disconnect`)
+      // keeps it strictly mechanical: no manual-leave marker, no refusal
+      // latch — a dialed-but-unreachable server is usually a restart away,
+      // so the tab-return rejoin stays free to try again. The client's own
+      // manualClose guard swallows whatever socket callbacks are still queued.
+      set({ status: "offline", attempt: 0, lastError: String(err) })
+      try {
+        await transportDisconnect()
+      } catch {
+        // Nothing was ever open — nothing to close.
+      }
     }
   },
 

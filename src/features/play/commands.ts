@@ -46,6 +46,8 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "growth" },
   { word: "en" },
   // Characters
+  { word: "chars" },
+  { word: "characters" },
   { word: "genchar" },
   { word: "coc" },
   { word: "coc7" },
@@ -71,6 +73,8 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "report" },
   { word: "summary" },
   { word: "chronicle" },
+  { word: "mem" },
+  { word: "settle" },
   { word: "phase" },
   { word: "hint" },
   { word: "help" },
@@ -131,53 +135,101 @@ export interface QuickCommand {
   line: string
   /** Keeper-only: hidden from players, and separated under a "Keeper" header. */
   keeper?: boolean
+  /** Normal command reply is delivered only to the invoking connection. */
+  privateReply?: boolean
+  /** Whether this command only reads, writes, or exposes both paths. */
+  dataMode: QuickCommandDataMode
 }
+
+export type QuickCommandDataMode = "read" | "write" | "mixed"
 
 export const QUICK_COMMANDS: readonly QuickCommand[] = [
   // --- Player surface ---
-  { word: "r", line: ".r " },
-  { word: "rh", line: ".rh " },
-  { word: "ra", line: ".ra " },
-  { word: "rav", line: ".rav " },
-  { word: "sanity", line: ".sc " },
-  { word: "init", line: ".ri" },
-  { word: "st", line: ".st " },
-  { word: "pc", line: ".pc " },
-  { word: "hint", line: ".hint " },
-  { word: "recap", line: ".recap" },
-  { word: "help", line: ".help" },
-  { word: "draw", line: ".draw" },
-  { word: "jrrp", line: ".jrrp" },
-  { word: "rename", line: ".rename " },
-  { word: "party", line: ".party" },
-  { word: "genchar", line: ".genchar" },
-  { word: "report", line: ".report" },
+  { word: "r", line: ".r ", dataMode: "write" },
+  { word: "rh", line: ".rh ", privateReply: true, dataMode: "write" },
+  { word: "ra", line: ".ra ", dataMode: "write" },
+  { word: "rav", line: ".rav ", dataMode: "write" },
+  { word: "sanity", line: ".sc ", dataMode: "write" },
+  { word: "init", line: ".ri", dataMode: "write" },
+  { word: "st", line: ".st ", dataMode: "mixed" },
+  { word: "pc", line: ".pc ", dataMode: "mixed" },
+  { word: "hint", line: ".hint ", dataMode: "write" },
+  { word: "recap", line: ".recap", privateReply: true, dataMode: "read" },
+  { word: "help", line: ".help", privateReply: true, dataMode: "read" },
+  { word: "draw", line: ".draw", dataMode: "read" },
+  { word: "jrrp", line: ".jrrp", dataMode: "read" },
+  { word: "rename", line: ".rename ", dataMode: "write" },
+  { word: "party", line: ".party", dataMode: "mixed" },
+  { word: "characters", line: ".characters ", privateReply: true, dataMode: "mixed" },
+  { word: "genchar", line: ".genchar", dataMode: "write" },
+  { word: "report", line: ".report", dataMode: "read" },
+  { word: "mem", line: ".mem ", dataMode: "read" },
+
   // --- Keeper-only surface (hidden from player seats) ---
-  { word: "summary", line: ".summary", keeper: true },
-  { word: "module", line: ".module ", keeper: true },
-  { word: "var", line: ".var ", keeper: true },
-  { word: "skill", line: ".skill ", keeper: true },
-  { word: "room", line: ".room ", keeper: true },
-  { word: "panels", line: ".panels", keeper: true },
-  { word: "audio", line: ".audio", keeper: true },
-  { word: "image", line: ".image ", keeper: true },
-  { word: "import", line: ".import list", keeper: true },
-  { word: "npc", line: ".npc ", keeper: true },
-  { word: "companion", line: ".companion ", keeper: true },
-  { word: "lore", line: ".lore ", keeper: true },
-  { word: "chronicle", line: ".chronicle ", keeper: true },
-  { word: "rule", line: ".rule list", keeper: true },
-  { word: "preset", line: ".preset list", keeper: true },
-  { word: "model", line: ".model list", keeper: true },
-  { word: "reset", line: ".reset", keeper: true },
-  { word: "save", line: ".save", keeper: true },
-  { word: "undo", line: ".undo", keeper: true },
-  { word: "bot", line: ".bot", keeper: true },
-  { word: "botlist", line: ".botlist", keeper: true },
-  { word: "language", line: ".language", keeper: true },
-  { word: "dev", line: ".dev", keeper: true },
-  { word: "habits", line: ".habits", keeper: true },
+  { word: "settle", line: ".settle", keeper: true, dataMode: "write" },
+  { word: "summary", line: ".summary", keeper: true, dataMode: "read" },
+  { word: "module", line: ".module ", keeper: true, privateReply: true, dataMode: "write" },
+  { word: "var", line: ".var ", keeper: true, privateReply: true, dataMode: "mixed" },
+  { word: "skill", line: ".skill ", keeper: true, dataMode: "mixed" },
+  { word: "room", line: ".room ", keeper: true, privateReply: true, dataMode: "mixed" },
+  { word: "panels", line: ".panels", keeper: true, dataMode: "mixed" },
+  { word: "audio", line: ".audio", keeper: true, dataMode: "mixed" },
+  { word: "image", line: ".image ", keeper: true, dataMode: "write" },
+  { word: "import", line: ".import list", keeper: true, dataMode: "read" },
+  { word: "npc", line: ".npc ", keeper: true, privateReply: true, dataMode: "mixed" },
+  { word: "companion", line: ".companion ", keeper: true, privateReply: true, dataMode: "mixed" },
+  { word: "lore", line: ".lore ", keeper: true, privateReply: true, dataMode: "mixed" },
+  { word: "chronicle", line: ".chronicle ", keeper: true, privateReply: true, dataMode: "mixed" },
+  { word: "rule", line: ".rule list", keeper: true, dataMode: "read" },
+  { word: "preset", line: ".preset list", keeper: true, privateReply: true, dataMode: "read" },
+  { word: "model", line: ".model list", keeper: true, privateReply: true, dataMode: "read" },
+  { word: "reset", line: ".reset", keeper: true, dataMode: "write" },
+  { word: "save", line: ".save", keeper: true, dataMode: "write" },
+  { word: "undo", line: ".undo", keeper: true, dataMode: "write" },
+  { word: "bot", line: ".bot", keeper: true, dataMode: "mixed" },
+  { word: "botlist", line: ".botlist", keeper: true, dataMode: "mixed" },
+  { word: "language", line: ".language", keeper: true, dataMode: "write" },
+  { word: "dev", line: ".dev", keeper: true, dataMode: "mixed" },
+  { word: "habits", line: ".habits", keeper: true, privateReply: true, dataMode: "mixed" },
 ]
+
+export interface CommandAnnotation {
+  /** Whether the normal reply is private to the invoking connection. */
+  privateReply: boolean
+  /** Whether the command reads, writes, or exposes both data paths. */
+  dataMode: QuickCommandDataMode
+}
+
+const COMMAND_ANNOTATION_ALIASES: Record<string, string> = {
+  roll: "r",
+  rd: "r",
+  hroll: "rh",
+  hidden_roll: "rh",
+  check: "ra",
+  rc: "ra",
+  attack: "ra",
+  opposed: "rav",
+  rcv: "rav",
+  sc: "sanity",
+  ri: "init",
+  initiative: "init",
+  sheet: "st",
+  roster: "pc",
+  chars: "characters",
+  luck: "jrrp",
+  nn: "rename",
+  vars: "var",
+}
+
+export function commandAnnotation(word: string): CommandAnnotation {
+  const normalized = word.trim().toLowerCase()
+  const target = COMMAND_ANNOTATION_ALIASES[normalized] ?? normalized
+  const command = QUICK_COMMANDS.find((entry) => entry.word === target)
+  return {
+    privateReply: command?.privateReply === true,
+    dataMode: command?.dataMode ?? "mixed",
+  }
+}
 
 /** Flatten for tests: every line reachable from the menu. */
 export function quickCommandLines(commands: readonly QuickCommand[] = QUICK_COMMANDS): string[] {
@@ -251,6 +303,8 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   // Cast & party (gateway/commands/cast.py's word sets)
   pc: { tokens: ["list", "claim", "release"] },
   roster: { tokens: ["list", "claim", "release"] },
+  characters: { tokens: ["list", "switch"] },
+  chars: { tokens: ["list", "switch"] },
   party: { tokens: ["add", "new", "recruit", "act", "go", "auto", "remove", "list"] },
   npc: { tokens: ["list", "show", "delete"] },
   companion: { tokens: ["list", "delete"] },
@@ -271,6 +325,7 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   lore: { tokens: ["list", "add", "query", "search", "import"] },
   chronicle: { tokens: ["list", "summary", "threads", "fold", "note", "edit"] },
   report: { tokens: ["detailed", "full", "log"] },
+  settle: { tokens: ["apply", "cancel"] },
   // Rules & skills (rules.py's word sets)
   skill: { tokens: ["list", "status", "enable", "on", "disable", "off"] },
   pack: { tokens: ["install", "add"] },
@@ -289,6 +344,74 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   sfx: { tokens: ["play", "stop", "pause", "resume", "volume"] },
 }
 
+const ARG_TOKEN_DATA_MODES: Record<string, Record<string, QuickCommandDataMode>> = {
+  st: { "hp-1": "write", "hp+1": "write", "理智-1": "write", "理智+1": "write", finalize: "write" },
+  sheet: { "hp-1": "write", "hp+1": "write", "理智-1": "write", "理智+1": "write", finalize: "write" },
+  pc: { list: "read", claim: "write", release: "write" },
+  roster: { list: "read", claim: "write", release: "write" },
+  characters: { list: "read", switch: "write" },
+  chars: { list: "read", switch: "write" },
+  party: {
+    add: "write",
+    new: "write",
+    recruit: "write",
+    act: "write",
+    go: "write",
+    auto: "write",
+    remove: "write",
+    list: "read",
+  },
+  npc: { list: "read", show: "read", delete: "write" },
+  companion: { list: "read", delete: "write" },
+  avatar: { gen: "write", generate: "write", clear: "write" },
+  image: { scene: "write", portrait: "write", clue: "write", combat: "write", last: "write" },
+  var: { list: "read", expose: "write", show: "read", hide: "write", add: "write", set: "write" },
+  vars: { list: "read", expose: "write", show: "read", hide: "write", add: "write", set: "write" },
+  lore: { list: "read", add: "write", query: "read", search: "read", import: "write" },
+  chronicle: {
+    list: "read",
+    summary: "read",
+    threads: "read",
+    fold: "write",
+    note: "write",
+    edit: "write",
+  },
+  report: { detailed: "read", full: "read", log: "read" },
+  settle: { apply: "write", cancel: "write" },
+  skill: { list: "read", status: "read", enable: "write", on: "write", disable: "write", off: "write" },
+  pack: { install: "write", add: "write" },
+  import: { list: "read" },
+  room: { show: "read", open: "write", link: "write", leave: "write" },
+  reset: { chars: "write", all: "write", confirm: "write" },
+  model: {
+    show: "read",
+    list: "read",
+    set: "write",
+    use: "write",
+    switch: "write",
+    key: "write",
+    reset: "write",
+    login: "write",
+    auth: "write",
+    signin: "write",
+    logout: "write",
+  },
+  dev: { mount: "write", unmount: "write", reload: "write" },
+  audio: { list: "read", set: "write", import: "write", play: "write", stop: "write", volume: "write" },
+  bgm: { play: "write", stop: "write", pause: "write", resume: "write", volume: "write" },
+  ambience: { play: "write", stop: "write", pause: "write", resume: "write", volume: "write" },
+  amb: { play: "write", stop: "write", pause: "write", resume: "write", volume: "write" },
+  sfx: { play: "write", stop: "write", pause: "write", resume: "write", volume: "write" },
+}
+
+function argumentAnnotation(word: string, token: string): CommandAnnotation {
+  const root = commandAnnotation(word)
+  return {
+    ...root,
+    dataMode: ARG_TOKEN_DATA_MODES[word]?.[token.toLowerCase()] ?? root.dataMode,
+  }
+}
+
 /** One inline completion candidate. */
 export interface ArgSuggestion {
   /** The candidate text. */
@@ -297,6 +420,8 @@ export interface ArgSuggestion {
   mode: "replace" | "append"
   /** Optional i18n key for this candidate's own description (defaults to the command's). */
   hintKey?: string
+  /** Reply visibility and data effect for this subcommand candidate. */
+  annotation?: CommandAnnotation
 }
 
 /**
@@ -340,8 +465,13 @@ export function suggestArgs(
 ): ArgSuggestion[] {
   const spec = ARG_SPECS[word]
   if (!spec) return []
-  if (spec.dice) return diceSuggestions(token)
-  if (spec.sanity) return sanitySuggestions(token)
+  const annotate = (suggestions: ArgSuggestion[]) =>
+    suggestions.map((suggestion) => ({
+      ...suggestion,
+      annotation: argumentAnnotation(word, suggestion.text),
+    }))
+  if (spec.dice) return annotate(diceSuggestions(token))
+  if (spec.sanity) return annotate(sanitySuggestions(token))
   const p = token.trim().toLowerCase()
   const filter = (list: readonly string[]) =>
     list.filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p)).slice(0, 8)
@@ -353,10 +483,12 @@ export function suggestArgs(
     candidates.push(...staticTokens.filter((c) => c.toLowerCase().startsWith(p)))
     const nouns = filter([...(dynamic.npcs ?? []), ...(dynamic.clues ?? [])])
     candidates.push(...nouns.map((n) => n))
-    return candidates.slice(0, 8).map((text) => ({ text, mode: "replace" as const }))
+    return annotate(candidates.slice(0, 8).map((text) => ({ text, mode: "replace" as const })))
   }
-  return (spec.tokens ?? [])
-    .filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p))
-    .slice(0, 8)
-    .map((text) => ({ text, mode: "replace" as const, hintKey: spec.hints?.[text] }))
+  return annotate(
+    (spec.tokens ?? [])
+      .filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p))
+      .slice(0, 8)
+      .map((text) => ({ text, mode: "replace" as const, hintKey: spec.hints?.[text] })),
+  )
 }

@@ -15,6 +15,7 @@ import {
 } from "react"
 import { useTranslation } from "react-i18next"
 import { Button } from "../../components/ui"
+import CommandTags from "./CommandTags"
 import { useConnectionStore } from "../../store/connection"
 import { QUICK_COMMANDS, type QuickCommand } from "./commands"
 
@@ -57,6 +58,24 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
 
   const labelOf = useCallback((key: string) => t(`play.commands.${key}`), [t])
 
+  const replyLabelOf = useCallback(
+    (command: QuickCommand) =>
+      t(command.privateReply ? "play.commands.replyPrivate" : "play.commands.replyShared"),
+    [t],
+  )
+
+  const dataLabelOf = useCallback(
+    (command: QuickCommand) =>
+      t(
+        command.dataMode === "read"
+          ? "play.commands.dataRead"
+          : command.dataMode === "write"
+            ? "play.commands.dataWrite"
+            : "play.commands.dataMixed",
+      ),
+    [t],
+  )
+
   /** The commands on screen: filtered by the search field, else the whole
    * first-level surface for the seat. */
   const rows = useMemo<QuickCommand[]>(() => {
@@ -66,9 +85,11 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
     const match = (command: QuickCommand) =>
       command.word.includes(q) ||
       command.line.toLowerCase().includes(q) ||
-      labelOf(command.word).toLowerCase().includes(q)
+      labelOf(command.word).toLowerCase().includes(q) ||
+      replyLabelOf(command).toLowerCase().includes(q) ||
+      dataLabelOf(command).toLowerCase().includes(q)
     return visible.filter(match)
-  }, [query, isKeeper, labelOf])
+  }, [query, isKeeper, labelOf, replyLabelOf, dataLabelOf])
 
   // Display list interleaves the Keeper section header before the first
   // keeper row.
@@ -203,6 +224,9 @@ export default function QuickMenu({ onPick, disabled = false }: QuickMenuProps) 
                   >
                     <span className="quick-menu-line">{row.line.trim()}</span>
                     <span className="quick-menu-label">{labelOf(row.word)}</span>
+                    <CommandTags
+                      annotation={{ privateReply: row.privateReply === true, dataMode: row.dataMode }}
+                    />
                   </Button>
                 ) : null,
               )}

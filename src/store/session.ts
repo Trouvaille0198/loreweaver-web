@@ -65,7 +65,17 @@ export type LogEntry =
        * attached by the server to this reply's id. Players never receive it. */
       discardedDraft?: string
     }
-  | { seq: number; at: number; kind: "dice"; frame: DiceFrame }
+  | {
+      seq: number
+      at: number
+      kind: "dice"
+      frame: DiceFrame
+      /** How many consecutive identical rolls this row folds — shown as ×N.
+       * A long run of the same check failing over and over is one fact, not
+       * one row per attempt; anything that differs (actor, expression, total,
+       * outcome, raw faces) starts a fresh row. */
+      repeats?: number
+    }
   | { seq: number; at: number; kind: "system"; frame: SystemFrame }
   | { seq: number; at: number; kind: "ui"; frame: UiFrame }
   | { seq: number; at: number; kind: "media"; frame: MediaFrame }
@@ -256,6 +266,38 @@ function ingestMedia(entries: LogEntry[], frame: MediaFrame, at: number): LogEnt
   return pushEntry(entries, { kind: "media", frame }, at)
 }
 
+/**
+ * Do two dice frames read identically on the table — same actor, same check,
+ * same result, same faces? Only then may they fold into one ×N row: the row is
+ * a compression of exactly what the reader would have seen twice, and anything
+ * that differs anywhere (a hidden flag, a subsystem tag, one pip of difference
+ * in the raw rolls) stays its own line.
+ */
+function sameDiceRoll(a: DiceFrame, b: DiceFrame): boolean {
+  return (
+    a.actor === b.actor &&
+    a.expr === b.expr &&
+    a.total === b.total &&
+    (a.outcome?.label ?? "") === (b.outcome?.label ?? "") &&
+    a.hidden === b.hidden &&
+    (a.subsystem ?? "") === (b.subsystem ?? "") &&
+    a.rolls.join(",") === b.rolls.join(",")
+  )
+}
+
+/** Append a dice frame, folding into the tail row when it reads the same.
+ * The folded row keeps its original seq (it anchors TOC jumps) and shows the
+ * latest roll's time, and it costs one scrollback slot instead of N. */
+function pushDice(entries: LogEntry[], frame: DiceFrame, at: number): LogEntry[] {
+  const last = entries[entries.length - 1]
+  if (last !== undefined && last.kind === "dice" && sameDiceRoll(last.frame, frame)) {
+    const next = [...entries]
+    next[next.length - 1] = { ...last, at, repeats: (last.repeats ?? 1) + 1 }
+    return next
+  }
+  return pushEntry(entries, { kind: "dice", frame }, at)
+}
+
 function ingestInlineUi(entries: LogEntry[], frame: UiFrame, at: number): LogEntry[] {  if (frame.replace && frame.id) {
     const index = entries.findIndex((e) => e.kind === "ui" && e.frame.id === frame.id)
     if (index !== -1) {
@@ -362,7 +404,7 @@ export const useSessionStore = create<SessionState>((set) => ({
         set((s) => ({ entries: ingestDraft(s.entries, frame) }))
         return
       case "dice":
-        set((s) => ({ entries: pushEntry(s.entries, { kind: "dice", frame }, now) }))
+        set((s) => ({ entries: pushDice(s.entries, frame, now) }))
         return
       case "media":
         set((s) => ({ entries: ingestMedia(s.entries, frame, now) }))

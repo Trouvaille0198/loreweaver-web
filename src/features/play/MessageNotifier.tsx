@@ -45,7 +45,11 @@ function summary(text: string, limit = 60): string {
  * replay and streaming drafts never do. Toggleable from the header bell. */
 export default function MessageNotifier() {
   const { t } = useTranslation()
-  const entries = useSessionStore((s) => s.entries)
+  // Only the TAIL is subscribed to: a mid-log correction or any other entry
+  // rewrite must not re-render this component. Streaming deltas rewrite the
+  // tail bubble constantly, but the effect below rejects drafts up front, so
+  // those runs cost one cheap state comparison each.
+  const last = useSessionStore((s) => s.entries[s.entries.length - 1])
   const [enabled, setEnabled] = useState<boolean>(
     () => typeof window !== "undefined" && localStorage.getItem(NOTIFY_STORAGE_KEY) !== "off",
   )
@@ -57,7 +61,6 @@ export default function MessageNotifier() {
   const mountTime = useRef(Date.now())
 
   useEffect(() => {
-    const last = entries[entries.length - 1]
     if (!last || last.kind !== "narrative" || last.draft) return
     const id = last.frame.id
     if (!id || notifiedIds.current.has(id)) return
@@ -70,7 +73,7 @@ export default function MessageNotifier() {
 
     // Taskbar/tab nudge: flash the title, named for the player who triggered
     // the reply (like a poke).
-    const label = t("session.messageNotifyTitle", { name: triggerName(entries, t) })
+    const label = t("session.messageNotifyTitle", { name: triggerName(useSessionStore.getState().entries, t) })
     const original = document.title
     let step = 0
     const flash = window.setInterval(() => {
@@ -107,7 +110,7 @@ export default function MessageNotifier() {
       }
       document.title = original
     }
-  }, [entries, enabled, t])
+  }, [last, enabled, t])
 
   const toggle = async () => {
     if (!canNotify()) return

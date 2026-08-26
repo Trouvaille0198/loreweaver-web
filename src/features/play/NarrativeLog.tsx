@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react"
 import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
@@ -14,7 +22,7 @@ import {
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore, type LogEntry, type PendingEcho } from "../../store/session"
 import DiceLine from "./DiceLine"
-import { assetFetch, assetReadBase64 } from "./panels/assets"
+import { assetReadBytes } from "./panels/assets"
 import { ECHO_SWEEP_MS, FOLLOW_SLACK_PX } from "./timing"
 import UiBlocks from "./UiBlocks"
 
@@ -285,18 +293,26 @@ function MediaEntry({
   const [src, setSrc] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
 
+  // The bytes become a Blob URL rather than a base64 data URL — a data URL
+  // keeps a third-again-inflated copy of the image alive in the JS heap for as
+  // long as the element references it. The URL dies with this line.
   useEffect(() => {
     let live = true
-    void assetFetch(frame.hash)
-      .then(() => assetReadBase64(frame.hash))
-      .then((base64) => {
-        if (live) setSrc(`data:${frame.mime};base64,${base64}`)
+    let url: string | null = null
+    assetReadBytes(frame.hash)
+      .then((bytes) => {
+        if (!live) return
+        // The cache never hands out SharedArrayBuffer-backed views; narrow the
+        // view's buffer so recent lib.dom typings accept it as a BlobPart.
+        url = URL.createObjectURL(new Blob([bytes.buffer as ArrayBuffer], { type: frame.mime }))
+        setSrc(url)
       })
       .catch(() => {
         if (live) setFailed(true)
       })
     return () => {
       live = false
+      if (url !== null) URL.revokeObjectURL(url)
     }
   }, [frame.hash, frame.mime])
 
@@ -347,7 +363,11 @@ function ErrorEntry({
   )
 }
 
-function Entry({
+/** One chronicle line, memoized: a streaming turn rewrites the entries array
+ * dozens of times a second, but every untouched line keeps its object identity,
+ * so the memo skips them — without it each delta would re-render the whole
+ * mounted window and re-parse every bubble through remark. */
+const Entry = memo(function Entry({
   entry,
   seq,
   isKeeper,
@@ -374,7 +394,7 @@ function Entry({
         />
       )
     case "dice":
-      return <DiceLine frame={entry.frame} seq={seq} isJumpTarget={isJumpTarget} />
+      return <DiceLine frame={entry.frame} repeats={entry.repeats} seq={seq} isJumpTarget={isJumpTarget} />
     case "media":
       return <MediaEntry frame={entry.frame} seq={seq} isJumpTarget={isJumpTarget} />
     case "system":
@@ -390,7 +410,7 @@ function Entry({
     case "pending":
       return <PendingEntry pending={entry.pending} seq={seq} isJumpTarget={isJumpTarget} />
   }
-}
+})
 
 /** One clickable chapter of the chronicle, as shown in the table of contents. */
 interface Chapter {
@@ -425,7 +445,10 @@ function chapterLabel(entry: LogEntry, t: TFunction): string {
 /**
  * Chapters split at a quiet spell (a line this long after the previous one)
  * and at system notices — round changes, scene shifts — so the table of
- * contents follows the shape of the story, not a fixed timer.
+ * contents follows the shape of the story, not a fixed timer. A dice line
+ * never opens a chapter of its own: roll clusters trail their scene, and a
+ * montage of repeated checks would otherwise fill the contents with a wall of
+ * identical `<actor> <expr>` rows that drown the story beats.
  */
 function buildChapters(entries: LogEntry[], t: TFunction): Chapter[] {
   const chapters: Chapter[] = []
@@ -434,7 +457,7 @@ function buildChapters(entries: LogEntry[], t: TFunction): Chapter[] {
     const prev = entries[i - 1]
     const quietGap = prev !== undefined && entry.at - prev.at >= CHAPTER_GAP_MS
     const systemNode = entry.kind === "system" && prev?.kind !== "system"
-    if (i === 0 || quietGap || systemNode) {
+    if (i === 0 || systemNode || (quietGap && entry.kind !== "dice")) {
       chapters.push({ startIndex: i, seq: entry.seq, at: entry.at, label: chapterLabel(entry, t) })
     }
   }
@@ -658,14 +681,61 @@ export default function NarrativeLog() {
     return () => clearInterval(timer)
   }, [waiting, expireEchoes])
 
+  // The discarded-draft dialog owns its own keyboard, like every other
+  // popover: it takes focus when it opens, closes on Escape, and holds Tab
+  // inside — aria-modal promises the reader nothing else is here.
+  const draftRoot = useRef<HTMLDivElement | null>(null)
+  const draftCloseRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    if (openDraft === null) return
+    draftCloseRef.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenDraft(null)
+      if (event.key === "Tab" && draftRoot.current !== null) {
+        const focusable = draftRoot.current.querySelectorAll<HTMLElement>(
+          "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const lastItem = focusable[focusable.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          lastItem.focus()
+        } else if (!event.shiftKey && document.activeElement === lastItem) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [openDraft])
+
   const [windowStart, windowEnd] = windowRange
   const gap = logGap(scroller.current)
   const topPad = positionOf(windowStart, entries, heightsRef.current, gap)
   const bottomPad = positionOf(entries.length, entries, heightsRef.current, gap) - positionOf(windowEnd, entries, heightsRef.current, gap)
 
+  // Roving focus inside the open contents: arrows walk the chapters (a menu's
+  // contract), Home/End jump to the ends. Buttons stay tabbable as fallback.
+  const onTocMenuKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(tocRoot.current?.querySelectorAll<HTMLButtonElement>(".log-toc-item") ?? [])
+    if (items.length === 0) return
+    const current = items.indexOf(document.activeElement as HTMLButtonElement)
+    let next = -1
+    if (event.key === "ArrowDown") next = current === -1 ? 0 : Math.min(current + 1, items.length - 1)
+    else if (event.key === "ArrowUp") next = current === -1 ? items.length - 1 : Math.max(current - 1, 0)
+    else if (event.key === "Home") next = 0
+    else if (event.key === "End") next = items.length - 1
+    else return
+    event.preventDefault()
+    items[next]?.focus()
+  }
+
   return (
     <div className="narrative-log" ref={scroller} onScroll={onScroll}>
-      {entries.length > 0 ? (
+      {/* Two chapters at least — a lone beat has nowhere to navigate to. */}
+      {chapters.length >= 2 ? (
         <div className="log-toc-anchor" ref={tocRoot}>
           <button
             ref={tocToggle}
@@ -680,7 +750,7 @@ export default function NarrativeLog() {
             {t("log.toc.toggle")}
           </button>
           {tocOpen ? (
-            <div className="log-toc-pop" role="menu" aria-label={t("log.toc.label")}>
+            <div className="log-toc-pop" role="menu" aria-label={t("log.toc.label")} onKeyDown={onTocMenuKey}>
               {chapters.length === 0 ? (
                 <div className="log-toc-empty">{t("log.toc.empty")}</div>
               ) : (
@@ -718,10 +788,16 @@ export default function NarrativeLog() {
       <div className="log-pad" style={{ height: bottomPad }} aria-hidden="true" />
       {openDraft ? (
         <div className="panel-modal-backdrop" onClick={() => setOpenDraft(null)}>
-          <div className="panel-modal draft-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={draftRoot}
+            className="panel-modal draft-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
             <header className="panel-modal-header">
               <h2>{t("log.draftTitle")}</h2>
-              <button type="button" className="ui-button" onClick={() => setOpenDraft(null)}>
+              <button ref={draftCloseRef} type="button" className="ui-button" onClick={() => setOpenDraft(null)}>
                 {t("log.draftClose")}
               </button>
             </header>

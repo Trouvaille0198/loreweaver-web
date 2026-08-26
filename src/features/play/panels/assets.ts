@@ -36,6 +36,18 @@ export function assetReadBase64(hash: string): Promise<string> {
   return invoke<string>("asset_read_base64", { hash })
 }
 
+/** Read a CACHED blob back as raw bytes — what image/audio elements actually
+ * want. The browser keeps content-addressed bytes natively; the native bridge
+ * only exposes a base64 read, which is decoded here so no caller ever handles
+ * the third-again-inflated string form. */
+export async function assetReadBytes(hash: string): Promise<Uint8Array> {
+  if (!isTauri()) return webGetBytes(hash)
+  const binary = atob(await invoke<string>("asset_read_base64", { hash }))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
 export function panelServeRegister(args: {
   token: string
   entryHash: string

@@ -43,6 +43,83 @@ const SHEET = {
   status_effects: [],
 }
 
+const ALT_SHEET = {
+  name: "Mira Vale",
+  system: "dnd5e",
+  resources: [{ id: "hp", label: "HP", value: 8, max: 10 }],
+  attributes: { STR: 12, DEX: 16 },
+  skills: { Stealth: 5 },
+  background: "A cautious surveyor.",
+  notes: "Keeps a second compass.",
+  status_effects: [],
+}
+
+describe("CharacterScreen — owned roster", () => {
+  beforeEach(() => {
+    sent.length = 0
+    useSessionStore.getState().clear()
+    useConnectionStore.setState({
+      status: "online",
+      welcome: {
+        type: "welcome",
+        protocol: "2.3",
+        room: "table",
+        you: { id: "u1", name: "Nyx", role: "player" },
+        locale: "en",
+        server: "loreweaver/1",
+      },
+    })
+    useSessionStore.getState().ingest(
+      stateFrame({
+        character: SHEET,
+        characters: [SHEET, ALT_SHEET],
+      }),
+    )
+  })
+
+  it("lists every owned character and shows the selected sheet in full", async () => {
+    render(<CharacterScreen onBack={() => {}} />)
+    expect(screen.getByRole("button", { name: "Lin Quill" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Mira Vale" })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Mira Vale" }))
+
+    expect(screen.getByText("A cautious surveyor.")).toBeInTheDocument()
+    expect(screen.getByText("Keeps a second compass.")).toBeInTheDocument()
+    expect(screen.getByText("Stealth")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Use this character" })).toBeEnabled()
+    expect(screen.queryByRole("button", { name: "16" })).not.toBeInTheDocument()
+  })
+
+  it("shows the dossier: source, memory and relationship tracks", async () => {
+    const dossierSheet = {
+      ...SHEET,
+      source: "forge-module:snow-villa",
+      memory: {
+        summary: "The surveyor closed the mirror case.",
+        entries: ["Found the bronze mirror in the well."],
+      },
+      relationships: [{ target: "阿雪", tracks: [{ track: "affection", value: 15 }] }],
+    }
+    useSessionStore.getState().ingest(
+      stateFrame({
+        character: dossierSheet,
+        characters: [dossierSheet],
+      }),
+    )
+    render(<CharacterScreen onBack={() => {}} />)
+
+    expect(screen.getByText(/snow-villa/)).toBeInTheDocument()
+    expect(screen.getByText("The surveyor closed the mirror case.")).toBeInTheDocument()
+    expect(screen.getByText("Found the bronze mirror in the well.")).toBeInTheDocument()
+    expect(screen.getByText("阿雪")).toBeInTheDocument()
+    expect(screen.getByText(/Affection \+15/)).toBeInTheDocument()
+    // The two memory parts are labeled distinctly: the folded life summary vs
+    // the recent per-turn entries — no more ambiguous prose blocks.
+    expect(screen.getByText("Life summary")).toBeInTheDocument()
+    expect(screen.getByText("Recent memory")).toBeInTheDocument()
+  })
+})
+
 describe("CharacterScreen — creation", () => {
   beforeEach(() => {
     sent.length = 0
@@ -242,9 +319,12 @@ describe("CharacterScreen — item detail", () => {
             {
               name: "Fencing Sword",
               kind: "weapon",
+              slot: "hand",
+              description: "A balanced blade.",
               effect: "+2 attack",
               lore: "A captain's blade.",
               origin: "the sunken galleon",
+              original_holder: "the captain",
               equipped_slot: "main_hand",
               quantity: 1,
             },
@@ -260,8 +340,53 @@ describe("CharacterScreen — item detail", () => {
     expect(screen.getByText("Fencing Sword")).toBeInTheDocument()
     expect(screen.getByText(/main_hand/)).toBeInTheDocument()
     expect(screen.getByText("Kind: weapon")).toBeInTheDocument()
+    expect(screen.getByText("A balanced blade.")).toBeInTheDocument()
+    expect(screen.getByText("Slot: hand")).toBeInTheDocument()
+    expect(screen.getByText("Original holder: the captain")).toBeInTheDocument()
     expect(screen.getByText("+2 attack")).toBeInTheDocument()
     expect(screen.getByText("A captain's blade.")).toBeInTheDocument()
     expect(screen.getByText("Origin: the sunken galleon")).toBeInTheDocument()
+  })
+
+  it("archives an item and shows a restorable shelved section", async () => {
+    useSessionStore.getState().ingest(
+      stateFrame({
+        character: {
+          ...SHEET,
+          items: [
+            {
+              name: "Fencing Sword",
+              kind: "weapon",
+              description: "A balanced blade.",
+              equipped_slot: "main_hand",
+              quantity: 1,
+            },
+            {
+              name: "Bronze Mirror",
+              kind: "misc",
+              description: "A heavy bronze mirror.",
+              archived: true,
+              quantity: 1,
+            },
+          ],
+        },
+      }),
+    )
+    render(<CharacterScreen onBack={() => {}} />)
+
+    // Default tab is the active bag: the held item carries an Archive button...
+    const archive = screen.getByRole("button", { name: "Archive" })
+    await userEvent.click(archive)
+    expect(sent).toEqual([{ type: "input", text: ".item archive Fencing Sword" }])
+
+    // ...and the shelved item sits behind the "Archived equipment" tab (with a
+    // count) until you switch to it, where a Restore button brings it back.
+    expect(screen.getByRole("tab", { name: /Archived equipment/ })).toBeInTheDocument()
+    expect(screen.queryByText("Bronze Mirror")).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole("tab", { name: /Archived equipment/ }))
+    expect(screen.getByText("Bronze Mirror")).toBeInTheDocument()
+    const restore = screen.getByRole("button", { name: "Restore" })
+    await userEvent.click(restore)
+    expect(sent).toContainEqual({ type: "input", text: ".item unarchive Bronze Mirror" })
   })
 })
