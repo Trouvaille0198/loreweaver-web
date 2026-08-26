@@ -139,7 +139,12 @@
     "poke": "Poke",
     "pokeBanner": "{{actor}} poked you",
     "pokeTitle": "{{actor}} poked you",
-    "pokeNotifyBody": "Tap to open the table"
+    "pokeNotifyBody": "Tap to open the table",
+    "messageNotifyTitle": "{{name}}'s reply arrived",
+    "notifyBell": "New-message notifications (click to enable)",
+    "notifyKp": "Keeper",
+    "notifyNpc": "NPC",
+    "notifyPlayer": "Player"
   },
   "panels": {
     "menu": "Panels ({{n}})",

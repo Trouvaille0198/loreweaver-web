@@ -631,7 +631,6 @@ body {
   color: var(--ink-dim);
   margin-bottom: 4px;
 }
-
 /* The send time of a chronicle line — smaller, non-uppercase, pushed right. */
 .log-entry .entry-time {
   margin-left: auto;

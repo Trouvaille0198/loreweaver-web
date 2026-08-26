@@ -139,7 +139,12 @@
     "poke": "拍一拍",
     "pokeBanner": "{{actor}} 拍了拍你",
     "pokeTitle": "{{actor}} 拍了拍你",
-    "pokeNotifyBody": "点击回到跑团桌"
+    "pokeNotifyBody": "点击回到跑团桌",
+    "messageNotifyTitle": "{{name}} 的回应生效",
+    "notifyBell": "新消息通知（点击开启）",
+    "notifyKp": "KP",
+    "notifyNpc": "NPC",
+    "notifyPlayer": "玩家"
   },
   "panels": {
     "menu": "面板({{n}})",
