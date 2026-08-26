@@ -135,7 +135,12 @@
     "deskReset": "恢复默认顺序",
     "deskGrip": "拖动排序",
     "deskGripHint": "沿右侧拖动调整顺序；聚焦后可用 ↑ ↓ 移动",
-    "clues": "已发现线索"
+    "clues": "已发现线索",
+    "poke": "拍一拍",
+    "pokeBanner": "{{actor}} 拍了拍你",
+    "pokeTitle": "{{actor}} 拍了拍你",
+    "pokeNotify": "开启桌面通知",
+    "pokeNotifyBody": "点击回到跑团桌"
   },
   "panels": {
     "menu": "面板({{n}})",

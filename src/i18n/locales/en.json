@@ -135,7 +135,12 @@
     "deskReset": "Reset order",
     "deskGrip": "Drag to reorder",
     "deskGripHint": "Drag along the right edge to reorder; focus and use ↑ ↓ to move",
-    "clues": "Discovered clues"
+    "clues": "Discovered clues",
+    "poke": "Poke",
+    "pokeBanner": "{{actor}} poked you",
+    "pokeTitle": "{{actor}} poked you",
+    "pokeNotify": "Enable desktop notifications",
+    "pokeNotifyBody": "Tap to open the table"
   },
   "panels": {
     "menu": "Panels ({{n}})",
