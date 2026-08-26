@@ -684,8 +684,12 @@ function PartyCharacterModal({
 export function PartyCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   const you = useConnectionStore((s) => s.welcome?.you.name ?? "")
+  const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
   const online = useConnectionStore((s) => s.status === "online")
   const [selectedName, setSelectedName] = useState<string | null>(null)
+  const [menu, setMenu] = useState<{ name: string; x: number; y: number } | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (!selectedName) return
     const onKeyDown = (event: KeyboardEvent) => {
@@ -694,7 +698,58 @@ export function PartyCard({ game }: { game: StateFrame }) {
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [selectedName])
+  // Close the row menu on outside tap / Escape, like every other popover.
+  useEffect(() => {
+    if (!menu) return
+    const onPointer = (event: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenu(null)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenu(null)
+    }
+    window.addEventListener("pointerdown", onPointer)
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("pointerdown", onPointer)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [menu])
+
+  const send = (text: string) => {
+    void transportSend({ type: "input", text }).catch(() => {
+      // The transport surfaces failures through status events.
+    })
+  }
+
+  // What the row menu may offer for one party member, recomputed against live
+  // state at render time — a release can resolve while the menu is open. The
+  // claim/switch/release verbs are the same `.pc` lane the pregen roster uses.
+  const menuActions = (name: string) => {
+    const pregen = game.pregens?.find((entry) => entry.name === name)
+    const claimedBy = pregen?.claimed_by?.trim() ?? ""
+    const mine = claimedBy !== "" && claimedBy === you
+    const active = mine && game.character?.name === name
+    return {
+      view: true,
+      mine,
+      switchTo: mine && !active && online,
+      release: mine && online,
+      forceRelease: !mine && claimedBy !== "" && isKeeper && online,
+    }
+  }
+
+  const openMenu = (event: ReactMouseEvent<HTMLLIElement>, name: string) => {
+    const actions = menuActions(name)
+    if (!actions || (!actions.view && !actions.switchTo && !actions.release && !actions.forceRelease)) return
+    event.preventDefault()
+    // A keyboard-triggered context menu (Shift+F10) reports no pointer
+    // coordinates; anchor to the row itself then.
+    const rect = event.currentTarget.getBoundingClientRect()
+    setConfirming(false)
+    setMenu({ name, x: event.clientX || rect.left, y: event.clientY || rect.bottom })
+  }
   if (game.party.length === 0) return null
+  const actions = menu ? menuActions(menu.name) : null
   const selected = game.party.find((member) => member.name === selectedName) as PartyCharacterInfo | undefined
   const ownCharacter = selected && game.character?.name === selected.name ? game.character : null
   const selectedPregen = selected ? game.pregens?.find((pregen) => pregen.name === selected.name) : undefined
@@ -720,6 +775,7 @@ export function PartyCard({ game }: { game: StateFrame }) {
               tabIndex={0}
               title={t("session.partyMemberHint")}
               onDoubleClick={() => setSelectedName(member.name)}
+              onContextMenu={(event) => openMenu(event, member.name)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault()
@@ -780,6 +836,93 @@ export function PartyCard({ game }: { game: StateFrame }) {
           }
           onClose={() => setSelectedName(null)}
         />
+      ) : null}
+      {menu && actions ? (
+        <div
+          ref={menuRef}
+          className="pregen-menu-pop"
+          role={confirming ? "group" : "menu"}
+          aria-label={t("session.pregenMenu", { name: menu.name })}
+          style={{
+            left: Math.max(8, Math.min(menu.x, window.innerWidth - 240)),
+            top: Math.max(8, Math.min(menu.y, window.innerHeight - 160)),
+          }}
+        >
+          {confirming ? (
+            // Releasing deletes the claimer's sheet copy (progress included)
+            // while the pristine card returns to the roster — destructive, so
+            // it sits behind an in-menu confirmation instead of one tap.
+            <div className="pregen-menu-confirm">
+              <p className="pregen-menu-warn">
+                {t(actions.mine ? "session.pregenReleaseWarn" : "session.pregenForceReleaseWarn", {
+                  name: menu.name,
+                })}
+              </p>
+              <div className="pregen-menu-confirm-actions">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="danger"
+                  autoFocus
+                  onClick={() => {
+                    send(`.pc release ${menu.name}`)
+                    setMenu(null)
+                  }}
+                >
+                  {t(actions.mine ? "session.pregenReleaseConfirm" : "session.pregenForceConfirm")}
+                </Button>
+                <Button type="button" size="sm" variant="quiet" onClick={() => setConfirming(false)}>
+                  {t("session.pregenCancel")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            (
+              [
+                actions.view && {
+                  key: "view",
+                  label: t("session.pregenView"),
+                  run: () => {
+                    setSelectedName(menu.name)
+                    setMenu(null)
+                  },
+                },
+                actions.switchTo && {
+                  key: "switch",
+                  label: t("session.pregenSwitch"),
+                  run: () => {
+                    send(`.pc claim ${menu.name}`)
+                    setMenu(null)
+                  },
+                },
+                actions.release && {
+                  key: "release",
+                  label: t("session.pregenRelease"),
+                  run: () => setConfirming(true),
+                },
+                actions.forceRelease && {
+                  key: "force",
+                  label: t("session.pregenForceRelease"),
+                  run: () => setConfirming(true),
+                },
+              ] as const
+            )
+              .filter((item): item is { key: string; label: string; run: () => void } => Boolean(item))
+              .map((item, itemIndex) => (
+                <Button
+                  key={item.key}
+                  type="button"
+                  role="menuitem"
+                  variant="quiet"
+                  className="app-menu-row"
+                  autoFocus={itemIndex === 0}
+                  onClick={item.run}
+                >
+                  {item.label}
+                </Button>
+              ))
+          )}
+        </div>
       ) : null}
     </>
   )
