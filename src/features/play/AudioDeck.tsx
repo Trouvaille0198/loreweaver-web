@@ -247,6 +247,19 @@ function KeeperControls() {
   )
 }
 
+/** Headless mount of just the <audio> elements — the single permanent mount
+ *  (SessionView), so playback survives the mixer card being closed. */
+export function AudioPlayers() {
+  const layers = useAudioStore((s) => s.layers)
+  return (
+    <>
+      {AUDIO_LAYERS.map((name) => (
+        <LayerPlayer key={name} layer={layers[name]} />
+      ))}
+    </>
+  )
+}
+
 export default function AudioDeck() {
   const { t } = useTranslation()
   const layers = useAudioStore((s) => s.layers)
@@ -292,9 +305,6 @@ export default function AudioDeck() {
         <LayerRow key={name} layer={layers[name]} />
       ))}
       {isKeeper ? <KeeperControls /> : null}
-      {AUDIO_LAYERS.map((name) => (
-        <LayerPlayer key={name} layer={layers[name]} />
-      ))}
     </section>
   )
 }

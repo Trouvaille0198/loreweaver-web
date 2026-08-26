@@ -383,4 +383,19 @@ declare module "@loreweaver/protocol" {
     /** `admin_import_presets` result: entries skipped, with a machine reason. */
     skipped?: { id: string; reason: string }[]
   }
+
+  /** v2.6 wire: `.poke` nudge attached to a system frame (`event.data["poke"]`
+   * in gateway/commands/rooms.py). Absent on ordinary system frames; the
+   * published npm protocol predates it. */
+  interface SystemFrame {
+    data?: {
+      poke?: {
+        actor?: string
+        actor_user?: string
+        target?: string
+        target_name?: string
+        target_user?: string
+      }
+    }
+  }
 }

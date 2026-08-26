@@ -112,6 +112,17 @@ function readRound(round: number | undefined): number | null {
   return round !== undefined && Number.isInteger(round) && round >= 1 ? round : null
 }
 
+/** `.poke` nudge payload (engine gateway/commands/rooms.py, `event.data["poke"]`).
+ * `target_name`/`target_user` identify the nudged seat (player display name /
+ * sheet owner uid); `actor` is the poking character name. */
+interface PokeNudge {
+  actor?: string
+  actor_user?: string
+  target?: string
+  target_name?: string
+  target_user?: string
+}
+
 interface SessionState {
   entries: LogEntry[]
   game: StateFrame | null
@@ -121,6 +132,9 @@ interface SessionState {
   /** v2.2 installed-pack card list; `null` until the first `pack_cards` reply,
    * then the (possibly empty) card list. */
   packCards: PackCardEntry[] | null
+  /** Latest `.poke` nudge (v2.6 wire, carried on a system frame's `data.poke`);
+   * `null` until someone pokes after join. */
+  lastPoke: PokeNudge | null
   /** Feed one validated server frame into the session (the keeper-only
    * `narrative_draft` rides alongside the published package's `ServerFrame`). */
   ingest: (frame: ServerFrame | NarrativeDraftFrame, now?: number) => void
@@ -316,6 +330,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   turn: IDLE_TURN,
   uiPanels: [],
   packCards: null,
+  lastPoke: null,
 
   ingest: (frame: ServerFrame | NarrativeDraftFrame, now = Date.now()) => {
     switch (frame.type) {
@@ -343,7 +358,11 @@ export const useSessionStore = create<SessionState>((set) => ({
       case "media":
         set((s) => ({ entries: ingestMedia(s.entries, frame, now) }))
         return
-      case "system":
+      case "system": {
+        // A `.poke` nudge rides a system frame's `data.poke`: record it for
+        // the banner without logging a second chronicle line.
+        const poke = frame.data?.poke
+        if (poke) set({ lastPoke: poke })
         // A spinner line is retired by a later frame with the SAME text and
         // `spinner: false` (image/avatar generation): replace in place instead
         // of stacking a permanently spinning entry.
@@ -362,6 +381,7 @@ export const useSessionStore = create<SessionState>((set) => ({
         }
         set((s) => ({ entries: pushEntry(s.entries, { kind: "system", frame }, now) }))
         return
+      }
       case "error":
         // The refusal belongs in the chronicle beside every other thing the
         // player is told, and it settles the line it refused straight away.
@@ -469,6 +489,14 @@ export const useSessionStore = create<SessionState>((set) => ({
 
   clear: () => {
     usePanelsStore.getState().resetSession()
-    set({ entries: [], game: null, presence: null, turn: IDLE_TURN, uiPanels: [], packCards: null })
+    set({
+      entries: [],
+      game: null,
+      presence: null,
+      turn: IDLE_TURN,
+      uiPanels: [],
+      packCards: null,
+      lastPoke: null,
+    })
   },
 }))
