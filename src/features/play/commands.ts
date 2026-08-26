@@ -69,6 +69,7 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "initiative" },
   { word: "recap" },
   { word: "report" },
+  { word: "summary" },
   { word: "chronicle" },
   { word: "phase" },
   { word: "help" },
@@ -149,6 +150,7 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "party", line: ".party" },
   { word: "genchar", line: ".genchar" },
   { word: "report", line: ".report" },
+  { word: "summary", line: ".summary" },
   // --- Keeper-only surface (hidden from player seats) ---
   { word: "module", line: ".module ", keeper: true },
   { word: "var", line: ".var ", keeper: true },
