@@ -139,7 +139,6 @@
     "poke": "拍一拍",
     "pokeBanner": "{{actor}} 拍了拍你",
     "pokeTitle": "{{actor}} 拍了拍你",
-    "pokeNotify": "开启桌面通知",
     "pokeNotifyBody": "点击回到跑团桌"
   },
   "panels": {

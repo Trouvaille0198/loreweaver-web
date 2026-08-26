@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 
-/** How long the banner and the title flash stay up. */
-const POKE_VISIBLE_MS = 4000
+/** How long the title flash stays up. */
 const TITLE_FLASH_STEPS = 6
 const TITLE_FLASH_MS = 500
 
@@ -13,15 +12,13 @@ function canNotify(): boolean {
   return typeof window !== "undefined" && "Notification" in window
 }
 
-/** The "poked you" nudge: a yellow banner across the top of the table, a brief
- * document-title flash, and — once the player grants the permission — a real
- * system notification, the closest a web page can get to the desktop-app
- * window nudge. Renders nothing for a poke aimed at someone else. */
+/** The "poked you" nudge: a brief document-title flash and — once the player
+ * grants the permission — a real system notification. Renders nothing and
+ * does nothing for a poke aimed at someone else. */
 export default function PokeBanner() {
   const { t } = useTranslation()
   const lastPoke = useSessionStore((s) => s.lastPoke)
   const you = useConnectionStore((s) => s.welcome?.you)
-  const [visible, setVisible] = useState(false)
   const timerRef = useRef<number | null>(null)
 
   // Is this poke for THIS seat? A claim names the player, a sheet owner names
@@ -36,7 +33,6 @@ export default function PokeBanner() {
 
   useEffect(() => {
     if (!mine || lastPoke === null) return
-    setVisible(true)
     const original = document.title
     let step = 0
     const flash = window.setInterval(() => {
@@ -49,10 +45,9 @@ export default function PokeBanner() {
     }, TITLE_FLASH_MS)
     if (timerRef.current !== null) window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
-      setVisible(false)
       document.title = original
       timerRef.current = null
-    }, POKE_VISIBLE_MS)
+    }, TITLE_FLASH_STEPS * TITLE_FLASH_MS)
     // A granted permission fires the real system notification (WeChat-style).
     if (canNotify() && Notification.permission === "granted") {
       const notice = new Notification(t("session.pokeBanner", { actor: lastPoke.actor }), {
@@ -74,23 +69,7 @@ export default function PokeBanner() {
     }
   }, [mine, lastPoke, t])
 
-  // The first poke arrives without permission; offer the one-tap opt-in right
-  // inside the banner (browsers require a user gesture to ask).
-  const askPermission = () => {
-    if (!canNotify()) return
-    void Notification.requestPermission()
-  }
-
-  if (!visible || lastPoke === null) return null
-  const permissionDenied = canNotify() && Notification.permission !== "granted"
-  return (
-    <div className="poke-banner" role="status">
-      <span>{t("session.pokeBanner", { actor: lastPoke.actor })}</span>
-      {permissionDenied ? (
-        <button type="button" className="poke-banner-notify" onClick={askPermission}>
-          {t("session.pokeNotify")}
-        </button>
-      ) : null}
-    </div>
-  )
+  // This component renders nothing — the nudge is the title flash and the
+  // system notification above.
+  return null
 }

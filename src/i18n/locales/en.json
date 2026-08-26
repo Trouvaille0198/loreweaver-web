@@ -139,7 +139,6 @@
     "poke": "Poke",
     "pokeBanner": "{{actor}} poked you",
     "pokeTitle": "{{actor}} poked you",
-    "pokeNotify": "Enable desktop notifications",
     "pokeNotifyBody": "Tap to open the table"
   },
   "panels": {
