@@ -57,9 +57,10 @@ export default function MessageNotifier() {
     const id = last.frame.id
     if (!id || notifiedIds.current.has(id)) return
     notifiedIds.current.add(id)
-    if (!enabled || !document.hidden) return
+    if (!enabled) return
 
-    // Taskbar/tab nudge: flash the title like a poke does.
+    // Taskbar/tab nudge: flash the title like a poke does — at ANY visibility,
+    // so it matches the poke behavior the player already knows.
     const label = t("session.messageNotifyTitle", { name: speakerName(last.frame, t) })
     const original = document.title
     let step = 0
@@ -77,8 +78,9 @@ export default function MessageNotifier() {
       flashTimer.current = null
     }, TITLE_FLASH_STEPS * TITLE_FLASH_MS)
 
-    // System notification when the permission is granted.
-    if (canNotify() && Notification.permission === "granted") {
+    // The system notification only fires while the tab is in the background
+    // (a foreground toast for every message would drown the table).
+    if (document.hidden && canNotify() && Notification.permission === "granted") {
       const notice = new Notification(label, {
         body: summary(last.frame.text ?? ""),
         tag: "loreweaver-message",
