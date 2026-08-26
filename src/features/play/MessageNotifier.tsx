@@ -29,13 +29,12 @@ function summary(text: string, limit = 60): string {
   return flat.length > limit ? `${flat.slice(0, limit)}…` : flat
 }
 
-/** The one thing the player wants to know about: the AI Keeper's finished
- * scene narration. Nothing else — player lines, NPC speech, system notices —
- * ever nudges. While the tab is in the background the document title flashes
- * ("<name> 的回应生效" ↔ original) exactly like a poke, and once the
- * notification permission is granted a system notification fires too.
- * Toggleable from the header bell. Streaming drafts, the join replay and
- * foreground messages never nudge. */
+/** Every finished reply — a player's message, an NPC line, the AI Keeper's
+ * scene narration — nudges while the tab is in the background: the document
+ * title flashes ("<发消息的人> 的回应生效" ↔ original) exactly like a poke,
+ * and once the notification permission is granted a system notification
+ * fires too. Toggleable from the header bell. Streaming drafts, the join
+ * replay and foreground messages never nudge. */
 export default function MessageNotifier() {
   const { t } = useTranslation()
   const entries = useSessionStore((s) => s.entries)
@@ -52,8 +51,6 @@ export default function MessageNotifier() {
     const last = entries[entries.length - 1]
     if (!last || last.kind !== "narrative" || last.draft || last.seq <= lastSeq.current) return
     lastSeq.current = last.seq
-    // ONLY the AI Keeper's finished scene narration nudges.
-    if (last.frame.speaker !== "kp") return
     if (!enabled || !document.hidden) return
 
     // Taskbar/tab nudge: flash the title like a poke does.
