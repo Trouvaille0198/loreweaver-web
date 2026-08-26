@@ -14,12 +14,20 @@ import { useHostLocalStore } from "../../store/hostLocal"
 import CharacterScreen from "./screens/CharacterScreen"
 import KeeperSettingsScreen from "./screens/KeeperSettingsScreen"
 import ModuleDetailScreen from "./screens/ModuleDetailScreen"
+import ModuleShareScreen from "./screens/ModuleShareScreen"
 import RoomInfoScreen from "./screens/RoomInfoScreen"
 import SettingsScreen from "./screens/SettingsScreen"
 import SessionView from "./SessionView"
 import StatusPill from "./StatusPill"
 
-export type PlayScreen = "game" | "character" | "roomInfo" | "settings" | "keeperSettings" | "moduleDetail"
+export type PlayScreen =
+  | "game"
+  | "character"
+  | "roomInfo"
+  | "settings"
+  | "keeperSettings"
+  | "moduleDetail"
+  | "moduleShare"
 
 /** Every play screen, keyed by the URL hash that selects it. The hash is the
  * primary source of truth for bookmarks and browser history; the tab-local
@@ -31,6 +39,7 @@ const SCREEN_HASHES: Record<PlayScreen, string> = {
   settings: "#/settings",
   keeperSettings: "#/keeper-settings",
   moduleDetail: "#/module-detail",
+  moduleShare: "#/module-share",
 }
 
 const SCREEN_STORAGE_KEY = "loreweaver-web.play-screen"
@@ -57,6 +66,7 @@ function screenFromHash(): PlayScreen {
   if (typeof window === "undefined") return "game"
   const hash = window.location.hash
   if (hash.startsWith("#/module-detail/")) return "moduleDetail"
+  if (hash.startsWith("#/module-share/")) return "moduleShare"
   if (hash.startsWith("#/settings/")) return "settings"
   if (
     hash.startsWith("#/keeper-settings/") ||
@@ -72,6 +82,16 @@ function moduleNameFromHash(): string | null {
   if (typeof window === "undefined" || !window.location.hash.startsWith("#/module-detail/")) return null
   try {
     const name = decodeURIComponent(window.location.hash.slice("#/module-detail/".length))
+    return name || null
+  } catch {
+    return null
+  }
+}
+
+function moduleShareNameFromHash(): string | null {
+  if (typeof window === "undefined" || !window.location.hash.startsWith("#/module-share/")) return null
+  try {
+    const name = decodeURIComponent(window.location.hash.slice("#/module-share/".length))
     return name || null
   } catch {
     return null
@@ -266,6 +286,14 @@ function OnlineView() {
         <ModuleDetailScreen moduleName={moduleName} onBack={() => navigate("keeperSettings")} />
       ) : (
         <KeeperSettingsScreen onBack={back} />
+      )
+    }
+    case "moduleShare": {
+      const moduleName = moduleShareNameFromHash()
+      return moduleName ? (
+        <ModuleShareScreen moduleName={moduleName} onBack={back} />
+      ) : (
+        <SessionView onNavigate={navigate} />
       )
     }
   }

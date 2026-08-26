@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
 import ReactMarkdown from "react-markdown"
@@ -236,9 +237,36 @@ function SystemEntry({
     >
       {frame.spinner ? <span className="spinner spinner-inline" aria-hidden="true" /> : null}
       {frame.private ? <span className="log-private-mark">{t("log.privateOnly")}</span> : null}
-      <span>{stripControlChars(frame.text)}</span>
+      <span>{linkify(stripControlChars(frame.text))}</span>
     </div>
   )
+}
+
+/** Split system-line text into plain segments and clickable link segments
+ * (`#/…` routes and `http(s)://…` URLs), so a shared-module link opens its
+ * page right from the chronicle. */
+function linkify(text: string): ReactNode[] {
+  const nodes: ReactNode[] = []
+  const re = /(https?:\/\/\S+|#\/\S+)/g
+  let last = 0
+  for (const match of text.matchAll(re)) {
+    if (match.index !== undefined && match.index > last) nodes.push(text.slice(last, match.index))
+    const url = match[0]
+    nodes.push(
+      <a
+        key={url}
+        href={url}
+        onClick={(event) => event.stopPropagation()}
+        target={url.startsWith("#/") ? undefined : "_blank"}
+        rel="noreferrer"
+      >
+        {url}
+      </a>,
+    )
+    last = (match.index ?? 0) + url.length
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes
 }
 
 /** The server refusing something, told where the player is already looking. */

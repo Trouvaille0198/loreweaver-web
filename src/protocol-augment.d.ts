@@ -54,6 +54,8 @@ declare module "@loreweaver/protocol" {
   interface StateFrame {
     /** The room's resolved rule system, distinct from the complete systems list. */
     room_system?: string
+    /** v2.5 additive: every character sheet owned by this viewer in this room. */
+    characters?: CharacterState[]
     /** Player-visible noun lists for `.image` completions (NPC/clue names). */
     image_names?: { npcs?: string[]; clues?: string[] }
     /** The room's discovered-clue log (player projection), discovery order.
@@ -66,6 +68,9 @@ declare module "@loreweaver/protocol" {
       image?: string
       found_turn?: number
     }[]
+    /** `.share` publishes a player-facing module link: the public face (name +
+     * description) rides every member's state frame. */
+    module_share?: { name?: string; description?: string }
   }
 
   interface CharacterState {

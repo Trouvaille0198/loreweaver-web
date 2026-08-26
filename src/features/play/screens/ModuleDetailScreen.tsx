@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Button, Notice, SectionHeader, Surface } from "../../../components/ui"
 import { useAdminStore, type ModuleDetail, type ModuleMediaRecord } from "../../../store/admin"
+import { transportSend } from "../../../lib/transport"
 import { assetFetch, assetReadBase64 } from "../panels/assets"
 import ScreenShell from "./ScreenShell"
 import { KnowledgePool } from "./ModuleScreen"
@@ -140,6 +141,15 @@ function PackDetailView({
             <div className="module-detail-actions">
               <span className="chip chip-warn">{t("play.module.kindPack")}</span>
               {detail.current && !importing ? <span className="chip chip-on">{t("play.module.current")}</span> : null}
+              {detail.current && !importing ? (
+                <Button
+                  type="button"
+                  onClick={() => void transportSend({ type: "input", text: ".share" }).catch(() => {})}
+                  title={t("play.module.shareHint")}
+                >
+                  {t("play.module.share")}
+                </Button>
+              ) : null}
               {!detail.current && !importing ? (
                 <Button type="button" variant="danger" onClick={onDelete} disabled={deleting}>
                   {deleting ? t("play.busy") : t("play.module.delete")}

@@ -578,6 +578,11 @@
         "import.hint": "服务端上的酒馆角色卡。世界机器部件在导入时被剥掉。"
       },
       "system": "规则系统",
+      "listTitle": "我的角色（{{count}}）",
+      "listHint": "选择一张角色卡查看全部资料，当前使用中的角色会标记出来。",
+      "active": "使用中",
+      "activate": "使用这个角色",
+      "viewOnlyHint": "这是你保存的角色。先切换为当前角色后才能编辑。",
       "open": "查看人物详情",
       "fields": "角色信息",
       "secondary": "派生属性",
@@ -922,7 +927,12 @@
       "importAll": "批量导入",
       "exportAll": "全部导出",
       "importInvalid": "文件格式无效：应为预设 JSON 数组，或带 presets 数组的导出包。"
-    }
+    },
+    "module.share": "分享",
+    "module.shareHint": "在对话中发布本模组的玩家可见链接",
+    "moduleShare.title": "模组分享",
+    "moduleShare.eyebrow": "本房当前模组",
+    "moduleShare.hint": "这是守秘人分享的内容，加入牌桌即可游玩。"
   },
   "studio": {
     "project": "项目",

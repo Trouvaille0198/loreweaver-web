@@ -578,6 +578,11 @@
         "import.hint": "A SillyTavern character card on the server. World machinery is stripped on the way in."
       },
       "system": "Rule system",
+      "listTitle": "My characters ({{count}})",
+      "listHint": "Select a sheet to see every detail. Your active character is marked.",
+      "active": "Playing",
+      "activate": "Use this character",
+      "viewOnlyHint": "This is a saved character you own. Activate it before editing.",
       "open": "Open character details",
       "fields": "Character details",
       "secondary": "Derived attributes",
@@ -922,7 +927,12 @@
       "importAll": "Import all",
       "exportAll": "Export all",
       "importInvalid": "Invalid file: expected an array of preset JSON objects, or an exported bundle with a presets array."
-    }
+    },
+    "module.share": "Share",
+    "module.shareHint": "Publish a player-facing link to this module in the chronicle",
+    "moduleShare.title": "Shared module",
+    "moduleShare.eyebrow": "The room's current module",
+    "moduleShare.hint": "This is what the Keeper shared. Join the table to play."
   },
   "studio": {
     "project": "Project",
