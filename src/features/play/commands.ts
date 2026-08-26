@@ -150,8 +150,8 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "party", line: ".party" },
   { word: "genchar", line: ".genchar" },
   { word: "report", line: ".report" },
-  { word: "summary", line: ".summary" },
   // --- Keeper-only surface (hidden from player seats) ---
+  { word: "summary", line: ".summary", keeper: true },
   { word: "module", line: ".module ", keeper: true },
   { word: "var", line: ".var ", keeper: true },
   { word: "skill", line: ".skill ", keeper: true },
