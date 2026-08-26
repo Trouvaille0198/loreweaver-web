@@ -441,12 +441,6 @@ body {
   white-space: nowrap;
 }
 
-/* The "⋯" overflow menu is a NARROW-SCREEN affordance: on wide screens the
-   panels menu and status pill sit directly in the header. */
-.session-more {
-  display: none;
-}
-
 /* ---- The ≡ app menu (navigation, replaces the old full-page main menu) ---- */
 
 .app-menu {
@@ -503,8 +497,9 @@ body {
   border-top: 1px solid var(--border-soft);
 }
 
-/* The session header's wide-screen extras (status, panels menu) sit directly
-   in the row; phones hide these and fold them into the ⋯ popup instead. */
+/* Header-row extras pinned against shrinking (the room name ellipsizes
+   first); the pill stays at every width — only the panels menu folds
+   into the ⋯ popup on a phone. */
 .session-head .status-pill,
 .session-head .panel-menu {
   flex-shrink: 0;
@@ -577,7 +572,9 @@ body {
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  /* The windowed log adds this gap to every line height in JS (NarrativeLog
+     reads `--log-gap`), so the spacer math and the layout can never drift. */
+  --log-gap: 14px;
 }
 
 .log-empty {
@@ -588,10 +585,14 @@ body {
 
 .log-entry,
 .dice-line,
-.system-line {
+.system-line,
+.log-ui {
   width: 100%;
   max-width: var(--narrative-max);
   margin-inline: auto;
+  /* Row spacing lives on the line (not a parent gap) so the windowed log's
+     height model can count it per line. */
+  margin-bottom: var(--log-gap, 14px);
 }
 
 .log-entry {
@@ -641,12 +642,52 @@ body {
   white-space: nowrap;
 }
 
+/* The new-message notification bell in the session header. */
+.notify-bell {
+  margin-left: 4px;
+  padding: 2px 6px;
+  font-size: 14px;
+  line-height: 1;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.notify-bell:hover,
+.notify-bell.is-on {
+  opacity: 1;
+}
+
 /* Keeper-only: a reply carrying a discarded pre-tool narration draft. Right-click
  * opens it (players never see the flag — the server never sends them the draft). */
 .log-entry.has-draft .entry-speaker .draft-mark {
   color: var(--lw-accent, var(--ink-dim));
   font-size: 9px;
   line-height: 1;
+}
+
+/* A line the server unicast to THIS seat only (sensitive command reply,
+ * failed-turn refusal, private notice) — marked so it is never mistaken for
+ * table content everyone saw. */
+.log-private-mark {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-raised));
+  color: var(--accent-strong);
+  font: 600 10px/1.2 var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.system-line .log-private-mark {
+  vertical-align: middle;
 }
 
 .log-media-img {
@@ -684,6 +725,139 @@ body {
   margin-top: 2px;
 }
 
+/* ---- Chronicle table of contents ---- */
+
+/* A floating anchor: sticky keeps it at the top of the scroll window while
+   the log scrolls; zero height keeps it out of the layout flow entirely. */
+.log-toc-anchor {
+  position: sticky;
+  top: 8px;
+  z-index: 30;
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.log-toc-toggle {
+  pointer-events: auto;
+  padding: 5px 12px;
+  font: 600 12px/1 var(--font-ui);
+  color: var(--ink-dim);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-raised) 86%, transparent);
+  cursor: pointer;
+}
+
+.log-toc-toggle:hover,
+.log-toc-toggle:focus-visible {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.log-toc-toggle[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.log-toc-pop {
+  position: absolute;
+  /* The anchor is zero-height (kept out of the layout flow), so `100%` is 0;
+     the offset is the toggle's height (40px) plus the 6px gap. */
+  top: 46px;
+  right: 0;
+  z-index: 40;
+  width: min(340px, calc(100vw - 48px));
+  max-height: min(55vh, 420px);
+  overflow-y: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.log-toc-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  min-height: 30px;
+  text-align: left;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: 13px/1.4 var(--font-ui);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.log-toc-item:hover,
+.log-toc-item:focus-visible {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.log-toc-item.is-current {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  padding: 5px 9px;
+}
+
+.log-toc-time {
+  font: 400 11px/1 var(--font-mono);
+  color: var(--ink-faint, var(--ink-dim));
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.log-toc-item:hover .log-toc-time,
+.log-toc-item:focus-visible .log-toc-time {
+  color: var(--accent-ink);
+}
+
+.log-toc-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-toc-empty {
+  padding: 8px 10px;
+  color: var(--ink-dim);
+  font: 13px/1.4 var(--font-ui);
+}
+
+/* A line the table of contents just jumped to — a quiet whole-surface tint,
+   never a rail down the edge. */
+.log-jump-target {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
+}
+
+.system-line.log-jump-target {
+  border-radius: 6px;
+}
+
+/* Mounted spacer rows of the windowed log. */
+.log-pad {
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .log-jump-target {
+    transition: none;
+  }
+}
+
 .speaker-kp .entry-speaker {
   color: var(--lw-kp);
 }
@@ -695,6 +869,10 @@ body {
 
 .entry-body {
   font: 15px/1.65 var(--font-story);
+  /* A very long message (a huge Keeper reply) caps its height and scrolls
+     inside, instead of stretching the whole chronicle past the viewport. */
+  max-height: 45vh;
+  overflow-y: auto;
 }
 
 .entry-body> :first-child,
@@ -4144,13 +4322,8 @@ code {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* The inline wide-screen extras fold into the ⋯ popup on a phone. */
-  .session-head>.status-pill-wrap,
-  .session-head>.panel-menu {
-    display: none;
-  }
-
-  /* --- header: chat-style on a phone — one row, the rest folds into "⋯" --- */
+  /* --- header: chat-style on a phone — one row of menu, room, status,
+         panels --- */
   .session-head {
     gap: 8px;
     padding: 4px 12px;
@@ -4158,73 +4331,6 @@ code {
 
   .session-room {
     font-size: 11px;
-  }
-
-  .session-more {
-    display: block;
-    position: relative;
-  }
-
-  .session-more-toggle {
-    min-width: 44px;
-    padding: 0 10px;
-    font-size: 15px;
-    line-height: 1;
-  }
-
-  .session-more-pop {
-    position: fixed;
-    top: auto;
-    right: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    left: 12px;
-    z-index: 30;
-    max-height: 75vh;
-    max-height: 75dvh;
-    width: auto;
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 12px;
-    box-shadow: 0 8px 32px rgb(0 0 0 / 0.5);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .session-more-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .session-more-section+.session-more-section {
-    border-top: 1px solid var(--border-soft);
-    padding-top: 10px;
-  }
-
-  .session-more-tools .desk-card {
-    background: var(--bg-inset);
-  }
-
-  .session-more-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .session-more-quit {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .session-head .status-pill,
-  .session-head .version-badge {
-    order: 0;
   }
 
   /* --- scene + vitals strips: the always-visible context lines --- */
@@ -4296,7 +4402,18 @@ code {
   /* --- narrative: chat-style on a phone --- */
   .narrative-log {
     padding: 10px 10px;
-    gap: 8px;
+    --log-gap: 8px;
+  }
+
+  /* Thumb-sized touch targets for the contents toggle and its rows. */
+  .log-toc-toggle,
+  .log-toc-item {
+    min-height: 44px;
+  }
+
+  .log-toc-pop {
+    /* The phone toggle is 44px tall (min-height above). */
+    top: 50px;
   }
 
   .log-entry,
