@@ -181,7 +181,14 @@
     "mediaPromptTitle": "Prompt: {{prompt}}",
     "draftTitle": "Discarded narration draft",
     "draftClose": "Close",
-    "draftHint": "This reply has a discarded pre-tool draft — right-click to review it."
+    "draftHint": "This reply has a discarded pre-tool draft — right-click to review it.",
+    "privateOnly": "Only you",
+    "toc": {
+      "toggle": "Contents",
+      "label": "Chronicle contents",
+      "empty": "Nothing to jump to yet.",
+      "ui": "Inline panel"
+    }
   },
   "play": {
     "back": "Back to the table",
@@ -216,8 +223,10 @@
       "aiLengthHelper": "How wordy the AI Keeper's replies should be. Applies from the next reply; players see it in the pace of the narration.",
       "aiLengthNormal": "Normal",
       "aiLengthNormalHint": "Full narration — the default.",
+      "aiLengthConcise": "Concise",
+      "aiLengthConciseHint": "Short-side beats: a few sentences per beat, trimmed padding, a little room for atmosphere.",
       "aiLengthBrief": "Brief",
-      "aiLengthBriefHint": "Short, to-the-point beats: one or two sentences per beat, no lengthy scene-setting."
+      "aiLengthBriefHint": "Very terse beats: one or two sentences per beat, no scene-setting."
     },
     "keys": {
       "name": "Name",
@@ -825,6 +834,7 @@
       "growth": "Character growth",
       "h": "Help (alias)",
       "habits": "Table habits",
+      "hint": "Ask the Keeper for a story hint",
       "help": "Command help",
       "hidden_roll": "Hidden roll (full name)",
       "hroll": "Hidden roll (alias)",

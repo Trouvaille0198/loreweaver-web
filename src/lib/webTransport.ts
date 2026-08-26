@@ -86,7 +86,9 @@ export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFram
   if (frame.type === "admin_room_settings") {
     return (
       typeof frame.room === "string" &&
-      (frame.ai_length === "normal" || frame.ai_length === "brief")
+      (frame.ai_length === "normal" ||
+        frame.ai_length === "concise" ||
+        frame.ai_length === "brief")
     )
   }
   if (frame.type !== "admin_room_config") {

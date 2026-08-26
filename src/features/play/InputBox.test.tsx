@@ -150,6 +150,21 @@ describe("InputBox quick commands", () => {
     expect(transportSend).not.toHaveBeenCalled()
   })
 
+  it("offers the story hint in completion and the quick-command menu", async () => {
+    const user = userEvent.setup()
+    render(<InputBox />)
+    const field = screen.getByRole("textbox")
+
+    await user.type(field, ".hin")
+    expect(screen.getByRole("option", { name: /\.hint/i })).toBeInTheDocument()
+
+    await user.clear(field)
+    await user.click(screen.getByRole("button", { name: /quick commands/i }))
+    expect(screen.getByRole("menuitem", { name: /^\.hint/i })).toBeInTheDocument()
+    await user.click(screen.getByRole("menuitem", { name: /^\.hint/i }))
+    expect(field).toHaveValue(".hint ")
+  })
+
   it("closes the quick menu with Escape without touching the box", async () => {
     const user = userEvent.setup()
     render(<InputBox />)

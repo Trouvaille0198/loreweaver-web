@@ -16,7 +16,17 @@ function OpposedRow({ side, won }: { side: OpposedSide; won: boolean }) {
   )
 }
 
-export default function DiceLine({ frame }: { frame: DiceFrame }) {
+export default function DiceLine({
+  frame,
+  seq,
+  isJumpTarget,
+}: {
+  frame: DiceFrame
+  /** Chronicle seq, surfaced as `data-seq` for the log's height measurement. */
+  seq?: number
+  /** Set while the table of contents has just jumped to this line. */
+  isJumpTarget?: boolean
+}) {
   const { t } = useTranslation()
   const outcome = frame.outcome
   // `detail` is system-declared data a client "may surface verbatim but never
@@ -25,7 +35,11 @@ export default function DiceLine({ frame }: { frame: DiceFrame }) {
   const { opposed, chips } = readDiceDetail(frame)
 
   return (
-    <div className={`dice-line ${diceOutcomeClass(outcome)}`} data-kind={frame.kind}>
+    <div
+      className={`dice-line ${diceOutcomeClass(outcome)}${isJumpTarget ? " log-jump-target" : ""}`}
+      data-kind={frame.kind}
+      data-seq={seq}
+    >
       <span className="dice-glyph" aria-hidden="true">
         ⚄
       </span>

@@ -871,7 +871,7 @@ body {
   font: 15px/1.65 var(--font-story);
   /* A very long message (a huge Keeper reply) caps its height and scrolls
      inside, instead of stretching the whole chronicle past the viewport. */
-  max-height: 45vh;
+  max-height: 65vh;
   overflow-y: auto;
 }
 

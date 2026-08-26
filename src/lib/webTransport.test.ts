@@ -107,11 +107,17 @@ describe("additive web transport frames", () => {
   })
 
   it("accepts an admin_room_settings frame with a known ai_length", () => {
-    const frame = parseAdditiveServerFrame(
-      JSON.stringify({ type: "admin_room_settings", room: "table", ai_length: "brief" }),
-    )
+    for (const mode of ["normal", "concise", "brief"]) {
+      const frame = parseAdditiveServerFrame(
+        JSON.stringify({ type: "admin_room_settings", room: "table", ai_length: mode }),
+      )
 
-    expect(frame).toMatchObject({ type: "admin_room_settings", room: "table", ai_length: "brief" })
+      expect(frame).toMatchObject({
+        type: "admin_room_settings",
+        room: "table",
+        ai_length: mode,
+      })
+    }
   })
 
   it("rejects an admin_room_settings frame with an unknown or missing ai_length", () => {

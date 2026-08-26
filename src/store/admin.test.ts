@@ -151,15 +151,18 @@ describe("admin model requests", () => {
     useAdminStore.getState().refreshRoomSettings()
     expect(sent).toEqual([{ type: "admin_get_room_settings" }])
 
-    useAdminStore.getState().setRoomSettings({ ai_length: "brief" })
-    expect(sent[1]).toEqual({ type: "admin_set_room_settings", ai_length: "brief" })
+    useAdminStore.getState().setRoomSettings({ ai_length: "concise" })
+    expect(sent[1]).toEqual({ type: "admin_set_room_settings", ai_length: "concise" })
 
-    const frame = { type: "admin_room_settings", room: "table", ai_length: "brief" }
+    const frame = { type: "admin_room_settings", room: "table", ai_length: "concise" }
     expect(useAdminStore.getState().ingest(frame as never)).toBe(true)
     expect(useAdminStore.getState()).toMatchObject({ roomSettings: frame, busy: false, lastError: null })
 
+    useAdminStore.getState().setRoomSettings({ ai_length: "brief" })
+    expect(sent[2]).toEqual({ type: "admin_set_room_settings", ai_length: "brief" })
+
     useAdminStore.getState().setRoomSettings({ ai_length: "normal" })
-    expect(sent[2]).toEqual({ type: "admin_set_room_settings", ai_length: "normal" })
+    expect(sent[3]).toEqual({ type: "admin_set_room_settings", ai_length: "normal" })
   })
 
   it("configures dedicated LLM lanes without exposing them in state", () => {

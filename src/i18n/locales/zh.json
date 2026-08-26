@@ -181,7 +181,14 @@
     "mediaPromptTitle": "提示词：{{prompt}}",
     "draftTitle": "被替换的叙述草稿",
     "draftClose": "关闭",
-    "draftHint": "这条回复带有掷骰前被替换的叙述草稿，右键可查看。"
+    "draftHint": "这条回复带有掷骰前被替换的叙述草稿，右键可查看。",
+    "privateOnly": "仅自己可见",
+    "toc": {
+      "toggle": "目录",
+      "label": "对话目录",
+      "empty": "还没有可跳转的段落。",
+      "ui": "内嵌面板"
+    }
   },
   "play": {
     "back": "返回牌桌",
@@ -216,8 +223,10 @@
       "aiLengthHelper": "AI 守秘人的回复详细程度。从下一条回复开始生效，玩家会直接感受到叙事的节奏。",
       "aiLengthNormal": "正常",
       "aiLengthNormalHint": "完整叙事——默认。",
-      "aiLengthBrief": "简短",
-      "aiLengthBriefHint": "简短扼要的节拍：每个节拍一两句话，不做长篇场景铺陈。"
+      "aiLengthConcise": "简洁",
+      "aiLengthConciseHint": "偏短的节拍：每个节拍几句话点明，保留少量氛围，不做整段铺陈。",
+      "aiLengthBrief": "极简",
+      "aiLengthBriefHint": "极其扼要的节拍：每个节拍一两句话，不做场景铺陈。"
     },
     "keys": {
       "name": "名字",
@@ -825,6 +834,7 @@
       "growth": "角色成长",
       "h": "帮助（别名）",
       "habits": "桌规习惯",
+      "hint": "向守秘人请求剧情提示",
       "help": "命令帮助",
       "hidden_roll": "暗骰（全名）",
       "hroll": "暗骰（别名）",

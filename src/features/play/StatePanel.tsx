@@ -11,9 +11,7 @@ import { Button } from "../../components/ui"
 import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
-import AudioDeck from "./AudioDeck"
 import Avatar from "./Avatar"
-import MediaDeck from "./MediaDeck"
 import Meter, { type MeterTone } from "./Meter"
 import { addVarCommand, isWritable, setVarCommand, stepFor } from "./varCommands"
 import UiBlocks from "./UiBlocks"
@@ -723,7 +721,8 @@ export function PartyCard({ game }: { game: StateFrame }) {
 
   // What the row menu may offer for one party member, recomputed against live
   // state at render time — a release can resolve while the menu is open. The
-  // claim/switch/release verbs are the same `.pc` lane the pregen roster uses.
+  // claim/switch/release verbs are the same `.pc` lane the pregen roster uses;
+  // poking needs a human at the other end, so it shows only for claimed cards.
   const menuActions = (name: string) => {
     const pregen = game.pregens?.find((entry) => entry.name === name)
     const claimedBy = pregen?.claimed_by?.trim() ?? ""
@@ -732,6 +731,7 @@ export function PartyCard({ game }: { game: StateFrame }) {
     return {
       view: true,
       mine,
+      poke: claimedBy !== "",
       switchTo: mine && !active && online,
       release: mine && online,
       forceRelease: !mine && claimedBy !== "" && isKeeper && online,
@@ -879,11 +879,11 @@ export function PartyCard({ game }: { game: StateFrame }) {
           ) : (
             (
               [
-                actions.view && {
-                  key: "view",
-                  label: t("session.pregenView"),
+                actions.poke && {
+                  key: "poke",
+                  label: t("session.poke"),
                   run: () => {
-                    setSelectedName(menu.name)
+                    send(`.poke ${menu.name}`)
                     setMenu(null)
                   },
                 },
@@ -1352,8 +1352,6 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
       {game ? <SceneCard game={game} /> : null}
       {game ? <InitiativeCard game={game} /> : null}
       <PresenceCard />
-      <MediaDeck />
-      <AudioDeck />
       {game ? <UsageCard game={game} /> : null}
     </div>
   )

@@ -464,7 +464,7 @@ interface AdminState {
   /** THIS room's LLM override state (null until the first admin_room_config). */
   roomConfig: AdminRoomConfigFrame | null
   /** THIS room's keeper settings (null until the first admin_room_settings).
-   * `ai_length` is "normal" by default; "brief" folds a brevity directive into
+   * `ai_length` is "normal" by default; "concise"/"brief" fold a brevity directive into
    * every AI-KP reply prompt. */
   roomSettings: AdminRoomSettingsFrame | null
   /** The last LLM-config export document (null until one arrives). Carries
@@ -551,7 +551,7 @@ interface AdminState {
   refreshRoomSettings: () => void
   /** Set one room setting (admin_set_room_settings); the server replies with a
    * fresh admin_room_settings carrying the applied values. */
-  setRoomSettings: (patch: { ai_length?: "normal" | "brief" }) => void
+  setRoomSettings: (patch: { ai_length?: "normal" | "concise" | "brief" }) => void
   /** Pin/change the caller's room's own LLM override. Fields present in the
    * frame set (or clear, when empty) the room's stored value; omitted ones keep
    * the current value. The server probes before persisting — a config whose

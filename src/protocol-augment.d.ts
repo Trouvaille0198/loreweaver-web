@@ -21,6 +21,25 @@ declare module "@loreweaver/protocol" {
     hidden?: boolean
   }
 
+  interface NarrativeFrame {
+    /** A line the server unicast to THIS connection only (a sensitive command
+     * reply, a failed-turn refusal): never broadcast, never table content.
+     * Absent on ordinary room-wide lines. */
+    private?: boolean
+  }
+
+  interface SystemFrame {
+    /** A private notice unicast to this connection only (e.g. "your input is
+     * queued"). Absent on room-wide notices. */
+    private?: boolean
+  }
+
+  interface ErrorFrame {
+    /** A refusal is always feedback for the connection that caused it — the
+     * server unicasts every error frame. */
+    private?: boolean
+  }
+
   /** v2.4 wire: KEEPER-ONLY discarded streaming draft attached to a KP reply —
    * the narration a tool round dropped before the dice settled. Players never
    * receive it (the server filters it at the hub). Mirrored locally because
@@ -195,7 +214,7 @@ declare module "@loreweaver/protocol" {
   interface AdminRoomSettingsFrame {
     type: "admin_room_settings"
     room: string
-    ai_length: "normal" | "brief"
+    ai_length: "normal" | "concise" | "brief"
   }
 
   interface AdminGetRoomSettingsFrame {
@@ -205,7 +224,7 @@ declare module "@loreweaver/protocol" {
   /** Client → server: write one room setting (only ai_length today). */
   interface AdminSetRoomSettingsFrame {
     type: "admin_set_room_settings"
-    ai_length?: "normal" | "brief"
+    ai_length?: "normal" | "concise" | "brief"
   }
 
   /** Client → server: choose global LLM profiles for this room's jobs. */

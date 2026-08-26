@@ -211,3 +211,135 @@ describe("NarrativeLog discarded draft (keeper-only)", () => {
     expect(document.querySelector(".draft-mark")).toBeNull()
   })
 })
+
+
+describe("NarrativeLog private lines", () => {
+  beforeEach(() => {
+    useSessionStore.getState().clear()
+  })
+
+  it("marks a narrative the server unicast to this seat only", () => {
+    ingest({
+      type: "narrative",
+      id: "priv1",
+      speaker: "kp",
+      text: "A secret whisper.",
+      format: "plain",
+      private: true,
+    })
+    render(<NarrativeLog />)
+    expect(screen.getByText("Only you")).toBeInTheDocument()
+  })
+
+  it("leaves broadcast lines unmarked", () => {
+    ingest({ type: "narrative", id: "pub1", speaker: "kp", text: "For everyone.", format: "plain" })
+    render(<NarrativeLog />)
+    expect(screen.queryByText("Only you")).not.toBeInTheDocument()
+  })
+
+  it("marks private system notices and refusals", () => {
+    ingest({ type: "system", level: "info", text: "Your input is queued.", private: true })
+    ingest({ type: "error", code: "forbidden", message: "That is not allowed.", private: true })
+    render(<NarrativeLog />)
+    expect(screen.getAllByText("Only you")).toHaveLength(2)
+  })
+})
+
+
+describe("NarrativeLog windowing", () => {
+  beforeEach(() => {
+    useSessionStore.getState().clear()
+  })
+
+  const ingestLines = (count: number, now: number) => {
+    act(() => {
+      for (let i = 0; i < count; i++) {
+        ingest(
+          { type: "narrative", id: `w${i}`, speaker: "kp", text: `line-${i}`, format: "markdown" },
+          now + i,
+        )
+      }
+    })
+  }
+
+  it("mounts only the tail of a long log, leaving older lines unmounted", () => {
+    ingestLines(120, Date.now())
+    render(<NarrativeLog />)
+
+    // The oldest line is not in the DOM at all (lazy loading)…
+    expect(screen.queryByText("line-0")).not.toBeInTheDocument()
+    // …while the newest line is.
+    expect(screen.getByText("line-119")).toBeInTheDocument()
+  })
+
+  it("mounts older lines on demand when the reader scrolls up", async () => {
+    ingestLines(120, Date.now())
+    const { container } = render(<NarrativeLog />)
+    const log = container.querySelector(".narrative-log") as HTMLDivElement
+    Object.defineProperty(log, "scrollHeight", { value: 20_000, configurable: true })
+    Object.defineProperty(log, "clientHeight", { value: 600, configurable: true })
+
+    log.scrollTop = 100
+    fireEvent.scroll(log)
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 40))
+    })
+
+    expect(screen.getByText("line-0")).toBeInTheDocument()
+    // The tail is unmounted again — the window moved with the viewport.
+    expect(screen.queryByText("line-119")).not.toBeInTheDocument()
+  })
+})
+
+
+describe("NarrativeLog table of contents", () => {
+  beforeEach(() => {
+    useSessionStore.getState().clear()
+  })
+
+  it("lists chapters split by quiet gaps and jumps to a line with a highlight", () => {
+    const now = Date.now()
+    act(() => {
+      ingest(
+        { type: "narrative", id: "c1", speaker: "kp", text: "First scene opens.", format: "markdown" },
+        now - 2 * 60 * 60_000,
+      )
+      ingest(
+        { type: "narrative", id: "c2", speaker: "player", name: "Nyx", text: "I search the desk.", format: "plain" },
+        now - 60 * 60_000,
+      )
+      ingest({ type: "narrative", id: "c3", speaker: "kp", text: "Second scene.", format: "markdown" }, now)
+    })
+    const { container } = render(<NarrativeLog />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Chronicle contents" }))
+    expect(screen.getByRole("menuitem", { name: /First scene opens/ })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /I search the desk/ })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /Second scene/ })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /First scene opens/ }))
+
+    // The jump targets the chosen line and marks it with a brief highlight.
+    expect(container.querySelector(".log-jump-target")).not.toBeNull()
+    expect(screen.getByText("First scene opens.")).toBeInTheDocument()
+    // The popover closed after the jump.
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+  })
+
+  it("treats consecutive system notices as one chapter, not many", () => {
+    const now = Date.now()
+    act(() => {
+      ingest({ type: "narrative", id: "s0", speaker: "kp", text: "Opening.", format: "markdown" }, now - 60_000)
+      ingest({ type: "system", level: "info", text: "Round 1." }, now)
+      ingest({ type: "system", level: "info", text: "The fog thickens." }, now + 1)
+      ingest({ type: "system", level: "info", text: "Roll initiative." }, now + 2)
+    })
+    render(<NarrativeLog />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Chronicle contents" }))
+    const items = screen.getAllByRole("menuitem")
+    // "Opening." chapter + ONE system chapter for the whole notice cluster.
+    expect(items).toHaveLength(2)
+    expect(screen.getByRole("menuitem", { name: /Round 1/ })).toBeInTheDocument()
+  })
+})

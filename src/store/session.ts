@@ -100,6 +100,7 @@ export interface TurnState {
   round: number | null
 }
 
+
 /** The activity hint, ignoring anything outside the set we can label. */
 function readActivity(activity: unknown): TurnActivityLabel | null {
   return typeof activity === "string" && (TURN_ACTIVITIES as readonly string[]).includes(activity)
@@ -107,20 +108,29 @@ function readActivity(activity: unknown): TurnActivityLabel | null {
     : null
 }
 
+/** A `.poke` nudge delivered inside a system frame (`frame.poke`, additive).
+ * `target_name` is the claimed player's display name, `target_user` the sheet
+ * owner's uid — either may be empty for an unclaimed/AI target. */
+export interface PokeInfo {
+  actor: string
+  actor_user: string
+  target: string
+  target_name?: string
+  target_user?: string
+}
+
+/** `frame.poke` when the system frame carries one (additive protocol field the
+ * pinned protocol package predates, hence the runtime `in` guard). */
+function pokeOf(frame: SystemFrame): PokeInfo | null {
+  if (typeof frame !== "object" || frame === null || !("poke" in frame)) return null
+  const poke: unknown = frame.poke
+  if (!poke || typeof poke !== "object") return null
+  return poke as PokeInfo
+}
+
 /** The 2.3.1 round hint; a non-integer or sub-1 value is no hint at all. */
 function readRound(round: number | undefined): number | null {
   return round !== undefined && Number.isInteger(round) && round >= 1 ? round : null
-}
-
-/** `.poke` nudge payload (engine gateway/commands/rooms.py, `event.data["poke"]`).
- * `target_name`/`target_user` identify the nudged seat (player display name /
- * sheet owner uid); `actor` is the poking character name. */
-interface PokeNudge {
-  actor?: string
-  actor_user?: string
-  target?: string
-  target_name?: string
-  target_user?: string
 }
 
 interface SessionState {
@@ -132,9 +142,8 @@ interface SessionState {
   /** v2.2 installed-pack card list; `null` until the first `pack_cards` reply,
    * then the (possibly empty) card list. */
   packCards: PackCardEntry[] | null
-  /** Latest `.poke` nudge (v2.6 wire, carried on a system frame's `data.poke`);
-   * `null` until someone pokes after join. */
-  lastPoke: PokeNudge | null
+  /** The most recent `.poke` (any target); the UI decides if it is for this seat. */
+  lastPoke: PokeInfo | null
   /** Feed one validated server frame into the session (the keeper-only
    * `narrative_draft` rides alongside the published package's `ServerFrame`). */
   ingest: (frame: ServerFrame | NarrativeDraftFrame, now?: number) => void
@@ -329,8 +338,8 @@ export const useSessionStore = create<SessionState>((set) => ({
   presence: null,
   turn: IDLE_TURN,
   uiPanels: [],
-  packCards: null,
   lastPoke: null,
+  packCards: null,
 
   ingest: (frame: ServerFrame | NarrativeDraftFrame, now = Date.now()) => {
     switch (frame.type) {
@@ -359,9 +368,10 @@ export const useSessionStore = create<SessionState>((set) => ({
         set((s) => ({ entries: ingestMedia(s.entries, frame, now) }))
         return
       case "system": {
-        // A `.poke` nudge rides a system frame's `data.poke`: record it for
-        // the banner without logging a second chronicle line.
-        const poke = frame.data?.poke
+        // A `.poke` rides inside the system frame (additive); stash it so the
+        // UI can nudge the seat it targets. The engine renders it as the
+        // top-level `frame.poke` (net/session.render_frame).
+        const poke = pokeOf(frame)
         if (poke) set({ lastPoke: poke })
         // A spinner line is retired by a later frame with the SAME text and
         // `spinner: false` (image/avatar generation): replace in place instead

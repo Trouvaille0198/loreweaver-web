@@ -1,8 +1,8 @@
 // Room settings — the web face of the room's keeper-facing flags (the engine's
 // `admin_get_room_settings` / `admin_set_room_settings` frame pair, backed by the
 // `ai_length` store flag). Only the AI reply-length mode is settable today:
-// "normal" (default, no brevity directive) or "brief" (the style layer asks the
-// AI-KP for short, to-the-point replies).
+// "normal" (default, no brevity directive), "concise" (short-side beats — a few
+// sentences per beat) or "brief" (one or two sentences, no scene-setting).
 
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
@@ -12,6 +12,7 @@ import ScreenShell from "./ScreenShell"
 
 const LENGTH_OPTIONS = [
   { value: "normal", labelKey: "play.room.aiLengthNormal", hintKey: "play.room.aiLengthNormalHint" },
+  { value: "concise", labelKey: "play.room.aiLengthConcise", hintKey: "play.room.aiLengthConciseHint" },
   { value: "brief", labelKey: "play.room.aiLengthBrief", hintKey: "play.room.aiLengthBriefHint" },
 ] as const
 
