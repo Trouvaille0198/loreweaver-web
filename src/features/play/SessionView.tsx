@@ -6,16 +6,16 @@ import { transportSend } from "../../lib/transport"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import AppMenu from "./AppMenu"
-import AudioDeck from "./AudioDeck"
+import { AudioPlayers } from "./AudioDeck"
 import DeskColumn from "./DeskColumn"
 import InputBox from "./InputBox"
-import MediaDeck from "./MediaDeck"
+import MessageNotifier from "./MessageNotifier"
 import NarrativeLog from "./NarrativeLog"
+import PokeBanner from "./PokeBanner"
 import PanelMenu from "./panels/PanelMenu"
 import PanelModalHost from "./panels/PanelModalHost"
 import PanelNotice from "./panels/PanelNotice"
 import StatusPill from "./StatusPill"
-import VersionBadge from "./VersionBadge"
 import TurnStatus from "./TurnStatus"
 import Meter from "./Meter"
 import type { PlayScreen } from "./PlayView"
@@ -144,15 +144,8 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
   const closeDesk = () => setDeskOpen(false)
   const toggleDesk = () => setDeskOpen((open) => !open)
 
-  // Mobile "⋯" menu: the connection status, version readout, panels menu and
-  // the in-session tools (audio/media) fold into it so the chat header stays
-  // one row on a phone. Navigation (character/settings/keeper screens) and
-  // Disconnect live in the ≡ app menu instead.
-  const [moreOpen, setMoreOpen] = useState(false)
-  const moreRef = useRef<HTMLDivElement | null>(null)
-
-  // Escape closes the drawer (the ≡ app menu and the ⋯ popup own their own
-  // Esc; there is no global Esc that navigates anywhere).
+  // Escape closes the drawer (the ≡ app menu and the header popovers own
+  // their own Esc; there is no global Esc that navigates anywhere).
   useEffect(() => {
     if (!deskOpen) return
     const onKey = (event: KeyboardEvent) => {
@@ -161,23 +154,6 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [deskOpen])
-
-  // Close the "⋯" menu on outside tap / Escape.
-  useEffect(() => {
-    if (!moreOpen) return
-    const onPointer = (event: PointerEvent) => {
-      if (moreRef.current && !moreRef.current.contains(event.target as Node)) setMoreOpen(false)
-    }
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMoreOpen(false)
-    }
-    window.addEventListener("pointerdown", onPointer)
-    window.addEventListener("keydown", onKey)
-    return () => {
-      window.removeEventListener("pointerdown", onPointer)
-      window.removeEventListener("keydown", onKey)
-    }
-  }, [moreOpen])
 
   // Swipe-down-to-close on the drawer (only from the top, so scrolling the
   // panels inside still works).
@@ -197,43 +173,17 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
 
   return (
     <div className={`session${deskOpen ? " desk-active" : ""}`}>
+      <PokeBanner />
+      {/* Headless: the only mount of the audio elements, so playback survives
+          without the mixer card. */}
+      <AudioPlayers />
       <div className="chronicle-pane">
         <header className="session-head">
           <AppMenu onNavigate={onNavigate} />
           <span className="session-room">{welcome ? `${welcome.room} · ${welcome.you.name}` : "…"}</span>
-          {/* Wide screens show status + the panels menu directly in the header;
-              phones fold them into the ⋯ popup (hidden here via CSS). */}
           <StatusPill />
+          <MessageNotifier />
           <PanelMenu />
-          <div className="session-more" ref={moreRef}>
-            <Button
-              type="button"
-              variant="quiet"
-              size="icon"
-              className="session-more-toggle"
-              aria-expanded={moreOpen}
-              aria-haspopup="menu"
-              aria-label={t("session.moreAria")}
-              onClick={() => setMoreOpen((open) => !open)}
-            >
-              ⋯
-            </Button>
-            {moreOpen ? (
-              <div className="session-more-pop" role="menu" aria-label={t("session.moreAria")}>
-                <div className="session-more-row session-more-status">
-                  <StatusPill />
-                  <VersionBadge />
-                </div>
-                <div className="session-more-section">
-                  <PanelMenu />
-                </div>
-                <div className="session-more-section session-more-tools">
-                  <AudioDeck />
-                  <MediaDeck />
-                </div>
-              </div>
-            ) : null}
-          </div>
         </header>
         <OnboardingBanner onNavigate={onNavigate} />
         <SceneLine />
