@@ -3227,6 +3227,19 @@ body {
   border-radius: 3px;
 }
 
+/* A behind-the-screen roll (tool hidden=True): keeper-only, marked so the
+   keeper can tell a secret ruling from a public one at a glance. */
+.dice-hidden {
+  margin-right: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  border-radius: 3px;
+}
+
 .dice-opposed,
 .dice-detail {
   display: inline-flex;
@@ -4614,9 +4627,9 @@ code {
 }
 
 .character-modal {
-  width: min(520px, calc(100vw - 32px));
+  width: min(920px, calc(100vw - 32px));
   max-height: min(82vh, 720px);
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -4629,6 +4642,53 @@ code {
   border-top: 2px solid color-mix(in srgb, var(--accent) 75%, var(--border));
   border-radius: 12px;
   box-shadow: 0 24px 80px rgb(0 0 0 / 52%);
+}
+
+.character-modal-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.character-modal-col {
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-color: transparent transparent;
+}
+
+/* Hidden until hover: the split columns' scrollbars only appear while the
+   pointer is over them, so the gear rail never fights the prose column. */
+.character-modal-col:hover {
+  scrollbar-color: var(--border) transparent;
+}
+
+.character-modal-col::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.character-modal-col:hover::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+.character-modal-col::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
+
+@media (max-width: 820px) {
+  .character-modal-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .character-modal-col {
+    overflow-y: visible;
+  }
 }
 
 .character-modal-head {
@@ -4799,6 +4859,25 @@ code {
   font-variant-numeric: tabular-nums;
 }
 
+.chip-improv {
+  color: #e8a33d;
+  border-color: #e8a33d66;
+  background: #e8a33d14;
+}
+
+.chip-module {
+  color: var(--ink-dim);
+  border-color: var(--ink-dim);
+  background: transparent;
+}
+
+.character-modal-detail-cell .stat-bonus {
+  margin-left: 6px;
+  color: #4caf7d;
+  font: 700 11px/1.2 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .character-modal-detail-grid--skills .character-modal-detail-cell {
   padding-block: 6px;
 }
@@ -4891,4 +4970,58 @@ code {
   width: 100%;
   border: 1px solid var(--line-subtle);
   border-radius: var(--radius-md);
+}
+/* ---- prompt presets (KeeperSettings → presets) ---- */
+
+.play-presets-helper {
+  margin: 0 0 var(--space-3);
+  color: var(--text-secondary);
+  font: 13px/1.5 var(--font-ui);
+}
+
+.play-presets-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.play-presets-row:last-child {
+  border-bottom: none;
+}
+
+.play-presets-preview {
+  margin: 0 0 0 28px;
+  color: var(--text-secondary);
+  font: 12px/1.5 var(--font-ui);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.play-presets-delete {
+  align-self: flex-start;
+  margin-left: 28px;
+}
+
+.play-presets-textarea {
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+}
+
+.play-presets-group {
+  margin: var(--space-3) 0 var(--space-1);
+  color: var(--text-secondary);
+  font: 12px/1.4 var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.play-presets-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: 28px;
 }

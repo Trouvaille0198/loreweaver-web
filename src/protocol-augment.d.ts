@@ -13,6 +13,14 @@ declare module "@loreweaver/protocol" {
     blurb?: string
   }
 
+  interface DiceFrame {
+    /** Behind-the-screen roll (tool `hidden=True`): the frame reaches the
+     * KEEPER only — players never receive it — and the number stays off every
+     * player-facing surface. Rendered with a marker so the keeper can tell a
+     * secret ruling from a public one. */
+    hidden?: boolean
+  }
+
   /** v2.4 wire: KEEPER-ONLY discarded streaming draft attached to a KP reply —
    * the narration a tool round dropped before the dice settled. Players never
    * receive it (the server filters it at the hub). Mirrored locally because
@@ -82,6 +90,8 @@ declare module "@loreweaver/protocol" {
     quantity?: number
     equipped_slot?: string
     bonus?: Record<string, number>
+    /** v2.4 wire: true when the item was improvised on the fly (`.item improvise`). */
+    improvised?: boolean
   }
 
   interface WelcomeFrame {
@@ -292,5 +302,67 @@ declare module "@loreweaver/protocol" {
     type: "admin_llm_export"
     ok: boolean
     config: AdminLLMConfigDocument
+  }
+
+  // --- v2.4 wire: ST-style preset template management (admin_list_presets /
+  // admin_enable_preset / admin_save_preset / admin_delete_preset, answered by
+  // the engine's net/admin.py). Mirrored locally like the per-room LLM frames
+  // above; callers cast at the transport boundary.
+
+  interface AdminPresetInfo {
+    id: string
+    name: string
+    enabled: boolean
+    /** True for the engine-shipped read-only tier (e.g. `mature-mode`). */
+    system: boolean
+    parse_error: boolean
+    prompt_count: number
+    preview: string
+    /** The preset's own gate marker (`mature`/`explicit`); empty otherwise. */
+    content_rating?: string
+  }
+
+  interface AdminListPresetsFrame {
+    type: "admin_list_presets"
+  }
+
+  interface AdminEnablePresetFrame {
+    type: "admin_enable_preset"
+    id: string
+    on: boolean
+  }
+
+  interface AdminSavePresetFrame {
+    type: "admin_save_preset"
+    id?: string
+    text: string
+  }
+
+  interface AdminDeletePresetFrame {
+    type: "admin_delete_preset"
+    id: string
+  }
+
+  interface AdminExportPresetsFrame {
+    type: "admin_export_presets"
+  }
+
+  interface AdminImportPresetsFrame {
+    type: "admin_import_presets"
+    presets: { id?: string; text: string }[]
+  }
+
+  interface AdminPresetExportAllFrame {
+    type: "admin_preset_export_all"
+    presets: { id: string; text: string }[]
+  }
+
+  interface AdminPresetsFrame {
+    type: "admin_presets"
+    presets: AdminPresetInfo[]
+    /** `admin_import_presets` result: ids that landed. */
+    imported?: string[]
+    /** `admin_import_presets` result: entries skipped, with a machine reason. */
+    skipped?: { id: string; reason: string }[]
   }
 }

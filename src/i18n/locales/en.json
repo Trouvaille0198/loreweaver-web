@@ -198,7 +198,8 @@
       "worldbook": "Worldbooks",
       "rules": "Rule systems",
       "skills": "KP skills",
-      "model": "Model / config"
+      "model": "Model / config",
+      "presets": "Prompt presets"
     },
     "keys": {
       "name": "Name",
@@ -582,8 +583,11 @@
       "items": "Items",
       "itemsKind": "Kind",
       "itemsEffect": "Effect",
+      "itemsImprov": "Improvised",
+      "itemsModule": "Module",
       "itemsOrigin": "Origin",
       "itemsLore": "Story",
+      "itemsBonus": "Bonus",
       "equipped": "Equipped",
       "equippedBonus": "Equipped bonus"
     },
@@ -687,6 +691,7 @@
       "statePending": "Waiting for the room state…"
     },
     "dice": {
+      "hidden": "hidden roll (keeper only)",
       "versus": "vs",
       "tie": "tie",
       "winner": "{{name}} wins",
@@ -863,6 +868,31 @@
       "importModule": "Import a module",
       "invite": "Invite players",
       "sample": "Try the sample"
+    },
+    "presets": {
+      "empty": "No presets yet. Paste a SillyTavern preset JSON below to create your first prompt template.",
+      "helper": "A preset is this room's style layer: when enabled, its prompt blocks are folded into the Keeper system prompt as a single section (one preset per room).",
+      "newTitle": "New / overwrite preset",
+      "idLabel": "Template ID (optional)",
+      "idHint": "Leave empty to derive it from the preset name.",
+      "textLabel": "SillyTavern preset JSON",
+      "textPlaceholder": "{\"name\": \"My Template\", \"prompts\": [{\"identifier\": \"main\", \"content\": \"...\"}]}",
+      "save": "Save preset",
+      "delete": "Delete",
+      "prompts": "{{count}} prompt blocks",
+      "broken": "Broken or unparseable file",
+      "previewLabel": "Preview",
+      "deleteConfirm": "Delete preset \"{{id}}\"?",
+      "systemGroup": "System presets",
+      "customGroup": "Custom presets",
+      "systemHint": "Built into the engine; read-only.",
+      "export": "Export",
+      "rating": "Content rating: {{rating}}",
+      "exported": "Exported preset {{id}} (download started).",
+      "systemEmpty": "No system presets.",
+      "importAll": "Import all",
+      "exportAll": "Export all",
+      "importInvalid": "Invalid file: expected an array of preset JSON objects, or an exported bundle with a presets array."
     }
   },
   "studio": {

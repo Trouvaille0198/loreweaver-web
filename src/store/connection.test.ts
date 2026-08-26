@@ -85,6 +85,27 @@ describe("connection store", () => {
     expect(useAdminStore.getState()).toMatchObject({ roomConfig: frame, busy: false, lastError: null })
   })
 
+  it("routes preset-management replies to the admin store (postdates the protocol package)", () => {
+    const frame = {
+      type: "admin_presets",
+      presets: [
+        {
+          id: "gritty-noir",
+          name: "gritty-noir",
+          enabled: true,
+          parse_error: false,
+          prompt_count: 1,
+          preview: "You are a hard-boiled noir narrator.",
+        },
+      ],
+    }
+
+    useConnectionStore.getState().handleEvent({ kind: "frame", frame })
+
+    expect(useAdminStore.getState().presets).toEqual(frame.presets)
+    expect(useAdminStore.getState().busy).toBe(false)
+  })
+
   it("keeps the fatal error and clears the welcome when going offline", () => {
     const handle = useConnectionStore.getState().handleEvent
     handle({ kind: "frame", frame: WELCOME })

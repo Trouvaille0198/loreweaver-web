@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { isServerFrame, protocolMismatch, type WelcomeFrame } from "@loreweaver/protocol"
+import type { AdminPresetsFrame } from "@loreweaver/protocol"
 import i18n from "../i18n"
 import {
   transportConnect,
@@ -165,6 +166,14 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       } else {
         useAdminStore.getState().ingest(frame)
       }
+      return
+    }
+    // v2.4 wire: the preset-management replies postdate the published protocol
+    // package, so neither `isAdditiveServerFrame` nor `isServerFrame` knows them.
+    // Route them to the admin store like the other keeper-gated replies.
+    const wireType = (frame as { type?: unknown }).type
+    if (wireType === "admin_presets") {
+      useAdminStore.getState().ingest(frame as AdminPresetsFrame)
       return
     }
     if (!isServerFrame(frame)) {

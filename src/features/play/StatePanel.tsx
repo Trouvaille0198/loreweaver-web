@@ -390,21 +390,30 @@ function PartyDetailGrid({
   t,
   className = "",
   bonusFor,
+  bonusTotalFor,
 }: {
   entries: [string, unknown][]
   t: ReturnType<typeof useTranslation>["t"]
   className?: string
   /** Hover hint per stat — shows which equipped items grant it what. */
   bonusFor?: (key: string) => string | undefined
+  /** Visible per-stat badge — the summed equipped-item delta, shown beside the value. */
+  bonusTotalFor?: (key: string) => number | undefined
 }) {
   return (
     <div className={`character-modal-detail-grid${className ? ` ${className}` : ""}`}>
-      {entries.map(([key, value]) => (
-        <div key={key} className="character-modal-detail-cell" title={bonusFor?.(key)}>
-          <span>{detailLabel(key, t)}</span>
-          <strong>{detailText(value)}</strong>
-        </div>
-      ))}
+      {entries.map(([key, value]) => {
+        const bonus = bonusTotalFor?.(key)
+        return (
+          <div key={key} className="character-modal-detail-cell" title={bonusFor?.(key)}>
+            <span>{detailLabel(key, t)}</span>
+            <strong>
+              {detailText(value)}
+              {bonus ? <span className="stat-bonus">{bonus > 0 ? "+" : ""}{bonus}</span> : null}
+            </strong>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -443,6 +452,10 @@ function PartyCharacterModal({
     return list && list.length > 0
       ? t("play.character.equippedBonus") + ": " + list.map((b) => `${b.name} +${b.delta}`).join(", ")
       : undefined
+  }
+  const bonusTotalFor = (key: string): number | undefined => {
+    const list = bonuses[key]
+    return list && list.length > 0 ? list.reduce((sum, b) => sum + b.delta, 0) : undefined
   }
   const hasExtra =
     attributes.length + secondary.length + fields.length + skills.length + equipment.length + items.length > 0
@@ -494,6 +507,8 @@ function PartyCharacterModal({
             ))}
           </div>
         ) : null}
+        <div className="character-modal-body">
+          <div className="character-modal-col character-modal-col-main">
         {fields.length > 0 ? (
           <section className="character-modal-section">
             <h3>{t("play.character.fields")}</h3>
@@ -503,21 +518,40 @@ function PartyCharacterModal({
         {attributes.length > 0 ? (
           <section className="character-modal-section">
             <h3>{t("session.attributes")}</h3>
-            <PartyDetailGrid entries={attributes} t={t} className="character-modal-detail-grid--attributes" bonusFor={hintFor} />
+            <PartyDetailGrid
+              entries={attributes}
+              t={t}
+              className="character-modal-detail-grid--attributes"
+              bonusFor={hintFor}
+              bonusTotalFor={bonusTotalFor}
+            />
           </section>
         ) : null}
         {secondary.length > 0 ? (
           <section className="character-modal-section">
             <h3>{t("play.character.secondary")}</h3>
-            <PartyDetailGrid entries={secondary} t={t} />
+            <PartyDetailGrid
+              entries={secondary}
+              t={t}
+              bonusFor={hintFor}
+              bonusTotalFor={bonusTotalFor}
+            />
           </section>
         ) : null}
         {skills.length > 0 ? (
           <section className="character-modal-section">
             <h3>{t("session.skills", { n: skills.length })}</h3>
-            <PartyDetailGrid entries={skills} t={t} className="character-modal-detail-grid--skills" bonusFor={hintFor} />
+            <PartyDetailGrid
+              entries={skills}
+              t={t}
+              className="character-modal-detail-grid--skills"
+              bonusFor={hintFor}
+              bonusTotalFor={bonusTotalFor}
+            />
           </section>
         ) : null}
+          </div>
+          <div className="character-modal-col character-modal-col-gear">
         {equipment.length > 0 ? (
           <section className="character-modal-section">
             <h3>{t("play.character.equipment")}</h3>
@@ -536,6 +570,11 @@ function PartyCharacterModal({
                 <li key={`${index}-${String(item.name ?? "")}`} className="play-character-item">
                   <div className="play-character-item-head">
                     <strong>{stripControlChars(String(item.name ?? ""))}</strong>
+                    {item.improvised ? (
+                      <span className="chip chip-improv">{t("play.character.itemsImprov")}</span>
+                    ) : (
+                      <span className="chip chip-module">{t("play.character.itemsModule")}</span>
+                    )}
                     {item.equipped_slot ? (
                       <span className="chip">
                         {t("play.character.equipped")} · {stripControlChars(String(item.equipped_slot))}
@@ -550,7 +589,16 @@ function PartyCharacterModal({
                       {t("play.character.itemsKind")}: {stripControlChars(String(item.kind))}
                     </span>
                   ) : null}
+                  {item.description ? <p>{stripControlChars(String(item.description))}</p> : null}
                   {item.effect ? <p>{stripControlChars(String(item.effect))}</p> : null}
+                  {item.bonus && Object.keys(item.bonus).length > 0 ? (
+                    <p className="play-character-item-bonus">
+                      {t("play.character.itemsBonus")}:{" "}
+                      {Object.entries(item.bonus)
+                        .map(([canon, delta]) => `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
                   {item.lore ? <p className="play-character-item-lore">{stripControlChars(String(item.lore))}</p> : null}
                   {item.origin ? (
                     <p className="play-character-item-origin">
@@ -562,6 +610,8 @@ function PartyCharacterModal({
             </ul>
           </section>
         ) : null}
+          </div>
+        </div>
         {info.background ? (
           <section className="character-modal-section">
             <h3>{t("play.character.background")}</h3>

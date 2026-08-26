@@ -218,11 +218,15 @@ function AttributeRow({
   // Hover over a stat shows which equipped items grant it what (phase 2 item bonuses).
   const bonusHint = bonus && bonus.length > 0 ? t("play.character.equippedBonus") + ": " + bonus.map((b) => `${b.name} +${b.delta}`).join(", ") : undefined
 
+  const bonusTotal = bonus && bonus.length > 0 ? bonus.reduce((s, b) => s + b.delta, 0) : undefined
   if (!isEditable(value)) {
     return (
       <tr>
         <td className="play-attr-name">{stripControlChars(name)}</td>
-        <td title={bonusHint}>{attrText(value)}</td>
+        <td title={bonusHint}>
+          {attrText(value)}
+          {bonusTotal ? <span className="stat-bonus">{bonusTotal > 0 ? "+" : ""}{bonusTotal}</span> : null}
+        </td>
       </tr>
     )
   }
@@ -377,18 +381,25 @@ function CharacterDetailsView({
       </CharacterDetailSection>
       {secondaryEntries.length > 0 ? (
         <CharacterDetailSection title={t("play.character.secondary")}>
-          <DetailTable entries={secondaryEntries} />
+          <DetailTable entries={secondaryEntries} bonusFor={hintFor} />
         </CharacterDetailSection>
       ) : null}
       {skillEntries.length > 0 ? (
         <CharacterDetailSection title={t("session.skills", { n: skillEntries.length })}>
           <div className="play-character-skill-grid" role="list">
-            {skillEntries.map(([name, value]) => (
-              <div key={name} className="play-character-skill" role="listitem" title={hintFor(name)}>
-                <span>{stripControlChars(name)}</span>
-                <strong>{attrText(value)}</strong>
-              </div>
-            ))}
+            {skillEntries.map(([name, value]) => {
+              const list = bonuses[name]
+              const bonus = list && list.length > 0 ? list.reduce((s, b) => s + b.delta, 0) : undefined
+              return (
+                <div key={name} className="play-character-skill" role="listitem" title={hintFor(name)}>
+                  <span>{stripControlChars(name)}</span>
+                  <strong>
+                    {attrText(value)}
+                    {bonus ? <span className="stat-bonus">{bonus > 0 ? "+" : ""}{bonus}</span> : null}
+                  </strong>
+                </div>
+              )
+            })}
           </div>
         </CharacterDetailSection>
       ) : null}
@@ -408,6 +419,11 @@ function CharacterDetailsView({
               <li key={`${index}-${String(item.name ?? "")}`} className="play-character-item">
                 <div className="play-character-item-head">
                   <strong>{stripControlChars(String(item.name ?? ""))}</strong>
+                  {item.improvised ? (
+                    <span className="chip chip-improv">{t("play.character.itemsImprov")}</span>
+                  ) : (
+                    <span className="chip chip-module">{t("play.character.itemsModule")}</span>
+                  )}
                   {item.equipped_slot ? (
                     <span className="chip">
                       {t("play.character.equipped")} · {stripControlChars(String(item.equipped_slot))}
@@ -422,7 +438,16 @@ function CharacterDetailsView({
                     {t("play.character.itemsKind")}: {stripControlChars(String(item.kind))}
                   </span>
                 ) : null}
+                {item.description ? <p>{stripControlChars(String(item.description))}</p> : null}
                 {item.effect ? <p>{stripControlChars(String(item.effect))}</p> : null}
+                {item.bonus && Object.keys(item.bonus).length > 0 ? (
+                  <p className="play-character-item-bonus">
+                    {t("play.character.itemsBonus")}:{" "}
+                    {Object.entries(item.bonus)
+                      .map(([canon, delta]) => `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`)
+                      .join(" · ")}
+                  </p>
+                ) : null}
                 {item.lore ? <p className="play-character-item-lore">{stripControlChars(String(item.lore))}</p> : null}
                 {item.origin ? (
                   <p className="play-character-item-origin">
@@ -492,14 +517,21 @@ function CharacterDetailSection({ title, children }: { title: string; children: 
   )
 }
 
-function DetailTable({ entries }: { entries: [string, unknown][] }) {
+function DetailTable({
+  entries,
+  bonusFor,
+}: {
+  entries: [string, unknown][]
+  /** Hover hint per stat — shows which equipped items grant it what. */
+  bonusFor?: (key: string) => string | undefined
+}) {
   return (
     <table className="play-table play-character-detail-table">
       <tbody>
         {entries.map(([key, value]) => (
           <tr key={key}>
             <td className="play-attr-name">{stripControlChars(key)}</td>
-            <td>{attrText(value)}</td>
+            <td title={bonusFor?.(key)}>{attrText(value)}</td>
           </tr>
         ))}
       </tbody>

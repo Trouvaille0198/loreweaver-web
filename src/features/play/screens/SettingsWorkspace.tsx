@@ -13,7 +13,7 @@ export type SettingsNavGroup<Key extends string> = {
 }
 
 export type SettingsNavIcon =
-  "appearance" | "language" | "connection" | "access" | "module" | "worldbook" | "rules" | "skills" | "model"
+  "appearance" | "language" | "connection" | "access" | "module" | "worldbook" | "rules" | "skills" | "presets" | "model"
 
 function SettingsIcon({ name }: { name: SettingsNavIcon }) {
   const paths: Record<SettingsNavIcon, ReactNode> = {
@@ -57,6 +57,11 @@ function SettingsIcon({ name }: { name: SettingsNavIcon }) {
     skills: (
       <>
         <path d="m10 3 1.5 4.2L16 8.5l-3.5 2.7.2 4.8-2.7-2-2.7 2 .2-4.8L4 8.5l4.5-1.3z" />
+      </>
+    ),
+    presets: (
+      <>
+        <path d="M4 4h12v3H4zM4 9.5h12v3H4zM4 15h8v2H4z" />
       </>
     ),
     model: (

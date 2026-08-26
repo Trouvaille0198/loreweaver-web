@@ -14,6 +14,9 @@ import type {
   AdminKeyPurpose,
   AdminLLMConfigDocument,
   AdminLLMExportFrame,
+  AdminPresetExportAllFrame,
+  AdminPresetInfo,
+  AdminPresetsFrame,
   AdminResetScope,
   AdminRoomConfigFrame,
   AdminRoomOpFrame,
@@ -467,6 +470,11 @@ interface AdminState {
   minted: MintedKey | null
   skills: AdminSkillInfo[]
   rules: AdminRuleInfo[]
+  /** Installed ST-style preset templates, each marked enabled per this room. */
+  presets: AdminPresetInfo[]
+  /** The last `admin_preset_export_all` reply: every USER-tier preset's verbatim
+   * text, bundled for a single download. `null` until an export lands. */
+  presetExport: AdminPresetExportAllFrame | null
   generated: AdminGeneratedFrame | null
   generatedPrompt: { requestId: string; text: string } | null
   modulePromptRequestId: string | null
@@ -498,7 +506,9 @@ interface AdminState {
       | AdminRoomConfigFrame
       | AdminGenerateStartedFrame
       | AdminGenerateProgressFrame
-      | AdminLLMExportFrame,
+      | AdminLLMExportFrame
+      | AdminPresetsFrame
+      | AdminPresetExportAllFrame,
   ) => boolean
   refreshConfig: () => void
   setEmbedding: (profileId: string, dimension?: number) => void
@@ -552,6 +562,13 @@ interface AdminState {
   listSkills: (locale?: string) => void
   enableSkill: (id: string, on: boolean, locale?: string) => void
   listRules: () => void
+  listPresets: () => void
+  enablePreset: (id: string, on: boolean) => void
+  savePreset: (text: string, id?: string) => void
+  deletePreset: (id: string) => void
+  exportPresets: () => void
+  importPresets: (presets: { id?: string; text: string }[]) => void
+  clearPresetExport: () => void
   generateModulePrompt: (
     description: string,
     options?: { ruleStrategy?: string; roomSystem?: string },
@@ -676,6 +693,8 @@ const EMPTY = {
   minted: null,
   skills: [],
   rules: [],
+  presets: [],
+  presetExport: null,
   generated: null,
   generatedPrompt: null,
   modulePromptRequestId: null,
@@ -729,6 +748,12 @@ export const useAdminStore = create<AdminState>((set) => ({
         return true
       case "admin_rules":
         set({ rules: frame.systems, busy: false, lastError: null })
+        return true
+      case "admin_presets":
+        set({ presets: frame.presets, busy: false, lastError: null })
+        return true
+      case "admin_preset_export_all":
+        set({ presetExport: frame as AdminPresetExportAllFrame, busy: false, lastError: null })
         return true
       case "admin_generate_started":
         set((state) => ({
@@ -961,6 +986,16 @@ export const useAdminStore = create<AdminState>((set) => ({
   enableSkill: (id, on, locale) =>
     send({ type: "admin_enable_skill", id, on, ...(locale ? { locale } : {}) }, set),
   listRules: () => send({ type: "admin_list_rules" }, set),
+  listPresets: () => send({ type: "admin_list_presets" } as unknown as ClientFrame, set),
+  enablePreset: (id, on) =>
+    send({ type: "admin_enable_preset", id, on } as unknown as ClientFrame, set),
+  savePreset: (text, id) =>
+    send({ type: "admin_save_preset", ...(id ? { id } : {}), text } as unknown as ClientFrame, set),
+  deletePreset: (id) => send({ type: "admin_delete_preset", id } as unknown as ClientFrame, set),
+  exportPresets: () => send({ type: "admin_export_presets" } as unknown as ClientFrame, set),
+  importPresets: (presets) =>
+    send({ type: "admin_import_presets", presets } as unknown as ClientFrame, set),
+  clearPresetExport: () => set({ presetExport: null }),
   generateModulePrompt: (description, options) => {
     const requestId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
     const idea = description.trim()

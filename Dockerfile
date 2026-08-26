@@ -50,6 +50,16 @@ RUN --mount=type=cache,target=/root/.cache/pip,id=engine-pip \
 # The combined runner is bind-mounted from the web checkout, while its
 # web-only engine extension lives in the sibling engine checkout.
 COPY --from=engine /module_admin.py /srv/module_admin.py
+# Engine-owned SYSTEM presets (mature mode and any future built-in templates):
+# read-only tier beside the user tier at /data/presets. The env var is how
+# core.preset_store finds them in a deployment where the repo checkout is gone.
+COPY --from=engine /presets /srv/presets
+ENV TRPG_SYSTEM_PRESET_DIR=/srv/presets
+# Built-in skills ship the same way — the repo's `skills/` (romance mode, forge
+# helpers, …) was silently absent from the wheel before, so the skills screen was
+# empty on Docker deployments even though the engine advertised the surface.
+COPY --from=engine /skills /srv/skills
+ENV TRPG_SKILLS_DIR=/srv/skills
 # Campaign data, keys, media — the one volume that survives container death.
 VOLUME /data
 EXPOSE 8787

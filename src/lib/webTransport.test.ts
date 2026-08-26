@@ -79,6 +79,32 @@ describe("additive web transport frames", () => {
     expect(parseAdditiveServerFrame(JSON.stringify({ type: "admin_room_config", room: "table" }))).toBeNull()
     expect(parseAdditiveServerFrame(JSON.stringify({ type: "presence", players: [], online: 0 }))).toBeNull()
   })
+
+  it("accepts a complete preset-management reply", () => {
+    const frame = parseAdditiveServerFrame(
+      JSON.stringify({
+        type: "admin_presets",
+        presets: [
+          {
+            id: "gritty-noir",
+            name: "gritty-noir",
+            enabled: true,
+            parse_error: false,
+            prompt_count: 1,
+            preview: "You are a hard-boiled noir narrator.",
+          },
+        ],
+      }),
+    )
+
+    expect(frame).toMatchObject({ type: "admin_presets", presets: [{ id: "gritty-noir", enabled: true }] })
+  })
+
+  it("rejects a malformed preset-management reply", () => {
+    expect(isAdditiveServerFrame({ type: "admin_presets", presets: "nope" })).toBe(false)
+    expect(isAdditiveServerFrame({ type: "admin_presets", presets: [{ id: "x" }] })).toBe(false) // no enabled
+    expect(isAdditiveServerFrame({ type: "admin_presets" })).toBe(false)
+  })
 })
 
 

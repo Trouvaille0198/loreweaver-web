@@ -29,6 +29,7 @@ export default function DiceLine({ frame }: { frame: DiceFrame }) {
       <span className="dice-glyph" aria-hidden="true">
         ⚄
       </span>
+      {frame.hidden ? <span className="dice-hidden">{t("play.dice.hidden")}</span> : null}
       <span className="dice-text">
         {frame.subsystem ? (
           <span className="dice-subsystem">{stripControlChars(frame.subsystem)}</span>

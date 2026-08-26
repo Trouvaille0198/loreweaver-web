@@ -198,7 +198,8 @@
       "worldbook": "世界书",
       "rules": "规则系统",
       "skills": "KP 技能",
-      "model": "模型与配置"
+      "model": "模型与配置",
+      "presets": "提示词预设"
     },
     "keys": {
       "name": "名字",
@@ -582,8 +583,11 @@
       "items": "物品",
       "itemsKind": "类别",
       "itemsEffect": "效果",
+      "itemsImprov": "即兴",
+      "itemsModule": "剧本",
       "itemsOrigin": "来源",
       "itemsLore": "来历",
+      "itemsBonus": "增益",
       "equipped": "已装备",
       "equippedBonus": "装备增益"
     },
@@ -687,6 +691,7 @@
       "statePending": "等待房间状态…"
     },
     "dice": {
+      "hidden": "暗骰（仅守密人可见）",
       "versus": "对抗",
       "tie": "平手",
       "winner": "{{name}} 胜",
@@ -863,6 +868,31 @@
       "importModule": "导入模组",
       "invite": "邀请玩家",
       "sample": "试玩样例"
+    },
+    "presets": {
+      "empty": "还没有预设模板。在下方粘贴 SillyTavern 预设 JSON，创建你的第一个提示词模板。",
+      "helper": "预设是本房间的风格层：启用后，其提示块会作为单独章节注入守秘人系统提示词（每房间同时启用一个）。",
+      "newTitle": "新建 / 覆盖预设",
+      "idLabel": "模板 ID（可选）",
+      "idHint": "留空时根据预设名称自动生成。",
+      "textLabel": "SillyTavern 预设 JSON",
+      "textPlaceholder": "{\"name\": \"My Template\", \"prompts\": [{\"identifier\": \"main\", \"content\": \"...\"}]}",
+      "save": "保存预设",
+      "delete": "删除",
+      "prompts": "{{count}} 个提示块",
+      "broken": "文件损坏或无法解析",
+      "previewLabel": "预览",
+      "deleteConfirm": "确定删除预设「{{id}}」？",
+      "systemGroup": "系统预设",
+      "customGroup": "自定义预设",
+      "systemHint": "随引擎内置，只读。",
+      "export": "导出",
+      "rating": "内容评级：{{rating}}",
+      "exported": "已导出 {{id}} 预设（下载开始）。",
+      "systemEmpty": "没有系统预设。",
+      "importAll": "批量导入",
+      "exportAll": "全部导出",
+      "importInvalid": "文件格式无效：应为预设 JSON 数组，或带 presets 数组的导出包。"
     }
   },
   "studio": {

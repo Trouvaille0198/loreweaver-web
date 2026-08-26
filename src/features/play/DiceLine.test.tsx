@@ -72,6 +72,34 @@ describe("DiceLine", () => {
     expect(container.textContent).not.toContain("\u001b")
     expect(container.textContent).toContain("Nyx]0;pwn")
   })
+
+  it("marks a hidden (keeper-only) roll with the hidden badge", () => {
+    const frame: DiceFrame = {
+      type: "dice",
+      actor: "Keeper",
+      kind: "roll",
+      expr: "1d100",
+      rolls: [13],
+      total: 13,
+      hidden: true,
+    }
+    const { container } = render(<DiceLine frame={frame} />)
+    expect(container.querySelector(".dice-hidden")).not.toBeNull()
+    expect(container.textContent).toContain("hidden roll")
+  })
+
+  it("renders no hidden badge for a public roll", () => {
+    const frame: DiceFrame = {
+      type: "dice",
+      actor: "Nyx",
+      kind: "roll",
+      expr: "1d6",
+      rolls: [4],
+      total: 4,
+    }
+    const { container } = render(<DiceLine frame={frame} />)
+    expect(container.querySelector(".dice-hidden")).toBeNull()
+  })
 })
 
 describe("dice detail", () => {

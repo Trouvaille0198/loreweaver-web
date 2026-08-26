@@ -12,6 +12,8 @@ import {
   WsClient,
   isServerFrame,
   type AdminLLMExportFrame,
+  type AdminPresetExportAllFrame,
+  type AdminPresetsFrame,
   type AdminRoomConfigFrame,
   type AdminGenerateProgressFrame,
   type AdminGenerateStartedFrame,
@@ -36,6 +38,8 @@ type AdditiveServerFrame =
   | AdminGenerateStartedFrame
   | AdminGenerateProgressFrame
   | AdminLLMExportFrame
+  | AdminPresetsFrame
+  | AdminPresetExportAllFrame
   | NarrativeDraftFrame
 
 function isStringArray(value: unknown): value is string[] {
@@ -77,7 +81,33 @@ export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFram
       doc.imagegen_runtime !== null
     )
   }
-  if (frame.type !== "admin_room_config") return false
+  if (frame.type !== "admin_room_config") {
+    if (frame.type === "admin_presets") {
+      return (
+        Array.isArray(frame.presets) &&
+        frame.presets.every(
+          (item) =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as Record<string, unknown>).id === "string" &&
+            typeof (item as Record<string, unknown>).enabled === "boolean",
+        )
+      )
+    }
+    if (frame.type === "admin_preset_export_all") {
+      return (
+        Array.isArray(frame.presets) &&
+        frame.presets.every(
+          (item) =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as Record<string, unknown>).id === "string" &&
+            typeof (item as Record<string, unknown>).text === "string",
+        )
+      )
+    }
+    return false
+  }
   const stored = frame.stored
   if (
     typeof frame.room !== "string" ||
