@@ -3,6 +3,13 @@ import { useTranslation } from "react-i18next"
 import type { NarrativeFrame } from "@loreweaver/protocol"
 import { useSessionStore } from "../../store/session"
 
+/** Persisted opt-in for new-message nudges. */
+const NOTIFY_STORAGE_KEY = "loreweaver.message-notify"
+
+/** How long the title flash stays up. */
+const TITLE_FLASH_STEPS = 6
+const TITLE_FLASH_MS = 500
+
 /** Whether this browser supports the system Notification API at all. */
 function canNotify(): boolean {
   return typeof window !== "undefined" && "Notification" in window
@@ -22,51 +29,93 @@ function summary(text: string, limit = 60): string {
   return flat.length > limit ? `${flat.slice(0, limit)}…` : flat
 }
 
-/** WeChat-style new-message nudge: while the table tab is in the background, a
- * fresh narrative line fires a system notification ("<name> 的回应生效") and
- * the header bell offers the one-tap opt-in (browsers require a gesture). */
+/** WeChat-style new-message nudge, toggleable from the header bell:
+ * - while the table tab is in the background, a fresh narrative line flashes
+ *   the document title ("<name> 的回应生效" ↔ original) exactly like a poke,
+ *   and — once the permission is granted — fires a system notification too.
+ * Streaming drafts, the join replay and foreground messages never nudge. */
 export default function MessageNotifier() {
   const { t } = useTranslation()
   const entries = useSessionStore((s) => s.entries)
+  const [enabled, setEnabled] = useState<boolean>(
+    () => typeof window !== "undefined" && localStorage.getItem(NOTIFY_STORAGE_KEY) !== "off",
+  )
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
     canNotify() ? Notification.permission : "unsupported",
   )
   const lastSeq = useRef(0)
+  const flashTimer = useRef<number | null>(null)
 
-  // Any NEW completed narrative line (a player's reply, an NPC line, a KP
-  // response) nudges the OS while the tab is hidden. Streaming drafts and the
-  // join replay (which lands while the page is foreground) never notify.
   useEffect(() => {
     const last = entries[entries.length - 1]
     if (!last || last.kind !== "narrative" || last.draft || last.seq <= lastSeq.current) return
     lastSeq.current = last.seq
-    if (!document.hidden) return
-    if (!canNotify() || Notification.permission !== "granted") return
-    const notice = new Notification(t("session.messageNotifyTitle", { name: speakerName(last.frame, t) }), {
-      body: summary(last.frame.text ?? ""),
-      tag: "loreweaver-message",
-    })
-    notice.onclick = () => {
-      window.focus()
-      notice.close()
-    }
-  }, [entries, t])
+    if (!enabled || !document.hidden) return
 
-  const ask = async () => {
+    // Taskbar/tab nudge: flash the title like a poke does.
+    const label = t("session.messageNotifyTitle", { name: speakerName(last.frame, t) })
+    const original = document.title
+    let step = 0
+    const flash = window.setInterval(() => {
+      document.title = step % 2 === 0 ? label : original
+      step += 1
+      if (step >= TITLE_FLASH_STEPS) {
+        window.clearInterval(flash)
+        document.title = original
+      }
+    }, TITLE_FLASH_MS)
+    if (flashTimer.current !== null) window.clearTimeout(flashTimer.current)
+    flashTimer.current = window.setTimeout(() => {
+      document.title = original
+      flashTimer.current = null
+    }, TITLE_FLASH_STEPS * TITLE_FLASH_MS)
+
+    // System notification when the permission is granted.
+    if (canNotify() && Notification.permission === "granted") {
+      const notice = new Notification(label, {
+        body: summary(last.frame.text ?? ""),
+        tag: "loreweaver-message",
+      })
+      notice.onclick = () => {
+        window.focus()
+        notice.close()
+      }
+    }
+    return () => {
+      window.clearInterval(flash)
+      if (flashTimer.current !== null) {
+        window.clearTimeout(flashTimer.current)
+        flashTimer.current = null
+      }
+      document.title = original
+    }
+  }, [entries, enabled, t])
+
+  const toggle = async () => {
     if (!canNotify()) return
-    const result = await Notification.requestPermission()
-    setPermission(result)
+    if (enabled) {
+      // Turn off: stop nudging, keep the permission grant.
+      localStorage.setItem(NOTIFY_STORAGE_KEY, "off")
+      setEnabled(false)
+      return
+    }
+    if (Notification.permission === "default") {
+      await Notification.requestPermission()
+      setPermission(Notification.permission)
+    }
+    localStorage.setItem(NOTIFY_STORAGE_KEY, "on")
+    setEnabled(true)
   }
 
   if (permission === "unsupported") return null
-  const on = permission === "granted"
+  const on = enabled && permission === "granted"
   return (
     <button
       type="button"
       className={`notify-bell${on ? " is-on" : ""}`}
       title={t("session.notifyBell")}
       aria-pressed={on}
-      onClick={ask}
+      onClick={toggle}
     >
       {on ? "🔔" : "🔕"}
     </button>
