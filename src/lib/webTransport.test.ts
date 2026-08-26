@@ -105,6 +105,21 @@ describe("additive web transport frames", () => {
     expect(isAdditiveServerFrame({ type: "admin_presets", presets: [{ id: "x" }] })).toBe(false) // no enabled
     expect(isAdditiveServerFrame({ type: "admin_presets" })).toBe(false)
   })
+
+  it("accepts an admin_room_settings frame with a known ai_length", () => {
+    const frame = parseAdditiveServerFrame(
+      JSON.stringify({ type: "admin_room_settings", room: "table", ai_length: "brief" }),
+    )
+
+    expect(frame).toMatchObject({ type: "admin_room_settings", room: "table", ai_length: "brief" })
+  })
+
+  it("rejects an admin_room_settings frame with an unknown or missing ai_length", () => {
+    expect(
+      isAdditiveServerFrame({ type: "admin_room_settings", room: "table", ai_length: "verbose" }),
+    ).toBe(false)
+    expect(isAdditiveServerFrame({ type: "admin_room_settings", room: "table" })).toBe(false)
+  })
 })
 
 

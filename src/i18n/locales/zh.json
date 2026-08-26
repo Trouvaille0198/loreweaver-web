@@ -199,7 +199,16 @@
       "rules": "规则系统",
       "skills": "KP 技能",
       "model": "模型与配置",
-      "presets": "提示词预设"
+      "presets": "提示词预设",
+      "room": "房间"
+    },
+    "room": {
+      "aiLengthTitle": "AI 回复长度",
+      "aiLengthHelper": "AI 守秘人的回复详细程度。从下一条回复开始生效，玩家会直接感受到叙事的节奏。",
+      "aiLengthNormal": "正常",
+      "aiLengthNormalHint": "完整叙事——默认。",
+      "aiLengthBrief": "简短",
+      "aiLengthBriefHint": "简短扼要的节拍：每个节拍一两句话，不做长篇场景铺陈。"
     },
     "keys": {
       "name": "名字",

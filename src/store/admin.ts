@@ -20,6 +20,7 @@ import type {
   AdminResetScope,
   AdminRoomConfigFrame,
   AdminRoomOpFrame,
+  AdminRoomSettingsFrame,
   AdminRuleInfo,
   AdminSkillInfo,
   AdminUpdateFrame,
@@ -462,6 +463,10 @@ interface AdminState {
   models: string[]
   /** THIS room's LLM override state (null until the first admin_room_config). */
   roomConfig: AdminRoomConfigFrame | null
+  /** THIS room's keeper settings (null until the first admin_room_settings).
+   * `ai_length` is "normal" by default; "brief" folds a brevity directive into
+   * every AI-KP reply prompt. */
+  roomSettings: AdminRoomSettingsFrame | null
   /** The last LLM-config export document (null until one arrives). Carries
    * PLAINTEXT keys; the Model screen downloads it as a JSON file. */
   llmExport: AdminLLMConfigDocument | null
@@ -504,6 +509,7 @@ interface AdminState {
     frame:
       | ServerFrame
       | AdminRoomConfigFrame
+      | AdminRoomSettingsFrame
       | AdminGenerateStartedFrame
       | AdminGenerateProgressFrame
       | AdminLLMExportFrame
@@ -541,6 +547,11 @@ interface AdminState {
   setImagegen: (provider: string, model: string, apiKey?: string, baseUrl?: string, size?: string) => void
   /** Fetch the caller's room's LLM override state (admin_get_room_config reply). */
   refreshRoomConfig: () => void
+  /** Fetch the caller's room's keeper settings (admin_get_room_settings reply). */
+  refreshRoomSettings: () => void
+  /** Set one room setting (admin_set_room_settings); the server replies with a
+   * fresh admin_room_settings carrying the applied values. */
+  setRoomSettings: (patch: { ai_length?: "normal" | "brief" }) => void
   /** Pin/change the caller's room's own LLM override. Fields present in the
    * frame set (or clear, when empty) the room's stored value; omitted ones keep
    * the current value. The server probes before persisting — a config whose
@@ -688,6 +699,7 @@ const EMPTY = {
   modelsKind: "",
   models: [],
   roomConfig: null,
+  roomSettings: null,
   llmExport: null,
   keys: [],
   minted: null,
@@ -739,6 +751,9 @@ export const useAdminStore = create<AdminState>((set) => ({
         return true
       case "admin_room_config":
         set({ roomConfig: frame as AdminRoomConfigFrame, busy: false, lastError: null })
+        return true
+      case "admin_room_settings":
+        set({ roomSettings: frame as AdminRoomSettingsFrame, busy: false, lastError: null })
         return true
       case "admin_keys":
         set({ keys: frame.keys, minted: frame.minted ?? null, busy: false, lastError: null })
@@ -963,6 +978,9 @@ export const useAdminStore = create<AdminState>((set) => ({
     ),
   // Room choices reference global LLM profiles; credentials never cross this boundary.
   refreshRoomConfig: () => send({ type: "admin_get_room_config" } as unknown as ClientFrame, set),
+  refreshRoomSettings: () => send({ type: "admin_get_room_settings" } as unknown as ClientFrame, set),
+  setRoomSettings: (patch) =>
+    send({ type: "admin_set_room_settings", ...patch } as unknown as ClientFrame, set),
   setRoomModel: (patch) =>
     send(
       {

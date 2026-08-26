@@ -190,6 +190,24 @@ declare module "@loreweaver/protocol" {
     type: "admin_get_room_config"
   }
 
+  /** Server → client: this room's keeper-facing settings (admin_get_room_settings
+   * reply / fresh admin_set_room_settings reply). */
+  interface AdminRoomSettingsFrame {
+    type: "admin_room_settings"
+    room: string
+    ai_length: "normal" | "brief"
+  }
+
+  interface AdminGetRoomSettingsFrame {
+    type: "admin_get_room_settings"
+  }
+
+  /** Client → server: write one room setting (only ai_length today). */
+  interface AdminSetRoomSettingsFrame {
+    type: "admin_set_room_settings"
+    ai_length?: "normal" | "brief"
+  }
+
   /** Client → server: choose global LLM profiles for this room's jobs. */
   interface AdminSetRoomModelFrame {
     type: "admin_set_room_model"

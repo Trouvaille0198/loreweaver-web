@@ -15,6 +15,7 @@ import {
   type AdminPresetExportAllFrame,
   type AdminPresetsFrame,
   type AdminRoomConfigFrame,
+  type AdminRoomSettingsFrame,
   type AdminGenerateProgressFrame,
   type AdminGenerateStartedFrame,
   type ClientFrame,
@@ -40,6 +41,7 @@ type AdditiveServerFrame =
   | AdminLLMExportFrame
   | AdminPresetsFrame
   | AdminPresetExportAllFrame
+  | AdminRoomSettingsFrame
   | NarrativeDraftFrame
 
 function isStringArray(value: unknown): value is string[] {
@@ -79,6 +81,12 @@ export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFram
       doc.imagegen_credentials !== null &&
       typeof doc.imagegen_runtime === "object" &&
       doc.imagegen_runtime !== null
+    )
+  }
+  if (frame.type === "admin_room_settings") {
+    return (
+      typeof frame.room === "string" &&
+      (frame.ai_length === "normal" || frame.ai_length === "brief")
     )
   }
   if (frame.type !== "admin_room_config") {

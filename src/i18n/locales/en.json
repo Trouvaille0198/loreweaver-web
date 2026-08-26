@@ -199,7 +199,16 @@
       "rules": "Rule systems",
       "skills": "KP skills",
       "model": "Model / config",
-      "presets": "Prompt presets"
+      "presets": "Prompt presets",
+      "room": "Room"
+    },
+    "room": {
+      "aiLengthTitle": "AI reply length",
+      "aiLengthHelper": "How wordy the AI Keeper's replies should be. Applies from the next reply; players see it in the pace of the narration.",
+      "aiLengthNormal": "Normal",
+      "aiLengthNormalHint": "Full narration — the default.",
+      "aiLengthBrief": "Brief",
+      "aiLengthBriefHint": "Short, to-the-point beats: one or two sentences per beat, no lengthy scene-setting."
     },
     "keys": {
       "name": "Name",

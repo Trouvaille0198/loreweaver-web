@@ -6,21 +6,22 @@ import KeysScreen from "./KeysScreen"
 import ModelScreen from "./ModelScreen"
 import ModuleScreen from "./ModuleScreen"
 import PresetsScreen from "./PresetsScreen"
+import RoomSettingsScreen from "./RoomSettingsScreen"
 import RulesScreen from "./RulesScreen"
 import ScreenShell from "./ScreenShell"
 import SkillsScreen from "./SkillsScreen"
 import SettingsWorkspace, { type SettingsNavGroup } from "./SettingsWorkspace"
 import WorldbookScreen from "./WorldbookScreen"
 
-type KeeperSection = "keys" | "module" | "worldbook" | "rules" | "skills" | "presets" | "model"
+type KeeperSection = "keys" | "module" | "worldbook" | "rules" | "skills" | "presets" | "model" | "room"
 
-const SECTION_KEYS: KeeperSection[] = ["keys", "module", "worldbook", "rules", "skills", "presets", "model"]
+const SECTION_KEYS: KeeperSection[] = ["keys", "module", "worldbook", "rules", "skills", "presets", "model", "room"]
 
 const SECTION_STORAGE_KEY = "loreweaver-web.keeper-settings-section"
 function readInitialSection(): KeeperSection {
   if (typeof window !== "undefined") {
     const match = window.location.hash.match(
-      /^#\/keeper-settings\/(keys|module|worldbook|rules|skills|presets|model)$/,
+      /^#\/keeper-settings\/(keys|module|worldbook|rules|skills|presets|model|room)$/,
     )
     if (match) return match[1] as KeeperSection
     try {
@@ -59,7 +60,10 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
     () => [
       {
         label: t("play.keeperSettings.roomGroup"),
-        items: [{ key: "keys", label: t("play.menu.keys"), icon: "access" }],
+        items: [
+          { key: "keys", label: t("play.menu.keys"), icon: "access" },
+          { key: "room", label: t("play.menu.room"), icon: "room" },
+        ],
       },
       {
         label: t("play.keeperSettings.contentGroup"),
@@ -105,6 +109,8 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
         return <PresetsScreen onBack={() => {}} embedded />
       case "model":
         return <ModelScreen onBack={() => {}} embedded />
+      case "room":
+        return <RoomSettingsScreen onBack={() => {}} embedded />
     }
   })()
 
