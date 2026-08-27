@@ -65,17 +65,21 @@ export interface GenerateModuleOptions {
   companion?: string[]
 }
 
-export interface ModuleMediaRecord {
-  name: string
-  hash: string
-  mime: string
-  size: number
-  /** Illustration kind (cover/scenes/npcs/items/asset) from the provenance name. */
-  kind?: string
-  /** The scene, NPC, item, or other subject depicted by the illustration. */
-  subject?: string
-  /** Inline base64 payload when the media is a pack asset not reachable via the room channel. */
-  data?: string
+
+/** One queued illustration job of the async media lane: `pending` (queued), `generating`
+ * (in flight), `done` (rendered — see `media` for the plate), or `failed` (the prompt is
+ * kept verbatim for a one-click retry). */
+export interface ModuleMediaJob {
+  id: string
+  kind: string
+  subject: string
+  prompt: string
+  caption: string
+  status: "pending" | "generating" | "done" | "failed" | string
+  asset?: string
+  hash?: string
+  mime?: string
+  error?: string
 }
 
 export interface ModuleDetail {
@@ -127,7 +131,10 @@ export interface ModuleDetail {
     keeper?: Record<string, unknown>
     player?: Record<string, unknown>
   } | null
-  media: ModuleMediaRecord[]
+
+  /** The async illustration lane's live jobs: pending/generating/failed plates shown on
+   * the detail page, with the persisted prompt for a one-click retry. */
+  mediaJobs?: ModuleMediaJob[]
 }
 export interface WorldbookSource {
   name: string
@@ -168,13 +175,22 @@ export interface WorldbookOperation {
 }
 
 export interface ModuleOperation {
-  kind: "module_upload" | "module_update" | "module_bundle_upload" | "module_import" | "module_delete"
+  kind:
+    | "module_upload"
+    | "module_update"
+    | "module_bundle_upload"
+    | "module_import"
+    | "module_delete"
+    | "module_media_generate"
   ok: boolean
   name: string
   error?: string
   receipt?: string
   status?: string
   files?: number
+  /** True when a fresh-shot generation request was accepted but its LLM shot-list planning
+   * still runs in the background — the detail page keeps polling until jobs appear. */
+  planning?: boolean
   /** Exact module references offered when an installed pack contains several world cards. */
   choices?: string[]
 }
@@ -421,6 +437,38 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
                 : undefined,
           }))
       : [],
+    mediaJobs: Array.isArray(value.media_jobs)
+      ? value.media_jobs.flatMap((item): ModuleMediaJob[] => {
+          if (typeof item !== "object" || item === null) return []
+          const rec = item as {
+            id?: unknown
+            kind?: unknown
+            status?: unknown
+            subject?: unknown
+            prompt?: unknown
+            caption?: unknown
+            asset?: unknown
+            hash?: unknown
+            mime?: unknown
+            error?: unknown
+          }
+          if (typeof rec.id !== "string" || typeof rec.kind !== "string" || typeof rec.status !== "string") return []
+          return [
+            {
+              id: rec.id,
+              kind: rec.kind,
+              status: rec.status,
+              subject: typeof rec.subject === "string" ? rec.subject : "",
+              prompt: typeof rec.prompt === "string" ? rec.prompt : "",
+              caption: typeof rec.caption === "string" ? rec.caption : "",
+              asset: typeof rec.asset === "string" ? rec.asset : undefined,
+              hash: typeof rec.hash === "string" ? rec.hash : undefined,
+              mime: typeof rec.mime === "string" ? rec.mime : undefined,
+              error: typeof rec.error === "string" ? rec.error : undefined,
+            },
+          ]
+        })
+      : [],
   }
 }
 
@@ -615,6 +663,8 @@ interface AdminState {
   listSkills: (locale?: string) => void
   enableSkill: (id: string, on: boolean, locale?: string) => void
   listRules: () => void
+  generateSkill: (description: string) => void
+  generateRule: (description: string) => void
   listPresets: () => void
   enablePreset: (id: string, on: boolean) => void
   savePreset: (text: string, id?: string) => void
@@ -640,8 +690,10 @@ interface AdminState {
   uploadModule: (name: string, content: string) => void
   updateModule: (name: string, content: string) => void
   uploadModuleBundle: (name: string, archive: string) => void
-  importModule: (name: string) => void
-  deleteModule: (name: string, sourceKind?: "text" | "pack") => void
+
+  /** Queue fresh illustration jobs (`kinds`) or re-queue failed ones (`retry` ids) for an
+   * installed pack — the async media lane renders them in the background. */
+  moduleMediaRequest: (name: string, options?: { kinds?: string[]; retry?: string[] }) => void
   listWorldbooks: () => void
   getWorldbookDetail: (name: string) => void
   uploadWorldbook: (name: string, content: string) => void
@@ -881,6 +933,7 @@ export const useAdminStore = create<AdminState>((set) => ({
                 error: frame.ok ? undefined : frame.error,
                 receipt: typeof detail.receipt === "string" ? detail.receipt : undefined,
                 status: typeof detail.status === "string" ? detail.status : undefined,
+                planning: detail.planning === true,
                 choices: Array.isArray(detail.choices)
                   ? detail.choices.filter(
                       (choice): choice is string => typeof choice === "string" && !!choice,
@@ -1051,6 +1104,26 @@ export const useAdminStore = create<AdminState>((set) => ({
   enableSkill: (id, on, locale) =>
     send({ type: "admin_enable_skill", id, on, ...(locale ? { locale } : {}) }, set),
   listRules: () => send({ type: "admin_list_rules" }, set),
+  generateSkill: (description) =>
+    send(
+      {
+        type: "admin_generate",
+        kind: "skill",
+        description,
+        locale: i18n.resolvedLanguage === "zh" ? "zh" : "en",
+      } as unknown as ClientFrame,
+      set,
+    ),
+  generateRule: (description) =>
+    send(
+      {
+        type: "admin_generate",
+        kind: "rule",
+        description,
+        locale: i18n.resolvedLanguage === "zh" ? "zh" : "en",
+      } as unknown as ClientFrame,
+      set,
+    ),
   listPresets: () => send({ type: "admin_list_presets" } as unknown as ClientFrame, set),
   enablePreset: (id, on) => send({ type: "admin_enable_preset", id, on } as unknown as ClientFrame, set),
   savePreset: (text, id) =>
@@ -1130,8 +1203,18 @@ export const useAdminStore = create<AdminState>((set) => ({
       })
     })
   },
-  deleteModule: (name, sourceKind) =>
-    moduleAction("module_delete", { name, ...(sourceKind ? { source_kind: sourceKind } : {}) }, set),
+
+  moduleMediaRequest: (name, options) => {
+    const payload: Record<string, unknown> = {
+      name,
+      locale: i18n.resolvedLanguage === "zh" ? "zh" : "en",
+    }
+    const kinds = options?.kinds?.filter((kind) => kind.length > 0)
+    const retry = options?.retry?.filter((id) => id.length > 0)
+    if (kinds?.length) payload.kinds = kinds
+    if (retry?.length) payload.retry = retry
+    moduleAction("module_media_generate", payload, set)
+  },
   exportRoom: (room, path) => send({ type: "admin_export_room", room, ...(path ? { path } : {}) }, set),
   importRoom: (path) => send({ type: "admin_import_room", path }, set),
   resetRoom: (room, scope) => send({ type: "admin_reset_room", room, scope }, set),

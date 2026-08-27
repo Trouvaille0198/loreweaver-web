@@ -134,6 +134,10 @@
     "deskClose": "Close",
     "attributes": "Attributes",
     "skills": "Skills ({{n}})",
+    "resourceGroups": {
+      "hit_dice": "Hit Dice",
+      "spell_slots": "Spell Slots"
+    },
     "quickCommands": "Quick commands",
     "quickMenuHint": "Pick to insert into the box — tweak before sending",
     "quickMenuSearch": "Filter commands…",
@@ -500,6 +504,17 @@
       "mediaPreview": "Image preview for {{name}}",
       "mediaClose": "Close image preview",
       "mediaFallback": "{{kind}} {{index}}",
+      "mediaJobQueued": "{{subject}} illustration queued…",
+      "mediaJobGenerating": "Illustrating {{subject}}…",
+      "mediaJobFailedUnknown": "Generation failed.",
+      "mediaJobRetry": "Retry",
+      "mediaJobRetryAll": "Retry {{count}} failed",
+      "mediaJobRegenerate": "Regenerate",
+      "mediaGenerate": "Generate illustrations",
+      "mediaGenerateHint": "Illustration kinds",
+      "mediaGenerateStart": "Generate",
+      "mediaGenerateCancel": "Cancel",
+      "mediaGenerateQueued": "Generation started — finished plates appear here.",
       "packNotImported": "This pack has no lore entries.",
       "imported": "Imported into this room.",
       "saved": "Saved",
@@ -582,10 +597,32 @@
     },
     "rules": {
       "builtIn": "built-in",
-      "empty": "No rule systems reported."
+      "empty": "No rule systems reported.",
+      "forgeTitle": "Describe a rule system",
+      "forgeLabel": "Description",
+      "forgeHint": "Describe the system's attributes, checks, and derived stats; the forge authors and installs it.",
+      "forgePlaceholder": "e.g. a pulp adventure system with d100 roll-under checks and a luck pool",
+      "forgeSubmit": "Generate & install",
+      "forgeDone": "Installed rule system: {name}",
+      "forgeFailed": "Rule system generation failed: {error}"
     },
     "skills": {
-      "empty": "No keeper skills installed."
+      "empty": "No keeper skills installed.",
+      "forgeTitle": "Describe a KP skill",
+      "forgeLabel": "Description",
+      "forgeHint": "Describe the play style; the forge authors and installs it.",
+      "forgePlaceholder": "e.g. a courtly-intrigue faction game",
+      "forgeSubmit": "Generate & install",
+      "forgeDone": "Installed KP skill: {name}",
+      "forgeFailed": "KP skill generation failed: {error}",
+      "tools": "Unlocks:",
+      "noBody": "No SKILL.md body available.",
+      "close": "Close",
+      "source": {
+        "builtin": "built-in",
+        "user": "forged",
+        "pack": "pack"
+      }
     },
     "character": {
       "none": "No character yet — make one below, or claim one from the module's cast.",
@@ -901,6 +938,7 @@
       "luck": "Daily luck (alias)",
       "model": "Model / config",
       "module": "Import a module",
+      "forge": "Forge: .forge <desc> — new module | .forge skill <desc> — new KP skill | .forge rule <desc> — new rule system",
       "nn": "Rename (alias)",
       "npc": "NPCs",
       "opposed": "Opposed check",
@@ -990,7 +1028,8 @@
       "close": "Close info card",
       "memories": "Public memory",
       "effect": "Effect",
-      "foundTurn": "Found on turn {{turn}}"
+      "foundTurn": "Found on turn {{turn}}",
+      "relationships": "Relationships"
     }
   },
   "studio": {

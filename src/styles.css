@@ -89,6 +89,7 @@ body,
    app shell actually means; 100vh on iOS Safari overshoots under the collapsed
    chrome. Fall back to 100% where dvh is unsupported (old WebViews). */
 @supports (height: 100dvh) {
+
   html,
   body,
   #root {
@@ -187,7 +188,7 @@ body {
   min-height: 0;
 }
 
-.app-main > .placeholder {
+.app-main>.placeholder {
   margin: auto;
 }
 
@@ -220,7 +221,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .connect-head h2 {
@@ -641,6 +642,7 @@ body {
   color: var(--ink-dim);
   margin-bottom: 4px;
 }
+
 /* The send time of a chronicle line — smaller, non-uppercase, pushed right. */
 .log-entry .entry-time {
   margin-left: auto;
@@ -889,7 +891,7 @@ body {
   overflow-y: auto;
 }
 
-.entry-body > :first-child,
+.entry-body> :first-child,
 .entry-body p:first-child {
   margin-top: 0;
 }
@@ -1204,7 +1206,7 @@ body {
   border-color: var(--accent);
 }
 
-.input-box > button {
+.input-box>button {
   background: var(--accent);
   color: var(--accent-ink);
   border: none;
@@ -1485,7 +1487,7 @@ body {
   color: var(--ink-faint);
 }
 
-.input-box > button:disabled {
+.input-box>button:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -2526,7 +2528,7 @@ body {
   opacity: 0.55;
 }
 
-.var-hidden-row > :last-child {
+.var-hidden-row> :last-child {
   flex: 1;
   min-width: 0;
 }
@@ -2773,6 +2775,7 @@ body {
   font: inherit;
   cursor: pointer;
 }
+
 .entry-body a[href^="npc://"]:hover,
 .entry-body a[href^="item://"]:hover,
 .entry-body a[href^="clue://"]:hover {
@@ -2790,6 +2793,7 @@ body {
   justify-content: center;
   padding: 24px;
 }
+
 .npc-card {
   position: relative;
   width: min(420px, 100%);
@@ -2804,6 +2808,7 @@ body {
   border-radius: 10px;
   padding: 20px;
 }
+
 .npc-card-close {
   position: absolute;
   top: 10px;
@@ -2815,6 +2820,7 @@ body {
   line-height: 1;
   cursor: pointer;
 }
+
 .npc-card-avatar {
   width: 96px;
   height: 96px;
@@ -2823,51 +2829,61 @@ body {
   border: 1px solid var(--border);
   background: var(--bg-inset, var(--bg));
 }
+
 .npc-card-avatar-empty {
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--ink-faint);
 }
+
 .npc-card-name {
   margin: 0;
   font-size: 18px;
 }
+
 .npc-card-description {
   margin: 0;
   color: var(--ink-soft);
   line-height: 1.5;
 }
+
 .npc-card-status {
   margin: 0;
   font-size: 12px;
   color: var(--ink-faint);
 }
+
 .npc-card-meta {
   margin: 0;
   font-size: 12px;
   color: var(--ink-faint);
 }
+
 .npc-card-content {
   margin: 0;
   color: var(--ink-soft);
   line-height: 1.5;
 }
+
 .npc-card-effect {
   margin: 0;
   color: var(--ink-soft);
   line-height: 1.5;
 }
+
 .npc-card-effect strong {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ink-faint);
 }
+
 .npc-card-memories {
   border-top: 1px solid var(--border);
   padding-top: 10px;
 }
+
 .npc-card-memories-title {
   margin: 0 0 6px;
   font-size: 12px;
@@ -2875,12 +2891,60 @@ body {
   letter-spacing: 0.04em;
   color: var(--ink-faint);
 }
+
 .npc-card-memories ul {
   margin: 0;
   padding-left: 18px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.npc-card-relationships {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.npc-card-relationships-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+.npc-card-relationships ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.npc-card-relationship {
+  margin-left: 8px;
+  color: var(--ink-dim);
+}
+
+.panel-modal-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.panel-modal-header h3 {
+  margin: 0;
+}
+
+.panel-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.play-skills-tools code {
+  margin-right: 6px;
 }
 
 .panel-modal-body {
@@ -3335,7 +3399,7 @@ body {
   text-align: left;
 }
 
-.module-source-select > .ui-button-label {
+.module-source-select>.ui-button-label {
   align-items: stretch;
   flex-direction: column;
   gap: var(--space-1);
@@ -3410,11 +3474,9 @@ body {
 .module-detail-source-card {
   border: 1px solid var(--border-soft);
   border-radius: 14px;
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--bg-raised) 92%, var(--accent) 8%),
-    var(--bg-raised)
-  );
+  background: linear-gradient(145deg,
+      color-mix(in srgb, var(--bg-raised) 92%, var(--accent) 8%),
+      var(--bg-raised));
 }
 
 .module-detail-hero {
@@ -3550,6 +3612,7 @@ body {
   margin-top: 8px;
   color: var(--ink-faint);
 }
+
 .module-variable-list {
   display: flex;
   flex-direction: column;
@@ -4316,20 +4379,14 @@ body {
 
 /* ---- text fields (inputs, textareas, selects) ---- */
 
-.field
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .field select,
 .field textarea,
-.dialog-row
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .play-table select,
-.play-table
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .var-set-input,
-.host-local-home
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-    [type="color"]
-  ) {
+.host-local-home input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]) {
   background-color: var(--bg-inset);
   color: var(--ink);
   border: 1px solid var(--border);
@@ -4435,10 +4492,8 @@ input[type="checkbox"]:checked {
      fallback before JS runs. The stroke color is the palette's bg token —
      it reads on the accent fill for every palette (light accent + dark bg,
      or paperwhite's dark accent + light bg). */
-  background-image: var(
-    --checkbox-check,
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%2317130e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-  );
+  background-image: var(--checkbox-check,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%2317130e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"));
 }
 
 input[type="checkbox"]:focus-visible {
@@ -4590,7 +4645,7 @@ code {
 .icon-button,
 .app-menu-row,
 .connect-form button,
-.input-box > button,
+.input-box>button,
 .host-local-button {
   transition:
     background-color 120ms ease,
@@ -4605,7 +4660,7 @@ code {
 .choice-button:hover:not(:disabled),
 .icon-button:hover:not(:disabled),
 .connect-form button:hover:not(:disabled),
-.input-box > button:hover:not(:disabled),
+.input-box>button:hover:not(:disabled),
 .host-local-button:hover:not(:disabled) {
   filter: brightness(1.12);
 }
@@ -4615,19 +4670,20 @@ code {
 .choice-button:active:not(:disabled),
 .icon-button:active:not(:disabled),
 .connect-form button:active:not(:disabled),
-.input-box > button:active:not(:disabled),
+.input-box>button:active:not(:disabled),
 .host-local-button:active:not(:disabled) {
   transform: translateY(1px);
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .primary-button,
   .ghost-button,
   .choice-button,
   .icon-button,
   .app-menu-row,
   .connect-form button,
-  .input-box > button,
+  .input-box>button,
   .host-local-button {
     transition: none;
   }
@@ -4797,7 +4853,7 @@ code {
     gap: var(--space-1);
   }
 
-  .room-info-grid dd + dt {
+  .room-info-grid dd+dt {
     margin-top: var(--space-2);
   }
 
@@ -5066,7 +5122,7 @@ code {
     font-size: 16px;
   }
 
-  .input-box > button {
+  .input-box>button {
     padding: 0 14px;
   }
 
@@ -5166,28 +5222,16 @@ code {
   }
 
   /* --- form fields: no iOS zoom, easier thumbs --- */
-  .field
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
+  .field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
   .field select,
   .field textarea,
-  .dialog-row
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
+  .dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
   .play-table select,
-  .play-table
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ),
+  .play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
   .var-set-input,
   .connect-form input,
   .connect-form textarea,
-  .host-local-home
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
-      [type="color"]
-    ) {
+  .host-local-home input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]) {
     font-size: 16px;
   }
 
@@ -5197,7 +5241,7 @@ code {
   .icon-button,
   .app-menu-row,
   .app-menu-toggle,
-  .input-box > button,
+  .input-box>button,
   .connect-form button {
     min-height: 44px;
   }
@@ -5262,7 +5306,7 @@ code {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%),
     var(--bg-raised);
-  gap: 10px;
+  gap: 12px;
 }
 
 .session .desk-pane .character-card .desk-title {
@@ -5283,23 +5327,81 @@ code {
   border-width: 2px;
 }
 
-/* Vitals inside the character card: the numbers lead, bars thicken. */
+/* Vitals inside the character card share one row rhythm, whether a resource
+   has a maximum (meter) or is an unbounded value such as temporary HP. */
+.session .desk-pane .character-card .character-resources,
+.session .desk-pane .character-card .resource-group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.session .desk-pane .character-card-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.session .desk-pane .character-card .character-resources {
+  padding-top: 0;
+}
+
+.session .desk-pane .character-card .resource-group {
+  margin-top: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-soft);
+}
+
+.session .desk-pane .character-card .resource-group-title {
+  margin: 0;
+  color: var(--ink);
+  font: 650 13px/1.3 var(--font-ui);
+}
+
+.session .desk-pane .character-card .resource-row,
 .session .desk-pane .character-card .meter {
-  grid-template-columns: auto minmax(48px, 1fr) auto;
+  min-width: 0;
+  min-height: 32px;
+}
+
+.session .desk-pane .character-card .resource-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 8px;
 }
 
+.session .desk-pane .character-card .meter {
+  grid-template-columns: minmax(0, 1fr) minmax(48px, 1.6fr) auto;
+  gap: 8px;
+}
+
+.session .desk-pane .character-card .resource-label,
 .session .desk-pane .character-card .meter-label {
-  font-size: 12px;
-  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-dim);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.session .desk-pane .character-card .resource-value {
+  color: var(--ink);
+  font: 700 15px/1.2 var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .session .desk-pane .character-card .meter-track {
   height: 8px;
-  border-radius: 4px;
+  border-radius: 999px;
 }
 
 .session .desk-pane .character-card .meter-value {
+  color: var(--ink);
   font-size: 15px;
   font-weight: 700;
 }
@@ -5314,26 +5416,83 @@ code {
   border-radius: 999px;
 }
 
-/* Trackers: number-forward instrument rows, not label-forward lists. */
-.session .desk-pane .variables-card {
-  gap: 12px;
-  padding: 14px 16px 16px;
+.session .desk-pane .character-card .skills-fold {
+  margin-top: 0;
+  padding-top: var(--space-2);
 }
 
-.session .desk-pane .variables-card .desk-title {
+/* Trackers: number-forward instrument rows, not label-forward lists. */
+.session .desk-pane .variables-card {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.session .desk-pane .variables-card .variables-card-header {
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
   letter-spacing: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 650;
+}
+
+.session .desk-pane .variables-card-title {
+  min-width: 0;
+  color: var(--ink);
+}
+
+.session .desk-pane .variables-card-edit {
+  flex: 0 0 auto;
+}
+
+.session .desk-pane .variables-card-hint {
+  margin: 0;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: var(--ink-dim);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.session .desk-pane .variables-card .var-list {
+  gap: 0;
+  padding: 4px 14px 8px;
+}
+
+.session .desk-pane .variables-card .var-group {
+  gap: 0;
+}
+
+.session .desk-pane .variables-card .var-group+.var-group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.session .desk-pane .variables-card .var-entry {
+  padding: 8px 0;
+}
+
+.session .desk-pane .variables-card .var-entry+.var-entry {
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 72%, transparent);
 }
 
 .session .desk-pane .var-row {
   font-size: 14px;
-  min-height: 30px;
-  padding: 5px 10px;
+  min-height: 32px;
+  padding: 0;
   align-items: center;
-  border: 1px solid var(--border-soft);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--bg-inset) 58%, transparent);
+}
+
+.session .desk-pane .variables-card .var-label,
+.session .desk-pane .variables-card .meter-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.35;
 }
 
 .party-stat-value.is-low {
@@ -5369,13 +5528,14 @@ code {
   font-variant-numeric: normal;
 }
 
-.session .desk-pane .meter {
-  grid-template-columns: auto minmax(48px, 1fr) auto;
-  min-height: 30px;
-  padding: 5px 10px;
-  border: 1px solid var(--border-soft);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--bg-inset) 58%, transparent);
+.session .desk-pane .variables-card .meter {
+  grid-template-columns: minmax(0, 1fr) minmax(48px, 1.6fr) auto;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  gap: 10px;
 }
 
 .session .desk-pane .meter-value {
@@ -5385,8 +5545,8 @@ code {
 }
 
 .session .desk-pane .meter-track {
-  height: 7px;
-  border-radius: 4px;
+  height: 6px;
+  border-radius: 999px;
 }
 
 /* Party and module cards: quiet, compact. */
@@ -5728,6 +5888,7 @@ code {
 }
 
 @media (max-width: 380px) {
+
   .character-modal-detail-grid,
   .character-modal-detail-grid--attributes,
   .character-modal .play-character-equipment {
@@ -5784,6 +5945,119 @@ code {
   border: 1px solid var(--line-subtle);
   border-radius: var(--radius-md);
 }
+
+/* ---- async illustration lane (module detail) ---- */
+
+.module-media-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.module-media-job {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.module-media-job--busy {
+  color: var(--text-secondary);
+  font: 13px/1.45 var(--font-ui);
+}
+
+.module-media-job--failed {
+  color: var(--text-secondary);
+  font: 13px/1.45 var(--font-ui);
+}
+
+.module-media-job-spinner {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: module-media-spin 0.9s linear infinite;
+}
+
+@keyframes module-media-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.module-media-job-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.module-media-job-error {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+  color: var(--text-tertiary);
+  font: 11px/1.4 var(--font-mono);
+}
+
+.module-media-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.module-media-picker-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font: 13px/1.4 var(--font-ui);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.module-media-menu {
+  position: fixed;
+  z-index: 1600;
+  min-width: 150px;
+  padding: var(--space-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated, var(--surface));
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+.module-media-menu button {
+  display: block;
+  width: 100%;
+  padding: var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-primary);
+  font: 13px/1.4 var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.module-media-menu button:hover,
+.module-media-menu button:focus-visible {
+  background: var(--surface-hover);
+}
+
 /* ---- prompt presets (KeeperSettings → presets) ---- */
 
 .play-presets-helper {

@@ -196,6 +196,15 @@ declare module "@loreweaver/protocol" {
     locale?: "en" | "zh"
   }
 
+  interface AdminSkillInfo {
+    /** The full SKILL.md body (additive: a pre-2.5 server omits it). */
+    body?: string
+    /** Tool names this skill unlocks (additive). */
+    allowed_tools?: string[]
+    /** Provenance: `builtin` | `user` | `pack` (additive). */
+    source?: string
+  }
+
   // --- v2.4 wire: per-room LLM override (admin_get_room_config /
   // admin_set_room_model, answered by the engine's `admin_room_config` frame).
   // The published npm package does not type these yet; the server implements
@@ -507,6 +516,9 @@ declare module "@loreweaver/protocol" {
     effect?: string
     content?: string
     found_turn?: number
+    /** NPC card only: this NPC's deterministic relationship tracks toward other
+     * entities (好感/情欲), player-visible projection, non-default values only. */
+    relationships?: { target: string; tracks: { track: string; value: number }[] }[]
   }
 
   // --- v2.7 wire: the campaign catch-up feed (list_chronicle →

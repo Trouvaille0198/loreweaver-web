@@ -96,6 +96,11 @@ async def _serve_both(core, i18n, keys_path: str) -> bool:
     except Exception as exc:  # bind failure, etc.
         print(i18n.t("tui.web.failed", error=str(exc)), file=sys.stderr)
         return False
+    # Resume any interrupted module-illustration queues: the media worker is an in-process
+    # task, so a restart otherwise freezes half-rendered plates in "generating" forever.
+    from gateway.module_media import resume_pending_queues
+
+    await resume_pending_queues(core.services)
     scheme = "wss" if core.services.settings.tui.tls_cert_path else "ws"
     _announce_web_url(i18n, f"{scheme}://{core.host}:{core.port}/", core.static_dir)
 

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { createPortal } from "react-dom"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Button, Notice, SectionHeader, Surface } from "../../../components/ui"
-import { useAdminStore, type ModuleDetail, type ModuleMediaRecord } from "../../../store/admin"
+import { useAdminStore, type ModuleDetail, type ModuleMediaJob, type ModuleMediaRecord } from "../../../store/admin"
 import { transportSend } from "../../../lib/transport"
 import { assetFetch, assetReadBase64 } from "../panels/assets"
 import ScreenShell from "./ScreenShell"
@@ -12,13 +12,30 @@ import { KnowledgePool } from "./ModuleScreen"
 
 /** One illustration. Renders the inline base64 payload when present (a pack asset not reachable
  * via the room media channel); otherwise pulls through the content-addressed asset channel. */
-function ModuleMediaImage({ record, fallbackLabel }: { record: ModuleMediaRecord; fallbackLabel?: string }) {
+function ModuleMediaImage({
+  record,
+  fallbackLabel,
+  onRegenerate,
+}: {
+  record: ModuleMediaRecord
+  fallbackLabel?: string
+  /** Present when this finished illustration belongs to a job — right-clicking the plate
+   * opens a menu whose "regenerate" entry re-queues that job with the SAME prompt,
+   * swapping the plate for a fresh render. */
+  onRegenerate?: () => void
+}) {
   const { t } = useTranslation()
   const subject = record.subject?.trim() || ""
   const displayName = subject || fallbackLabel || record.name
   const [src, setSrc] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const openMenu = (event: ReactMouseEvent) => {
+    if (!onRegenerate) return
+    event.preventDefault()
+    setMenu({ x: Math.min(event.clientX, window.innerWidth - 170), y: event.clientY })
+  }
 
   useEffect(() => {
     let live = true
@@ -51,8 +68,26 @@ function ModuleMediaImage({ record, fallbackLabel }: { record: ModuleMediaRecord
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [previewOpen])
 
+  // Right-click menu: close on outside click (menu itself excluded) or Escape.
+  useEffect(() => {
+    if (!menu) return
+    const onDown = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest(".module-media-menu")) return
+      setMenu(null)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenu(null)
+    }
+    window.addEventListener("mousedown", onDown)
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("mousedown", onDown)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [menu])
+
   return (
-    <figure className="module-media-item">
+    <figure className="module-media-item" onContextMenu={openMenu}>
       {src !== null ? (
         <button
           type="button"
@@ -103,8 +138,72 @@ function ModuleMediaImage({ record, fallbackLabel }: { record: ModuleMediaRecord
             document.body,
           )
         : null}
+      {menu && onRegenerate
+        ? createPortal(
+            <div
+              className="module-media-menu"
+              role="menu"
+              style={{ left: menu.x, top: menu.y }}
+              onContextMenu={(event) => event.preventDefault()}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenu(null)
+                  onRegenerate()
+                }}
+              >
+                {t("play.module.mediaJobRegenerate")}
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
     </figure>
   )
+}
+
+/** The keeper-selectable illustration kinds for the detail page's generate trigger (mirrors
+ * the forge's MEDIA_OPTION_IDS). */
+const MODULE_MEDIA_OPTIONS = ["cover", "scenes", "npcs", "clue", "pregens"] as const
+
+/** One row of the async illustration lane: a queued/generating placeholder (point 1 of the
+ * async-media contract: the detail page shows "正在生成中" while the worker renders) or a
+ * failed job with its persisted prompt behind a one-click retry (point 3). */
+function MediaJobRow({ job, onRetry }: { job: ModuleMediaJob; onRetry: (id: string) => void }) {
+  const { t } = useTranslation()
+  const label = job.subject || job.kind || job.id
+  if (job.status === "pending") {
+    return (
+      <li className="module-media-job module-media-job--busy">
+        <span className="module-media-job-spinner" aria-hidden="true" />
+        <span className="module-media-job-text">{t("play.module.mediaJobQueued", { subject: label })}</span>
+      </li>
+    )
+  }
+  if (job.status === "generating") {
+    return (
+      <li className="module-media-job module-media-job--busy">
+        <span className="module-media-job-spinner" aria-hidden="true" />
+        <span className="module-media-job-text">{t("play.module.mediaJobGenerating", { subject: label })}</span>
+      </li>
+    )
+  }
+  if (job.status === "failed") {
+    return (
+      <li className="module-media-job module-media-job--failed">
+        <span className="module-media-job-label">{label}</span>
+        <span className="module-media-job-error">
+          {job.error || t("play.module.mediaJobFailedUnknown")}
+        </span>
+        <Button type="button" size="sm" onClick={() => onRetry(job.id)}>
+          {t("play.module.mediaJobRetry")}
+        </Button>
+      </li>
+    )
+  }
+  return null
 }
 
 const MEDIA_GROUP_ORDER = ["scenes", "npcs", "clue", "items", "asset"] as const
@@ -168,6 +267,34 @@ function PackDetailView({
   onDelete: () => void
 }) {
   const { t } = useTranslation()
+  const moduleMediaRequest = useAdminStore((s) => s.moduleMediaRequest)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerKinds, setPickerKinds] = useState<string[]>(["cover"])
+  const [generateNotice, setGenerateNotice] = useState(false)
+  // The server plans fresh shots OUTSIDE the room turn lock (the LLM shot-list call can take
+  // tens of seconds), replying "planning" first — keep polling until the jobs materialize.
+  const [pendingPlan, setPendingPlan] = useState(false)
+  const mediaJobs = detail.mediaJobs ?? []
+  const failedJobs = mediaJobs.filter((job) => job.status === "failed")
+  /** The finished job behind a gallery plate (matched by asset filename), so its
+   * "regenerate" button can re-queue that job with the same prompt. */
+  const jobFor = (record: ModuleMediaRecord): ModuleMediaJob | undefined =>
+    mediaJobs.find((job) => job.status === "done" && job.asset === record.name)
+  const retryJob = (id: string) => moduleMediaRequest(detail.name, { retry: [id] })
+  const retryAll = () => {
+    const ids = failedJobs.map((job) => job.id)
+    if (ids.length > 0) moduleMediaRequest(detail.name, { retry: ids })
+  }
+  const toggleKind = (kind: string) => {
+    setPickerKinds((current) => (current.includes(kind) ? current.filter((k) => k !== kind) : [...current, kind]))
+  }
+  const startGenerate = () => {
+    if (pickerKinds.length === 0) return
+    moduleMediaRequest(detail.name, { kinds: pickerKinds })
+    setPickerOpen(false)
+    setGenerateNotice(true)
+    setPendingPlan(true)
+  }
   const mediaGroups = new Map<string, ModuleMediaRecord[]>()
   let covers: ModuleMediaRecord[] = []
   for (const record of detail.media) {
@@ -235,13 +362,57 @@ function PackDetailView({
         {detail.content ? <p className="studio-hint">{detail.content}</p> : null}
       </Surface>
 
-      {detail.media.length > 0 ? (
+      {detail.media.length > 0 || mediaJobs.length > 0 ? (
         <Surface className="module-detail-card module-detail-media-card" labelledBy="pack-media-title">
           <SectionHeader
             titleId="pack-media-title"
             title={t("play.module.packMedia")}
             description={t("play.module.packMediaCount", { count: galleryCount })}
+            actions={
+              <div className="module-detail-actions">
+                {failedJobs.length > 0 ? (
+                  <Button type="button" size="sm" onClick={retryAll}>
+                    {t("play.module.mediaJobRetryAll", { count: failedJobs.length })}
+                  </Button>
+                ) : null}
+                <Button type="button" size="sm" onClick={() => setPickerOpen((open) => !open)}>
+                  {t("play.module.mediaGenerate")}
+                </Button>
+              </div>
+            }
           />
+          {generateNotice ? (
+            <Notice tone="info" role="status">
+              {t("play.module.mediaGenerateQueued")}
+            </Notice>
+          ) : null}
+          {pickerOpen ? (
+            <div className="module-media-picker" role="group" aria-label={t("play.module.mediaGenerateHint")}>
+              {MODULE_MEDIA_OPTIONS.map((kind) => (
+                <label className="module-media-picker-kind" key={kind}>
+                  <input
+                    type="checkbox"
+                    checked={pickerKinds.includes(kind)}
+                    onChange={() => toggleKind(kind)}
+                  />
+                  <span>{t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })}</span>
+                </label>
+              ))}
+              <Button type="button" size="sm" onClick={startGenerate} disabled={pickerKinds.length === 0}>
+                {t("play.module.mediaGenerateStart")}
+              </Button>
+              <Button type="button" size="sm" variant="quiet" onClick={() => setPickerOpen(false)}>
+                {t("play.module.mediaGenerateCancel")}
+              </Button>
+            </div>
+          ) : null}
+          {mediaJobs.length > 0 ? (
+            <ul className="module-media-jobs">
+              {mediaJobs.map((job) => (
+                <MediaJobRow key={job.id} job={job} onRetry={retryJob} />
+              ))}
+            </ul>
+          ) : null}
           <div className="module-media-layout">
             {covers.length > 0 ? (
               <section
@@ -255,17 +426,21 @@ function PackDetailView({
                   ) : null}
                 </header>
                 <ul className="module-media-grid module-media-grid--cover">
-                  {covers.map((record, index) => (
-                    <li key={record.hash}>
-                      <ModuleMediaImage
-                        record={record}
-                        fallbackLabel={t("play.module.mediaFallback", {
-                          kind: t("play.module.packMediaGroups.cover"),
-                          index: index + 1,
-                        })}
-                      />
-                    </li>
-                  ))}
+                  {covers.map((record, index) => {
+                    const regen = jobFor(record)
+                    return (
+                      <li key={record.hash}>
+                        <ModuleMediaImage
+                          record={record}
+                          fallbackLabel={t("play.module.mediaFallback", {
+                            kind: t("play.module.packMediaGroups.cover"),
+                            index: index + 1,
+                          })}
+                          onRegenerate={regen ? () => retryJob(regen.id) : undefined}
+                        />
+                      </li>
+                    )
+                  })}
                 </ul>
               </section>
             ) : null}
@@ -281,17 +456,21 @@ function PackDetailView({
                     ) : null}
                   </header>
                   <ul className={`module-media-grid module-media-grid--${kind}`}>
-                    {records.map((record, index) => (
-                      <li key={record.hash}>
-                        <ModuleMediaImage
-                          record={record}
-                          fallbackLabel={t("play.module.mediaFallback", {
-                            kind: label,
-                            index: index + 1,
-                          })}
-                        />
-                      </li>
-                    ))}
+                    {records.map((record, index) => {
+                      const regen = jobFor(record)
+                      return (
+                        <li key={record.hash}>
+                          <ModuleMediaImage
+                            record={record}
+                            fallbackLabel={t("play.module.mediaFallback", {
+                              kind: label,
+                              index: index + 1,
+                            })}
+                            onRegenerate={regen ? () => retryJob(regen.id) : undefined}
+                          />
+                        </li>
+                      )
+                    })}
                   </ul>
                 </section>
               )
@@ -355,10 +534,17 @@ function PackDetailView({
           <ul className="play-list module-source-list">
             {detail.pregens.map((pregen) => {
               const portrait = detail.media?.find((m) => m.kind === "pregens" && m.name === pregen.avatar)
+              const regen = portrait ? jobFor(portrait) : undefined
               return (
                 <li className="module-source-row" key={pregen.name}>
                   <div className={`module-source-select${portrait ? " has-portrait" : ""}`}>
-                    {portrait ? <ModuleMediaImage record={portrait} fallbackLabel={pregen.name} /> : null}
+                    {portrait ? (
+                      <ModuleMediaImage
+                        record={portrait}
+                        fallbackLabel={pregen.name}
+                        onRegenerate={regen ? () => retryJob(regen.id) : undefined}
+                      />
+                    ) : null}
                     <div className="module-source-copy">
                       <strong>{pregen.name}</strong>
                       {pregen.concept ? <span className="studio-hint">{pregen.concept}</span> : null}
@@ -482,6 +668,49 @@ export default function ModuleDetailScreen({
   }, [getModuleDetail, moduleName])
 
   const detailReady = detail?.name === moduleName ? detail : null
+
+  const jobsBusy =
+    (detailReady?.mediaJobs ?? []).some((job) => job.status === "pending" || job.status === "generating") ?? false
+  // Fresh-shot requests plan OUTSIDE the room turn lock (the LLM shot-list call can take tens
+  // of seconds) — keep polling until the jobs materialize, with a bounded wait window.
+  const planning =
+    operation?.kind === "module_media_generate" && operation.planning === true && operation.name === moduleName
+  const [planWaitElapsed, setPlanWaitElapsed] = useState(false)
+  const pollActive = jobsBusy || (planning && !planWaitElapsed)
+
+  // Point 1 of the async-media contract: while the background lane renders, keep the detail
+  // fresh so a finished plate replaces its "正在生成中" row the moment the worker lands it.
+  useEffect(() => {
+    if (!pollActive) return
+    const timer = window.setInterval(() => getModuleDetail(moduleName), 3000)
+    return () => {
+      window.clearInterval(timer)
+      // The final poll can race the worker's last write (manifest update vs job done): always
+      // re-read once when polling stops so a just-finished regenerate shows its new plate
+      // without a manual refresh.
+      getModuleDetail(moduleName)
+    }
+  }, [pollActive, getModuleDetail, moduleName])
+
+  // Planning window: reset on a fresh request, stop once the jobs appear (the jobsBusy poll
+  // takes over) or after 30s without any jobs materializing.
+  useEffect(() => {
+    if (!planning) return
+    setPlanWaitElapsed(false)
+    if ((detailReady?.mediaJobs?.length ?? 0) > 0) {
+      setPlanWaitElapsed(true)
+      return
+    }
+    const timer = window.setTimeout(() => setPlanWaitElapsed(true), 30000)
+    return () => window.clearTimeout(timer)
+  }, [planning, detailReady])
+
+  // After a generate/retry request settles, re-read the detail (its jobs are now pending).
+  useEffect(() => {
+    if (operation?.kind === "module_media_generate" && operation.name === moduleName) {
+      getModuleDetail(moduleName)
+    }
+  }, [getModuleDetail, moduleName, operation])
 
   useEffect(() => {
     if (!editing && detailReady) setDraft(detailReady.content)

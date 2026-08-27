@@ -11,7 +11,7 @@ vi.mock("../../lib/transport", () => ({
   },
 }))
 
-import "../../i18n"
+import i18n from "../../i18n"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import StatePanel from "./StatePanel"
@@ -73,6 +73,39 @@ describe("StatePanel", () => {
     expect(container.querySelector(".initiative-list .is-current")).toHaveTextContent("Ash")
     const bo = screen.getByText("Bo", { selector: ".party-name" }).closest(".party-row")
     expect(bo).toHaveClass("is-offline")
+  })
+
+  it("localizes resource group headings", async () => {
+    const previousLanguage = i18n.language
+    await i18n.changeLanguage("zh")
+    try {
+      useSessionStore.getState().ingest({
+        type: "state",
+        character: {
+          name: "Ash",
+          system: "dnd5e",
+          resources: [],
+          resource_groups: [
+            {
+              id: "hit_dice",
+              resources: [{ id: "hit_dice", label: "生命骰", value: 1, max: 1 }],
+            },
+          ],
+          attributes: {},
+          status_effects: [],
+        },
+        party: [],
+        initiative: [],
+        online: 1,
+      })
+
+      render(<StatePanel />)
+
+      expect(screen.getByRole("heading", { name: "生命骰" })).toBeInTheDocument()
+      expect(screen.getByRole("group", { name: "生命骰" })).toBeInTheDocument()
+    } finally {
+      await i18n.changeLanguage(previousLanguage)
+    }
   })
 
   it("opens a character sheet popup from a party member double-click", () => {

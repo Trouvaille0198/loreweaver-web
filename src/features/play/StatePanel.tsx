@@ -51,9 +51,9 @@ export function ResourceRow({ resource }: { resource: ResourceState }) {
     return <Meter label={label} value={resource.value} max={resource.max} tone={resourceTone(resource.id)} />
   }
   return (
-    <div className="var-row" data-kind="number">
-      <span className="var-label">{label}</span>
-      <span className="var-value">{resource.value}</span>
+    <div className="resource-row resource-row-plain" data-kind="number">
+      <span className="resource-label">{label}</span>
+      <span className="resource-value">{resource.value}</span>
     </div>
   )
 }
@@ -71,67 +71,80 @@ export function CharacterCard({ character }: { character: CharacterState }) {
         {stripControlChars(character.name)}
         <span className="desk-tag">{stripControlChars(character.system)}</span>
       </header>
-      {attributeEntries.length > 0 ? (
-        <div className="attr-grid" role="list" aria-label={t("session.attributes")}>
-          {attributeEntries.map(([key, value]) => (
-            <span key={key} className="attr-cell" role="listitem" title={key}>
-              <span className="attr-key">{stripControlChars(key)}</span>
-              <span className="attr-value">{String(value)}</span>
-            </span>
-          ))}
-        </div>
-      ) : null}
-      {character.resources.map((resource) => (
-        <ResourceRow key={resource.id} resource={resource} />
-      ))}
-      {(character.resource_groups ?? []).map((group) => (
-        <div
-          key={group.id}
-          className="resource-group"
-          role="group"
-          aria-label={group.id || t("session.resources")}
-        >
-          {group.id ? <h4 className="resource-group-title">{stripControlChars(group.id)}</h4> : null}
-          {group.resources.map((resource) => (
-            <ResourceRow key={`${group.id}:${resource.id}`} resource={resource} />
-          ))}
-        </div>
-      ))}
-      {skillEntries.length > 0 ? (
-        <div className="skills-fold">
-          <Button
-            type="button"
-            variant="quiet"
-            className="skills-fold-toggle"
-            aria-expanded={skillsOpen}
-            onClick={() => setSkillsOpen((open) => !open)}
-          >
-            <span>{t("session.skills", { n: skillEntries.length })}</span>
-            <span className="skills-fold-caret" aria-hidden="true">
-              {skillsOpen ? "▾" : "▸"}
-            </span>
-          </Button>
-          {skillsOpen ? (
-            <div className="skills-grid" role="list">
-              {skillEntries.map(([name, value]) => (
-                <span key={name} className="skill-cell" role="listitem" title={name}>
-                  <span className="skill-name">{stripControlChars(name)}</span>
-                  <span className="skill-value">{String(value)}</span>
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      {character.status_effects.length > 0 ? (
-        <div className="chip-row">
-          {character.status_effects.map((effect) => (
-            <span key={effect} className="chip chip-effect">
-              {stripControlChars(effect)}
-            </span>
-          ))}
-        </div>
-      ) : null}
+      <div className="character-card-body">
+        {attributeEntries.length > 0 ? (
+          <div className="attr-grid" role="list" aria-label={t("session.attributes")}>
+            {attributeEntries.map(([key, value]) => (
+              <span key={key} className="attr-cell" role="listitem" title={key}>
+                <span className="attr-key">{stripControlChars(key)}</span>
+                <span className="attr-value">{String(value)}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {character.resources.length > 0 ? (
+          <div className="character-resources" role="group" aria-label={t("session.resources")}>
+            {character.resources.map((resource) => (
+              <ResourceRow key={resource.id} resource={resource} />
+            ))}
+          </div>
+        ) : null}
+        {(character.resource_groups ?? []).map((group) => (
+          (() => {
+            const groupLabel = group.id
+              ? t(`session.resourceGroups.${group.id}`, { defaultValue: stripControlChars(group.id) })
+              : t("session.resources")
+            return (
+              <div
+                key={group.id}
+                className="resource-group"
+                role="group"
+                aria-label={groupLabel}
+              >
+                {group.id ? <h4 className="resource-group-title">{groupLabel}</h4> : null}
+                {group.resources.map((resource) => (
+                  <ResourceRow key={`${group.id}:${resource.id}`} resource={resource} />
+                ))}
+              </div>
+            )
+          })()
+        ))}
+        {skillEntries.length > 0 ? (
+          <div className="skills-fold">
+            <Button
+              type="button"
+              variant="quiet"
+              className="skills-fold-toggle"
+              aria-expanded={skillsOpen}
+              onClick={() => setSkillsOpen((open) => !open)}
+            >
+              <span>{t("session.skills", { n: skillEntries.length })}</span>
+              <span className="skills-fold-caret" aria-hidden="true">
+                {skillsOpen ? "▾" : "▸"}
+              </span>
+            </Button>
+            {skillsOpen ? (
+              <div className="skills-grid" role="list">
+                {skillEntries.map(([name, value]) => (
+                  <span key={name} className="skill-cell" role="listitem" title={name}>
+                    <span className="skill-name">{stripControlChars(name)}</span>
+                    <span className="skill-value">{String(value)}</span>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+        {character.status_effects.length > 0 ? (
+          <div className="chip-row">
+            {character.status_effects.map((effect) => (
+              <span key={effect} className="chip chip-effect">
+                {stripControlChars(effect)}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <span className="visually-hidden">{t("session.character")}</span>
     </section>
   )
@@ -298,16 +311,26 @@ export function VariablesCard({ game }: { game: StateFrame }) {
   const [editing, setEditing] = useState(false)
   if (!game.variables || game.variables.length === 0) return null
   return (
-    <section className="desk-card variables-card">
-      <header className="desk-title">
-        {t("session.trackers")}
+    <section className="desk-card variables-card" aria-labelledby="trackers-card-title">
+      <header className="desk-title variables-card-header">
+        <span id="trackers-card-title" className="variables-card-title">
+          {t("session.trackers")}
+        </span>
         {isKeeper ? (
-          <Button type="button" size="sm" variant="quiet" onClick={() => setEditing(!editing)}>
+          <Button
+            type="button"
+            size="sm"
+            variant="quiet"
+            className="variables-card-edit"
+            onClick={() => setEditing(!editing)}
+          >
             {t(editing ? "session.varEditDone" : "session.varEdit")}
           </Button>
         ) : null}
       </header>
-      {isKeeper && editing ? <p className="studio-hint">{t("session.varEditHint")}</p> : null}
+      {isKeeper && editing ? (
+        <p className="studio-hint variables-card-hint">{t("session.varEditHint")}</p>
+      ) : null}
       <div className="var-list">
         {groupedVariables(game.variables).map(({ kind, variables }) => (
           <div key={kind} className={`var-group var-group-${kind}`}>
@@ -878,17 +901,17 @@ export function PartyCard({ game }: { game: StateFrame }) {
           ownCharacter={ownCharacter}
           onSwitch={
             selectedPregen &&
-            selectedPregen.claimed_by.trim() === you &&
-            online &&
-            game.character?.name !== selected.name
+              selectedPregen.claimed_by.trim() === you &&
+              online &&
+              game.character?.name !== selected.name
               ? () =>
-                  void transportSend({ type: "input", text: `.pc claim ${selected.name}` }).catch(() => {})
+                void transportSend({ type: "input", text: `.pc claim ${selected.name}` }).catch(() => { })
               : undefined
           }
           onRelease={
             selectedPregen && selectedPregen.claimed_by.trim() === you && online
               ? () =>
-                  void transportSend({ type: "input", text: `.pc release ${selected.name}` }).catch(() => {})
+                void transportSend({ type: "input", text: `.pc release ${selected.name}` }).catch(() => { })
               : undefined
           }
           onClose={() => setSelectedName(null)}
@@ -1084,18 +1107,18 @@ export function PregenCard({ game }: { game: StateFrame }) {
     viewMember ??
     (viewName && viewPregen
       ? {
-          name: viewPregen.name,
-          online: true,
-          active: false,
-          system: viewPregen.system,
-          attributes: viewPregen.attributes,
-          secondary_attributes: viewPregen.secondary_attributes,
-          skills: viewPregen.skills,
-          fields: viewPregen.fields,
-          background: viewPregen.background,
-          avatar: viewPregen.avatar,
-          resources: [],
-        }
+        name: viewPregen.name,
+        online: true,
+        active: false,
+        system: viewPregen.system,
+        attributes: viewPregen.attributes,
+        secondary_attributes: viewPregen.secondary_attributes,
+        skills: viewPregen.skills,
+        fields: viewPregen.fields,
+        background: viewPregen.background,
+        avatar: viewPregen.avatar,
+        resources: [],
+      }
       : undefined)
 
   return (

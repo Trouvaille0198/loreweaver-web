@@ -58,6 +58,7 @@ export default function MentionCard({ mention, onClose }: { mention: Mention; on
   const kind = mention.kind ?? "npc"
   const card = mention.card
   const memories = kind === "npc" ? (card?.public_memory ?? []) : []
+  const relationships = kind === "npc" ? (card?.relationships ?? []) : []
   const itemMeta =
     kind === "item" ? metaRow([card?.slot, card?.quantity && `×${card.quantity}`, card?.equipped_slot]) : ""
   return (
@@ -106,6 +107,23 @@ export default function MentionCard({ mention, onClose }: { mention: Mention; on
             <ul>
               {memories.map((memory, index) => (
                 <li key={index}>{memory}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {relationships.length > 0 ? (
+          <div className="npc-card-relationships">
+            <h4 className="npc-card-relationships-title">{t("play.mentionCard.relationships")}</h4>
+            <ul>
+              {relationships.map((rel, index) => (
+                <li key={index}>
+                  <strong>{rel.target}</strong>
+                  {rel.tracks.map((track) => (
+                    <span key={track.track} className="npc-card-relationship">
+                      {track.track} {track.value > 0 ? `+${track.value}` : track.value}
+                    </span>
+                  ))}
+                </li>
               ))}
             </ul>
           </div>

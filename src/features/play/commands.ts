@@ -87,8 +87,9 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "var" },
   { word: "vars" },
   { word: "module" },
-  { word: "pack" },
+  { word: "forge", example: "skill|rule <描述>" }, // i18n-exempt: data
   { word: "import" },
+  { word: "pack" },
   { word: "skill" },
   { word: "npc" },
   { word: "companion" },
@@ -173,6 +174,7 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "settle", line: ".settle", keeper: true, dataMode: "write" },
   { word: "summary", line: ".summary", keeper: true, dataMode: "read" },
   { word: "module", line: ".module ", keeper: true, privateReply: true, dataMode: "write" },
+  { word: "forge", line: ".forge ", keeper: true, privateReply: true, dataMode: "write" },
   { word: "var", line: ".var ", keeper: true, privateReply: true, dataMode: "mixed" },
   { word: "skill", line: ".skill ", keeper: true, dataMode: "mixed" },
   { word: "room", line: ".room ", keeper: true, privateReply: true, dataMode: "mixed" },
@@ -345,6 +347,7 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   settle: { tokens: ["apply", "cancel"] },
   // Rules & skills (rules.py's word sets)
   skill: { tokens: ["list", "status", "enable", "on", "disable", "off"] },
+  forge: { tokens: ["skill", "rule", "media"] },
   pack: { tokens: ["install", "add"] },
   import: { tokens: ["list"] },
   // Rooms & lifecycle (rooms.py's word sets)

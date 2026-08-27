@@ -134,6 +134,10 @@
     "deskClose": "关闭",
     "attributes": "属性",
     "skills": "技能（{{n}}）",
+    "resourceGroups": {
+      "hit_dice": "生命骰",
+      "spell_slots": "法术位"
+    },
     "quickCommands": "快捷命令",
     "quickMenuHint": "点选插入输入框，发送前可再修改",
     "quickMenuSearch": "过滤指令…",
@@ -500,6 +504,17 @@
       "mediaPreview": "{{name}}图片预览",
       "mediaClose": "关闭图片预览",
       "mediaFallback": "{{kind}} {{index}}",
+      "mediaJobQueued": "{{subject}} 的图片排队中…",
+      "mediaJobGenerating": "{{subject}} 的图片正在生成中…",
+      "mediaJobFailedUnknown": "生成失败。",
+      "mediaJobRetry": "重新生成",
+      "mediaJobRetryAll": "重试 {{count}} 张失败",
+      "mediaJobRegenerate": "重新生成",
+      "mediaGenerate": "生成插图",
+      "mediaGenerateHint": "选择要生成的插图类型",
+      "mediaGenerateStart": "开始生成",
+      "mediaGenerateCancel": "取消",
+      "mediaGenerateQueued": "已开始生成，完成的图片会显示在这里。",
       "packNotImported": "这个包没有设定条目。",
       "imported": "已导入当前房间。",
       "saved": "已保存",
@@ -582,10 +597,32 @@
     },
     "rules": {
       "builtIn": "内置",
-      "empty": "服务器未报告任何规则系统。"
+      "empty": "服务器未报告任何规则系统。",
+      "forgeTitle": "描述一套规则系统",
+      "forgeLabel": "描述",
+      "forgeHint": "描述系统的属性、检定方式与派生属性；锻造器会创作并安装它。",
+      "forgePlaceholder": "例如：一套 d100 检定、带幸运池的冒险系统",
+      "forgeSubmit": "生成并安装",
+      "forgeDone": "已安装规则系统：{name}",
+      "forgeFailed": "规则系统生成失败：{error}"
     },
     "skills": {
-      "empty": "尚未安装守秘人技能。"
+      "empty": "尚未安装任何 KP 技能。",
+      "forgeTitle": "描述一个 KP 技能",
+      "forgeLabel": "描述",
+      "forgeHint": "描述想要的玩法风格；锻造器会创作并安装它。",
+      "forgePlaceholder": "例如：宫廷权谋阵营游戏",
+      "forgeSubmit": "生成并安装",
+      "forgeDone": "已安装 KP 技能：{name}",
+      "forgeFailed": "KP 技能生成失败：{error}",
+      "tools": "解锁工具：",
+      "noBody": "没有可用的 SKILL.md 正文。",
+      "close": "关闭",
+      "source": {
+        "builtin": "内置",
+        "user": "锻造",
+        "pack": "包附带"
+      }
     },
     "character": {
       "none": "还没有角色——在下面建一个，或者从模组的预设名单里认领。",
@@ -901,6 +938,7 @@
       "luck": "今日人品（别名）",
       "model": "模型配置",
       "module": "导入模组",
+      "forge": "锻造：.forge <描述> — 新模组 | .forge skill <描述> — 新 KP 技能 | .forge rule <描述> — 新规则系统",
       "nn": "改名（别名）",
       "npc": "NPC 角色",
       "opposed": "对抗检定",
@@ -990,7 +1028,8 @@
       "close": "关闭信息卡",
       "memories": "公开记忆",
       "effect": "效果",
-      "foundTurn": "发现于第 {{turn}} 回合"
+      "foundTurn": "发现于第 {{turn}} 回合",
+      "relationships": "关系"
     }
   },
   "studio": {
