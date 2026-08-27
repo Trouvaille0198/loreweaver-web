@@ -21,7 +21,7 @@ type SendStatus = "idle" | "sent" | "failed"
 // Per-generation opt-ins for the forge path. The enabled companion ids reuse
 // existing generators; the SOON ids have no engine yet and render disabled so
 // the intended scope stays visible.
-const MEDIA_OPTIONS = ["cover", "scenes", "npcs", "items", "pregens"] as const
+const MEDIA_OPTIONS = ["cover", "scenes", "npcs", "clue", "pregens"] as const
 const COMPANION_OPTIONS = ["skills", "cards"] as const
 
 /** localStorage key for the AI-creation forge selections (media / companion / rule strategy /
@@ -616,12 +616,16 @@ export default function ModuleScreen({
                         </strong>
                         <span
                           className={`chip ${
-                            (source.generating ? source.generationKind ?? generationKind : source.sourceKind) === "pack"
+                            (source.generating
+                              ? (source.generationKind ?? generationKind)
+                              : source.sourceKind) === "pack"
                               ? "chip-warn"
                               : ""
                           }`}
                         >
-                          {(source.generating ? source.generationKind ?? generationKind : source.sourceKind) === "pack"
+                          {(source.generating
+                            ? (source.generationKind ?? generationKind)
+                            : source.sourceKind) === "pack"
                             ? t("play.module.kindPack")
                             : t("play.module.kindText")}
                         </span>
@@ -634,7 +638,9 @@ export default function ModuleScreen({
                       </span>
                       {source.generating ? (
                         <span className="studio-hint">
-                          {t(`play.module.stages.${source.stage ?? ""}`, { defaultValue: source.stage || "" })}
+                          {t(`play.module.stages.${source.stage ?? ""}`, {
+                            defaultValue: source.stage || "",
+                          })}
                           {source.detail ? ` — ${source.detail}` : ""}
                         </span>
                       ) : (
@@ -868,9 +874,7 @@ export default function ModuleScreen({
                 onChange={(e) => setRuleStrategy(e.target.value as RuleStrategy)}
                 aria-describedby={describedBy}
               >
-                <option value="">
-                  {t("play.module.options.extendsNone", { system: roomSystemLabel })}
-                </option>
+                <option value="">{t("play.module.options.extendsNone", { system: roomSystemLabel })}</option>
                 <option value="standalone">{t("play.module.options.standalone")}</option>
                 {packMode ? (
                   <>
@@ -931,7 +935,7 @@ export default function ModuleScreen({
             </Notice>
           ) : null}
           {generated !== null &&
-            (String(generated.kind) === "module" || String(generated.kind) === "pack") ? (
+          (String(generated.kind) === "module" || String(generated.kind) === "pack") ? (
             <Notice tone={generated.ok ? "success" : "danger"} role={generated.ok ? "status" : "alert"}>
               {generated.ok
                 ? t("play.module.generateOk", { name: generated.name, detail: generated.detail })

@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { FrameType } from "@loreweaver/protocol"
 import type {
+  ChronicleRecordsFrame,
   DiceFrame,
   ErrorFrame,
   MediaFrame,
@@ -110,7 +111,6 @@ export interface TurnState {
   round: number | null
 }
 
-
 /** The activity hint, ignoring anything outside the set we can label. */
 function readActivity(activity: unknown): TurnActivityLabel | null {
   return typeof activity === "string" && (TURN_ACTIVITIES as readonly string[]).includes(activity)
@@ -152,11 +152,20 @@ interface SessionState {
   /** v2.2 installed-pack card list; `null` until the first `pack_cards` reply,
    * then the (possibly empty) card list. */
   packCards: PackCardEntry[] | null
+  /** v2.7 campaign catch-up feed (the chronicle browser's data); `null` until
+   * the first `chronicle_records` reply, then the summary plus every record —
+   * `summary: null` and `records: []` are a real answer (a fresh campaign),
+   * distinct from "no reply yet". */
+  chronicleFeed: {
+    summary: ChronicleRecordsFrame["summary"]
+    records: ChronicleRecordsFrame["records"]
+  } | null
   /** The most recent `.poke` (any target); the UI decides if it is for this seat. */
   lastPoke: PokeInfo | null
-  /** Feed one validated server frame into the session (the keeper-only
-   * `narrative_draft` rides alongside the published package's `ServerFrame`). */
-  ingest: (frame: ServerFrame | NarrativeDraftFrame, now?: number) => void
+  /** Feed one validated server frame into the session (`narrative_draft` and
+   * the player-open `chronicle_records` ride alongside the published
+   * package's `ServerFrame`). */
+  ingest: (frame: ServerFrame | NarrativeDraftFrame | ChronicleRecordsFrame, now?: number) => void
   /** Show a line this client just sent, until the table reflects it back.
    * Returns the entry's seq, so the caller can fail it if the send throws. */
   echoLocalInput: (text: string, speaker: string, now?: number) => number
@@ -166,6 +175,8 @@ interface SessionState {
   expirePendingEchoes: (now: number) => void
   /** Ask the server for the card files installed packs ship (v2.2). */
   requestPackCards: () => void
+  /** Ask the server for the campaign catch-up feed (v2.7). */
+  requestChronicle: () => void
   /** Clear a stale busy indicator once the safety timeout has elapsed. */
   expireTurnSafety: (now: number) => void
   clear: () => void
@@ -298,7 +309,8 @@ function pushDice(entries: LogEntry[], frame: DiceFrame, at: number): LogEntry[]
   return pushEntry(entries, { kind: "dice", frame }, at)
 }
 
-function ingestInlineUi(entries: LogEntry[], frame: UiFrame, at: number): LogEntry[] {  if (frame.replace && frame.id) {
+function ingestInlineUi(entries: LogEntry[], frame: UiFrame, at: number): LogEntry[] {
+  if (frame.replace && frame.id) {
     const index = entries.findIndex((e) => e.kind === "ui" && e.frame.id === frame.id)
     if (index !== -1) {
       const next = [...entries]
@@ -382,14 +394,15 @@ export const useSessionStore = create<SessionState>((set) => ({
   uiPanels: [],
   lastPoke: null,
   packCards: null,
+  chronicleFeed: null,
 
-  ingest: (frame: ServerFrame | NarrativeDraftFrame, now = Date.now()) => {
+  ingest: (frame: ServerFrame | NarrativeDraftFrame | ChronicleRecordsFrame, now = Date.now()) => {
     switch (frame.type) {
       case "ui":
         if (frame.panel === "sidebar") {
           set((s) => ({ uiPanels: upsertUiPanel(s.uiPanels, frame) }))
         } else {
-                    set((s) => ({ entries: ingestInlineUi(s.entries, frame, now) }))
+          set((s) => ({ entries: ingestInlineUi(s.entries, frame, now) }))
         }
         return
       case "narrative":
@@ -420,9 +433,9 @@ export const useSessionStore = create<SessionState>((set) => ({
         // of stacking a permanently spinning entry.
         if (frame.spinner === false) {
           const entries = useSessionStore.getState().entries
-          const idx = [...entries].reverse().findIndex(
-            (e) => e.kind === "system" && e.frame.text === frame.text && e.frame.spinner === true,
-          )
+          const idx = [...entries]
+            .reverse()
+            .findIndex((e) => e.kind === "system" && e.frame.text === frame.text && e.frame.spinner === true)
           if (idx !== -1) {
             const i = entries.length - 1 - idx
             const next = [...entries]
@@ -458,6 +471,9 @@ export const useSessionStore = create<SessionState>((set) => ({
         return
       case "pack_cards":
         set({ packCards: frame.cards })
+        return
+      case "chronicle_records":
+        set({ chronicleFeed: { summary: frame.summary, records: frame.records } })
         return
       // v1.8 module panels live in their own store; the session store stays
       // the single ingest chokepoint.
@@ -535,6 +551,17 @@ export const useSessionStore = create<SessionState>((set) => ({
     })
   },
 
+  requestChronicle: () => {
+    // `list_chronicle` postdates the published protocol package; the runtime
+    // JSON is the contract (see protocol-augment.d.ts), so cast at the
+    // transport boundary like the admin store's un-type-aliased frames.
+    void transportSend({ type: "list_chronicle" } as unknown as Parameters<typeof transportSend>[0]).catch(
+      () => {
+        // The transport surfaces failures through status events.
+      },
+    )
+  },
+
   expireTurnSafety: (now) => {
     set((s) => (s.turn.busy && now - s.turn.since >= TURN_BUSY_TIMEOUT_MS ? { turn: IDLE_TURN } : s))
   },
@@ -548,6 +575,7 @@ export const useSessionStore = create<SessionState>((set) => ({
       turn: IDLE_TURN,
       uiPanels: [],
       packCards: null,
+      chronicleFeed: null,
       lastPoke: null,
     })
   },

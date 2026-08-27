@@ -58,6 +58,7 @@ function ModuleMediaImage({ record, fallbackLabel }: { record: ModuleMediaRecord
           type="button"
           className="module-media-trigger"
           aria-label={t("play.module.mediaOpen", { name: displayName })}
+          title={record.name}
           onClick={() => setPreviewOpen(true)}
         >
           <img src={src} alt={displayName} />
@@ -70,12 +71,12 @@ function ModuleMediaImage({ record, fallbackLabel }: { record: ModuleMediaRecord
       {previewOpen && src !== null
         ? createPortal(
             <div
-              className="module-image-lightbox-backdrop"
+              className="image-lightbox-backdrop"
               role="presentation"
               onClick={() => setPreviewOpen(false)}
             >
               <section
-                className="module-image-lightbox"
+                className="image-lightbox"
                 role="dialog"
                 aria-modal="true"
                 aria-label={t("play.module.mediaPreview", { name: displayName })}
@@ -84,15 +85,17 @@ function ModuleMediaImage({ record, fallbackLabel }: { record: ModuleMediaRecord
                 <button
                   ref={closeButtonRef}
                   type="button"
-                  className="module-image-lightbox-close"
+                  className="image-lightbox-close"
                   aria-label={t("play.module.mediaClose")}
                   onClick={() => setPreviewOpen(false)}
                 >
                   ×
                 </button>
-                <img className="module-image-lightbox-image" src={src} alt={displayName} />
-                <p className="module-image-lightbox-caption">
-                  {subject || fallbackLabel ? <strong className="module-media-subject">{displayName}</strong> : null}
+                <img className="image-lightbox-image" src={src} alt={displayName} />
+                <p className="image-lightbox-caption">
+                  {subject || fallbackLabel ? (
+                    <strong className="module-media-subject">{displayName}</strong>
+                  ) : null}
                   <span className="module-media-filename">{record.name}</span>
                 </p>
               </section>
@@ -104,7 +107,52 @@ function ModuleMediaImage({ record, fallbackLabel }: { record: ModuleMediaRecord
   )
 }
 
-const MEDIA_GROUP_ORDER = ["cover", "scenes", "npcs", "items", "asset"] as const
+const MEDIA_GROUP_ORDER = ["scenes", "npcs", "clue", "items", "asset"] as const
+
+/** Raw byte counts read as protocol noise on a reading surface; show a readable magnitude. */
+function formatBytes(size: number): string {
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`
+  if (size >= 1024) return `${Math.round(size / 1024)} KB`
+  return `${size} B`
+}
+
+/** Pack skills carry a machine-facing metadata block (name / description / allowed-tools…)
+ * ahead of the readable text; the header row already states identity, so the block is
+ * dropped here — but only when the head really is metadata, never for ordinary content. */
+function stripPackMetadata(content: string): string {
+  const body = content.trimStart()
+  // Fenced form: ---\n<keys>\n---\n<text>
+  if (body.startsWith("---")) {
+    const closer = body.slice(3).match(/^---\s*$/m)
+    if (
+      closer?.index !== undefined &&
+      /^(name|description|allowed-tools|metadata)\s*:/m.test(body.slice(3, closer.index))
+    ) {
+      return body
+        .slice(closer.index + 3)
+        .replace(/^---[^\S\n]*\n?/, "")
+        .trimStart()
+    }
+    return content
+  }
+  // Unfenced form: <keys>… then a bare --- separator before the text.
+  if (!/^(name|description|allowed-tools|metadata)\s*:/m.test(body.slice(0, 200))) return content
+  const separator = body.match(/^---\s*$/m)
+  if (!separator || separator.index === undefined) return content
+  return body
+    .slice(separator.index)
+    .replace(/^---[^\S\n]*\n?/, "")
+    .trimStart()
+}
+
+/** Rendering body for a rich pack entry: metadata stripped, and a leading heading that
+ * only repeats the entry title is dropped so the title is not stated twice. */
+function packEntryBody(content: string, title: string): string {
+  let body = stripPackMetadata(content)
+  const heading = body.match(/^#\s+(.+?)\s*\n/)
+  if (heading && heading[1].trim() === title.trim()) body = body.slice(heading[0].length)
+  return body.trim()
+}
 
 /** The complete view of an installed .lwpack module: its lore, claimable cast, typed variables,
  * illustrations (grouped by kind), rule systems, and KP skills. */
@@ -121,26 +169,43 @@ function PackDetailView({
 }) {
   const { t } = useTranslation()
   const mediaGroups = new Map<string, ModuleMediaRecord[]>()
+  let covers: ModuleMediaRecord[] = []
   for (const record of detail.media) {
     const kind = record.kind ?? "asset"
+    // Portraits belong to the pregen rows; covers are presented as the gallery hero.
+    if (kind === "pregens") continue
+    if (kind === "cover") {
+      covers = [...covers, record]
+      continue
+    }
     if (!mediaGroups.has(kind)) mediaGroups.set(kind, [])
     mediaGroups.get(kind)!.push(record)
   }
-  const groupIds = MEDIA_GROUP_ORDER.filter((g) => (mediaGroups.get(g)?.length ?? 0) > 0)
+  const knownGroups = MEDIA_GROUP_ORDER.filter((g) => mediaGroups.has(g))
+  const groupIds = [
+    ...knownGroups,
+    ...Array.from(mediaGroups.keys()).filter(
+      (k) => !MEDIA_GROUP_ORDER.includes(k as (typeof MEDIA_GROUP_ORDER)[number]),
+    ),
+  ]
+  const galleryCount =
+    covers.length + groupIds.reduce((n, kind) => n + (mediaGroups.get(kind)?.length ?? 0), 0)
 
   return (
     <>
       <Surface className="module-detail-card module-detail-summary-card" labelledBy="pack-detail-title">
         <SectionHeader
           titleId="pack-detail-title"
+          eyebrow={t("play.module.kindPack")}
           title={detail.title || detail.name}
-          description={`${detail.size} ${t("play.module.bytes")}${
+          description={`${formatBytes(detail.size)}${
             detail.worldbookEntries ? ` · ${detail.worldbookEntries.length} ${t("play.module.entries")}` : ""
           }${detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}`}
           actions={
             <div className="module-detail-actions">
-              <span className="chip chip-warn">{t("play.module.kindPack")}</span>
-              {detail.current && !importing ? <span className="chip chip-on">{t("play.module.current")}</span> : null}
+              {detail.current && !importing ? (
+                <span className="chip chip-on">{t("play.module.current")}</span>
+              ) : null}
               {detail.current && !importing ? (
                 <Button
                   type="button"
@@ -172,18 +237,30 @@ function PackDetailView({
 
       {detail.media.length > 0 ? (
         <Surface className="module-detail-card module-detail-media-card" labelledBy="pack-media-title">
-          <SectionHeader titleId="pack-media-title" title={t("play.module.packMedia")} />
+          <SectionHeader
+            titleId="pack-media-title"
+            title={t("play.module.packMedia")}
+            description={t("play.module.packMediaCount", { count: galleryCount })}
+          />
           <div className="module-media-layout">
-            {groupIds.map((kind) => (
-              <section className={`module-detail-subsection module-detail-subsection--${kind}`} key={kind}>
-                <SectionHeader title={t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })} />
-                <ul className="module-media-grid">
-                  {(mediaGroups.get(kind) ?? []).map((record, index) => (
+            {covers.length > 0 ? (
+              <section
+                className="module-media-group module-media-group--cover"
+                aria-label={t("play.module.packMediaGroups.cover")}
+              >
+                <header className="module-media-group-head">
+                  <h4 className="module-media-group-label">{t("play.module.packMediaGroups.cover")}</h4>
+                  {covers.length > 1 ? (
+                    <span className="module-media-group-count">{covers.length}</span>
+                  ) : null}
+                </header>
+                <ul className="module-media-grid module-media-grid--cover">
+                  {covers.map((record, index) => (
                     <li key={record.hash}>
                       <ModuleMediaImage
                         record={record}
                         fallbackLabel={t("play.module.mediaFallback", {
-                          kind: t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind }),
+                          kind: t("play.module.packMediaGroups.cover"),
                           index: index + 1,
                         })}
                       />
@@ -191,7 +268,34 @@ function PackDetailView({
                   ))}
                 </ul>
               </section>
-            ))}
+            ) : null}
+            {groupIds.map((kind) => {
+              const records = mediaGroups.get(kind) ?? []
+              const label = t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })
+              return (
+                <section className="module-media-group" key={kind}>
+                  <header className="module-media-group-head">
+                    <h4 className="module-media-group-label">{label}</h4>
+                    {records.length > 1 ? (
+                      <span className="module-media-group-count">{records.length}</span>
+                    ) : null}
+                  </header>
+                  <ul className={`module-media-grid module-media-grid--${kind}`}>
+                    {records.map((record, index) => (
+                      <li key={record.hash}>
+                        <ModuleMediaImage
+                          record={record}
+                          fallbackLabel={t("play.module.mediaFallback", {
+                            kind: label,
+                            index: index + 1,
+                          })}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )
+            })}
           </div>
         </Surface>
       ) : null}
@@ -220,7 +324,8 @@ function PackDetailView({
                 typeof variable.minimum === "number" || typeof variable.maximum === "number"
                   ? [variable.minimum, variable.maximum].filter((v) => typeof v === "number").join(" – ")
                   : ""
-              const options = variable.options && variable.options.length > 0 ? variable.options.join(" / ") : ""
+              const options =
+                variable.options && variable.options.length > 0 ? variable.options.join(" / ") : ""
               return (
                 <li className="module-variable-item" key={variable.id}>
                   <div className="module-variable-head">
@@ -249,9 +354,7 @@ function PackDetailView({
           <SectionHeader titleId="pack-pregens-title" title={t("play.module.packPregens")} />
           <ul className="play-list module-source-list">
             {detail.pregens.map((pregen) => {
-              const portrait = detail.media?.find(
-                (m) => m.kind === "pregens" && m.name === pregen.avatar,
-              )
+              const portrait = detail.media?.find((m) => m.kind === "pregens" && m.name === pregen.avatar)
               return (
                 <li className="module-source-row" key={pregen.name}>
                   <div className={`module-source-select${portrait ? " has-portrait" : ""}`}>
@@ -321,7 +424,9 @@ function PackDetailView({
             {detail.rulepacks.map((rp) => (
               <div className="worldbook-entry module-rich-entry" key={rp.name}>
                 <strong>{rp.title || rp.name}</strong>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{rp.content}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {packEntryBody(rp.content, rp.title || rp.name)}
+                </ReactMarkdown>
               </div>
             ))}
           </div>
@@ -338,7 +443,9 @@ function PackDetailView({
             {detail.skills.map((skill) => (
               <div className="worldbook-entry module-rich-entry" key={skill.name}>
                 <strong>{skill.name}</strong>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{skill.content}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {packEntryBody(skill.content, skill.name)}
+                </ReactMarkdown>
               </div>
             ))}
           </div>
@@ -416,11 +523,16 @@ export default function ModuleDetailScreen({
   const importing = detailReady?.importing === true || moduleImporting !== null
 
   return (
-    <ScreenShell title={t("play.module.detailTitle")} onBack={onBack} showAdminError>
+    <ScreenShell title={t("play.module.detailTitle")} onBack={onBack} showAdminError wide>
       <div className="module-detail-page">
         {detailReady ? (
           detailReady.sourceKind === "pack" ? (
-            <PackDetailView detail={detailReady} importing={importing} deleting={deleting} onDelete={remove} />
+            <PackDetailView
+              detail={detailReady}
+              importing={importing}
+              deleting={deleting}
+              onDelete={remove}
+            />
           ) : (
             <>
               <header className="module-detail-hero">
@@ -429,8 +541,8 @@ export default function ModuleDetailScreen({
                   <h3>{detailReady.title || detailReady.name}</h3>
                   <p className="module-detail-summary">
                     {detailReady.current
-                      ? `${importing ? t("play.module.importing") : detailReady.status || t("play.module.ready")} · ${detailReady.size} ${t("play.module.bytes")}`
-                      : `${detailReady.size} ${t("play.module.bytes")}`}
+                      ? `${importing ? t("play.module.importing") : detailReady.status || t("play.module.ready")} · ${formatBytes(detailReady.size)}`
+                      : formatBytes(detailReady.size)}
                   </p>
                 </div>
                 <div className="module-detail-actions">
@@ -507,9 +619,7 @@ export default function ModuleDetailScreen({
                   title={t("play.module.sourceText")}
                   actions={
                     <>
-                      <span className="module-detail-size">
-                        {detailReady.size} {t("play.module.bytes")}
-                      </span>
+                      <span className="module-detail-size">{formatBytes(detailReady.size)}</span>
                       {!editing ? (
                         <Button
                           type="button"

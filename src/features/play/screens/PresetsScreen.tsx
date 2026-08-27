@@ -73,11 +73,7 @@ export default function PresetsScreen({
     try {
       const text = await file.text()
       const parsed = JSON.parse(text)
-      const entries = Array.isArray(parsed)
-        ? parsed
-        : Array.isArray(parsed?.presets)
-          ? parsed.presets
-          : null
+      const entries = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.presets) ? parsed.presets : null
       if (!entries) {
         window.alert(t("play.presets.importInvalid"))
         return

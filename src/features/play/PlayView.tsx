@@ -21,13 +21,7 @@ import SessionView from "./SessionView"
 import StatusPill from "./StatusPill"
 
 export type PlayScreen =
-  | "game"
-  | "character"
-  | "roomInfo"
-  | "settings"
-  | "keeperSettings"
-  | "moduleDetail"
-  | "moduleShare"
+  "game" | "character" | "roomInfo" | "settings" | "keeperSettings" | "moduleDetail" | "moduleShare"
 
 /** Every play screen, keyed by the URL hash that selects it. The hash is the
  * primary source of truth for bookmarks and browser history; the tab-local

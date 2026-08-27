@@ -224,9 +224,7 @@ export default function InputBox() {
           role="combobox"
           aria-expanded={hints.length > 0}
           aria-controls={hints.length > 0 ? "command-hints-list" : undefined}
-          aria-activedescendant={
-            activeHint !== null ? `command-hint-${activeHint.key}` : undefined
-          }
+          aria-activedescendant={activeHint !== null ? `command-hint-${activeHint.key}` : undefined}
           aria-autocomplete="list"
           disabled={!online}
           spellCheck={false}

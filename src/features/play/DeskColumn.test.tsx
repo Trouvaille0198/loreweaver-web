@@ -76,14 +76,7 @@ describe("DeskColumn", () => {
     render(<DeskColumn />)
     // sidebar/tray/uiPanels/pregens have no data here — the rest follow the
     // default order with usage in its slot.
-    expect(domOrder()).toEqual([
-      "character",
-      "party",
-      "scene",
-      "trackers",
-      "initiative",
-      "usage",
-    ])
+    expect(domOrder()).toEqual(["character", "party", "scene", "trackers", "initiative", "usage"])
     expect(screen.queryByRole("button", { name: "Reset order" })).not.toBeInTheDocument()
   })
 
@@ -102,14 +95,7 @@ describe("DeskColumn", () => {
     // While dragging the DOM order is untouched — the reorder is expressed as
     // translations only. Usage glides four rows up (4 × 100px stride), and the
     // four cards it passes each part by one usage height (80px + 20px gap).
-    expect(domOrder()).toEqual([
-      "character",
-      "party",
-      "scene",
-      "trackers",
-      "initiative",
-      "usage",
-    ])
+    expect(domOrder()).toEqual(["character", "party", "scene", "trackers", "initiative", "usage"])
     expect(usage!.style.transform).toBe("translateY(-400px)")
     const party = document.querySelector<HTMLElement>('[data-slot="party"]')!
     expect(party.style.transform).toBe("translateY(100px)")
@@ -119,14 +105,7 @@ describe("DeskColumn", () => {
     // Usage now sits right after the character card. The persisted layout is
     // the FULL slot list — hidden slots (sidebar/tray/uiPanels/pregens) keep
     // their relative places for when their data returns.
-    expect(domOrder()).toEqual([
-      "character",
-      "usage",
-      "party",
-      "scene",
-      "trackers",
-      "initiative",
-    ])
+    expect(domOrder()).toEqual(["character", "usage", "party", "scene", "trackers", "initiative"])
     expect(localStorage.getItem("lw-desk-order:r1")).toBe(
       JSON.stringify([
         "character",
@@ -195,14 +174,7 @@ describe("DeskColumn", () => {
     // The reset control appears once customized; clicking restores default.
     const reset = screen.getByRole("button", { name: "Reset order" })
     fireEvent.click(reset)
-    expect(domOrder()).toEqual([
-      "character",
-      "party",
-      "scene",
-      "trackers",
-      "initiative",
-      "usage",
-    ])
+    expect(domOrder()).toEqual(["character", "party", "scene", "trackers", "initiative", "usage"])
     expect(localStorage.getItem("lw-desk-order:r1")).toBe(
       JSON.stringify([
         "character",

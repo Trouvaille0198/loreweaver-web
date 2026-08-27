@@ -237,6 +237,44 @@ describe("session store — installed-pack cards (v2.2)", () => {
   })
 })
 
+describe("session store — campaign chronicle feed (v2.7)", () => {
+  beforeEach(() => {
+    sent.length = 0
+    useSessionStore.getState().clear()
+  })
+
+  it("starts unknown and populates from a chronicle_records frame", () => {
+    expect(useSessionStore.getState().chronicleFeed).toBeNull()
+    useSessionStore.getState().ingest({
+      type: "chronicle_records",
+      summary: { text: "The party reached the harbour.", through_turn: 2 },
+      records: [
+        { id: "c00001", turn: 1, text: "They lit the lantern.", pcs: ["Vera"], scene: "cellar" },
+        { id: "c00002", turn: 2, text: "The bell tolled once.", pcs: [], scene: "" },
+      ],
+    })
+    expect(useSessionStore.getState().chronicleFeed).toEqual({
+      summary: { text: "The party reached the harbour.", through_turn: 2 },
+      records: [
+        { id: "c00001", turn: 1, text: "They lit the lantern.", pcs: ["Vera"], scene: "cellar" },
+        { id: "c00002", turn: 2, text: "The bell tolled once.", pcs: [], scene: "" },
+      ],
+    })
+  })
+
+  it("keeps a fresh campaign (null summary, no records) distinct from no reply yet", () => {
+    useSessionStore.getState().ingest({ type: "chronicle_records", summary: null, records: [] })
+    expect(useSessionStore.getState().chronicleFeed).toEqual({ summary: null, records: [] })
+    useSessionStore.getState().clear()
+    expect(useSessionStore.getState().chronicleFeed).toBeNull()
+  })
+
+  it("requestChronicle sends the list_chronicle request through the transport", () => {
+    useSessionStore.getState().requestChronicle()
+    expect(sent).toEqual([{ type: "list_chronicle" }])
+  })
+})
+
 describe("pending echoes", () => {
   beforeEach(() => useSessionStore.getState().clear())
 

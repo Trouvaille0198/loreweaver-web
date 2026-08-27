@@ -89,7 +89,6 @@ body,
    app shell actually means; 100vh on iOS Safari overshoots under the collapsed
    chrome. Fall back to 100% where dvh is unsupported (old WebViews). */
 @supports (height: 100dvh) {
-
   html,
   body,
   #root {
@@ -188,7 +187,7 @@ body {
   min-height: 0;
 }
 
-.app-main>.placeholder {
+.app-main > .placeholder {
   margin: auto;
 }
 
@@ -890,7 +889,7 @@ body {
   overflow-y: auto;
 }
 
-.entry-body> :first-child,
+.entry-body > :first-child,
 .entry-body p:first-child {
   margin-top: 0;
 }
@@ -1205,7 +1204,7 @@ body {
   border-color: var(--accent);
 }
 
-.input-box>button {
+.input-box > button {
   background: var(--accent);
   color: var(--accent-ink);
   border: none;
@@ -1468,7 +1467,6 @@ body {
   background: color-mix(in srgb, var(--accent-ink) 12%, transparent);
 }
 
-
 .quick-menu-empty {
   margin: 0;
   padding: 16px 10px;
@@ -1487,7 +1485,7 @@ body {
   color: var(--ink-faint);
 }
 
-.input-box>button:disabled {
+.input-box > button:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -2073,6 +2071,32 @@ body {
   font-size: 13px;
 }
 
+/* The scene card's plate: the current scene's illustration, one click from the
+   full-size lightbox. The desk card's flex gap provides the spacing. */
+.desk-card .scene-art-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: zoom-in;
+}
+
+.desk-card .scene-art-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.desk-card .scene-art-thumb {
+  display: block;
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+}
+
 .scene-focus,
 .scene-clock {
   color: var(--ink-dim);
@@ -2502,7 +2526,7 @@ body {
   opacity: 0.55;
 }
 
-.var-hidden-row> :last-child {
+.var-hidden-row > :last-child {
   flex: 1;
   min-width: 0;
 }
@@ -2733,9 +2757,246 @@ body {
   padding: 12px;
 }
 
+/* Mention highlight inside a narrative line — an npc, item, or clue name whose
+   link opens its public card. Remark anchors carry no class, so the scheme in
+   the href is the marker. */
+.entry-body a[href^="npc://"],
+.entry-body a[href^="item://"],
+.entry-body a[href^="clue://"] {
+  display: inline;
+  padding: 0 2px;
+  border: none;
+  border-bottom: 1px dashed var(--accent, var(--lw-accent, #c9a86a));
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent, var(--lw-accent, #c9a86a)) 14%, transparent);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.entry-body a[href^="npc://"]:hover,
+.entry-body a[href^="item://"]:hover,
+.entry-body a[href^="clue://"]:hover {
+  background: color-mix(in srgb, var(--accent, var(--lw-accent, #c9a86a)) 26%, transparent);
+}
+
+/* The player-visible mention card (npc / item / clue) — one shell, per-kind body. */
+.npc-card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  background: rgb(0 0 0 / 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.npc-card {
+  position: relative;
+  width: min(420px, 100%);
+  max-height: min(80vh, 100%);
+  max-height: min(80dvh, 100%);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+.npc-card-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.npc-card-avatar {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-inset, var(--bg));
+}
+.npc-card-avatar-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-faint);
+}
+.npc-card-name {
+  margin: 0;
+  font-size: 18px;
+}
+.npc-card-description {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.npc-card-status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.npc-card-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.npc-card-content {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.npc-card-effect {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.npc-card-effect strong {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+.npc-card-memories {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.npc-card-memories-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+.npc-card-memories ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .panel-modal-body {
   overflow-y: auto;
   min-height: 0;
+}
+
+/* --- Play: campaign chronicle browser (the ≡ menu's catch-up modal) --- */
+
+.chronicle-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--space-2) var(--space-3);
+}
+
+.chronicle-status {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.chronicle-summary,
+.chronicle-records {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.chronicle-section-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.chronicle-summary-text {
+  margin: 0;
+  font-family: var(--font-story);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.chronicle-summary-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.chronicle-record-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chronicle-record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+}
+
+/* At or below the fold watermark the record is already condensed into the
+   summary text above — muted, so old history never reads as fresh detail. */
+.chronicle-record.is-covered .chronicle-record-text,
+.chronicle-record.is-covered .chronicle-record-meta {
+  color: var(--text-tertiary);
+}
+
+.chronicle-record-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chronicle-record-turn {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.chronicle-record-covered {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-pill);
+  padding: 1px var(--space-2);
+}
+
+.chronicle-record-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.chronicle-record-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow-wrap: break-word;
 }
 
 .panel-modal .panel-frame {
@@ -3074,7 +3335,7 @@ body {
   text-align: left;
 }
 
-.module-source-select>.ui-button-label {
+.module-source-select > .ui-button-label {
   align-items: stretch;
   flex-direction: column;
   gap: var(--space-1);
@@ -3149,9 +3410,11 @@ body {
 .module-detail-source-card {
   border: 1px solid var(--border-soft);
   border-radius: 14px;
-  background: linear-gradient(145deg,
-      color-mix(in srgb, var(--bg-raised) 92%, var(--accent) 8%),
-      var(--bg-raised));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-raised) 92%, var(--accent) 8%),
+    var(--bg-raised)
+  );
 }
 
 .module-detail-hero {
@@ -3567,7 +3830,6 @@ body {
   color: var(--ink-faint);
   font-size: 12px;
 }
-
 
 .play-character-memory {
   margin: 0;
@@ -4054,14 +4316,20 @@ body {
 
 /* ---- text fields (inputs, textareas, selects) ---- */
 
-.field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.field
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .field select,
 .field textarea,
-.dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.dialog-row
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .play-table select,
-.play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.play-table
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 .var-set-input,
-.host-local-home input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]) {
+.host-local-home
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+    [type="color"]
+  ) {
   background-color: var(--bg-inset);
   color: var(--ink);
   border: 1px solid var(--border);
@@ -4167,8 +4435,10 @@ input[type="checkbox"]:checked {
      fallback before JS runs. The stroke color is the palette's bg token —
      it reads on the accent fill for every palette (light accent + dark bg,
      or paperwhite's dark accent + light bg). */
-  background-image: var(--checkbox-check,
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%2317130e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"));
+  background-image: var(
+    --checkbox-check,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%2317130e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+  );
 }
 
 input[type="checkbox"]:focus-visible {
@@ -4320,7 +4590,7 @@ code {
 .icon-button,
 .app-menu-row,
 .connect-form button,
-.input-box>button,
+.input-box > button,
 .host-local-button {
   transition:
     background-color 120ms ease,
@@ -4335,7 +4605,7 @@ code {
 .choice-button:hover:not(:disabled),
 .icon-button:hover:not(:disabled),
 .connect-form button:hover:not(:disabled),
-.input-box>button:hover:not(:disabled),
+.input-box > button:hover:not(:disabled),
 .host-local-button:hover:not(:disabled) {
   filter: brightness(1.12);
 }
@@ -4345,20 +4615,19 @@ code {
 .choice-button:active:not(:disabled),
 .icon-button:active:not(:disabled),
 .connect-form button:active:not(:disabled),
-.input-box>button:active:not(:disabled),
+.input-box > button:active:not(:disabled),
 .host-local-button:active:not(:disabled) {
   transform: translateY(1px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .primary-button,
   .ghost-button,
   .choice-button,
   .icon-button,
   .app-menu-row,
   .connect-form button,
-  .input-box>button,
+  .input-box > button,
   .host-local-button {
     transition: none;
   }
@@ -4528,7 +4797,7 @@ code {
     gap: var(--space-1);
   }
 
-  .room-info-grid dd+dt {
+  .room-info-grid dd + dt {
     margin-top: var(--space-2);
   }
 
@@ -4729,6 +4998,33 @@ code {
     flex-shrink: 0;
   }
 
+  /* The strip's plate replaces the ◎ glyph — same footprint, so the context
+     line never grows. Tap opens the full-size lightbox. */
+  .scene-strip .scene-art-trigger {
+    display: block;
+    flex-shrink: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: zoom-in;
+    line-height: 0;
+  }
+
+  .scene-strip .scene-art-trigger:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  .scene-strip .scene-art-thumb {
+    display: block;
+    width: 26px;
+    height: 26px;
+    object-fit: cover;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+  }
+
   .scene-strip-text {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4770,7 +5066,7 @@ code {
     font-size: 16px;
   }
 
-  .input-box>button {
+  .input-box > button {
     padding: 0 14px;
   }
 
@@ -4870,16 +5166,28 @@ code {
   }
 
   /* --- form fields: no iOS zoom, easier thumbs --- */
-  .field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  .field
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
   .field select,
   .field textarea,
-  .dialog-row input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  .dialog-row
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
   .play-table select,
-  .play-table input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  .play-table
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ),
   .var-set-input,
   .connect-form input,
   .connect-form textarea,
-  .host-local-home input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]) {
+  .host-local-home
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="color"]
+    ) {
     font-size: 16px;
   }
 
@@ -4889,7 +5197,7 @@ code {
   .icon-button,
   .app-menu-row,
   .app-menu-toggle,
-  .input-box>button,
+  .input-box > button,
   .connect-form button {
     min-height: 44px;
   }
@@ -5420,7 +5728,6 @@ code {
 }
 
 @media (max-width: 380px) {
-
   .character-modal-detail-grid,
   .character-modal-detail-grid--attributes,
   .character-modal .play-character-equipment {

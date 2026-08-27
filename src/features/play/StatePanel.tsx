@@ -14,6 +14,8 @@ import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import Avatar from "./Avatar"
 import Meter, { type MeterTone } from "./Meter"
+import SceneArt from "./SceneArt"
+import { sceneImage } from "./sceneImage"
 import { addVarCommand, isWritable, setVarCommand, stepFor } from "./varCommands"
 import UiBlocks from "./UiBlocks"
 import { asCharacterDetails, equippedItemBonuses } from "./characterDetails"
@@ -81,6 +83,19 @@ export function CharacterCard({ character }: { character: CharacterState }) {
       ) : null}
       {character.resources.map((resource) => (
         <ResourceRow key={resource.id} resource={resource} />
+      ))}
+      {(character.resource_groups ?? []).map((group) => (
+        <div
+          key={group.id}
+          className="resource-group"
+          role="group"
+          aria-label={group.id || t("session.resources")}
+        >
+          {group.id ? <h4 className="resource-group-title">{stripControlChars(group.id)}</h4> : null}
+          {group.resources.map((resource) => (
+            <ResourceRow key={`${group.id}:${resource.id}`} resource={resource} />
+          ))}
+        </div>
       ))}
       {skillEntries.length > 0 ? (
         <div className="skills-fold">
@@ -408,7 +423,12 @@ function PartyDetailGrid({
             <span>{detailLabel(key, t)}</span>
             <strong>
               {detailText(value)}
-              {bonus ? <span className="stat-bonus">{bonus > 0 ? "+" : ""}{bonus}</span> : null}
+              {bonus ? (
+                <span className="stat-bonus">
+                  {bonus > 0 ? "+" : ""}
+                  {bonus}
+                </span>
+              ) : null}
             </strong>
           </div>
         )
@@ -539,12 +559,7 @@ function PartyCharacterModal({
             {secondary.length > 0 ? (
               <section className="character-modal-section">
                 <h3>{t("play.character.secondary")}</h3>
-                <PartyDetailGrid
-                  entries={secondary}
-                  t={t}
-                  bonusFor={hintFor}
-                  bonusTotalFor={bonusTotalFor}
-                />
+                <PartyDetailGrid entries={secondary} t={t} bonusFor={hintFor} bonusTotalFor={bonusTotalFor} />
               </section>
             ) : null}
             {skills.length > 0 ? (
@@ -605,13 +620,17 @@ function PartyCharacterModal({
                       ) : null}
                       {item.description ? (
                         <p>
-                          <span className="play-character-item-label">{t("play.character.itemsDescription")}:</span>{" "}
+                          <span className="play-character-item-label">
+                            {t("play.character.itemsDescription")}:
+                          </span>{" "}
                           <span>{stripControlChars(String(item.description))}</span>
                         </p>
                       ) : null}
                       {item.effect ? (
                         <p>
-                          <span className="play-character-item-label">{t("play.character.itemsEffect")}:</span>{" "}
+                          <span className="play-character-item-label">
+                            {t("play.character.itemsEffect")}:
+                          </span>{" "}
                           <span>{stripControlChars(String(item.effect))}</span>
                         </p>
                       ) : null}
@@ -619,7 +638,10 @@ function PartyCharacterModal({
                         <p className="play-character-item-bonus">
                           {t("play.character.itemsBonus")}:{" "}
                           {Object.entries(item.bonus)
-                            .map(([canon, delta]) => `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`)
+                            .map(
+                              ([canon, delta]) =>
+                                `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`,
+                            )
                             .join(" · ")}
                         </p>
                       ) : null}
@@ -855,13 +877,18 @@ export function PartyCard({ game }: { game: StateFrame }) {
           member={selected}
           ownCharacter={ownCharacter}
           onSwitch={
-            selectedPregen && selectedPregen.claimed_by.trim() === you && online && game.character?.name !== selected.name
-              ? () => void transportSend({ type: "input", text: `.pc claim ${selected.name}` }).catch(() => { })
+            selectedPregen &&
+            selectedPregen.claimed_by.trim() === you &&
+            online &&
+            game.character?.name !== selected.name
+              ? () =>
+                  void transportSend({ type: "input", text: `.pc claim ${selected.name}` }).catch(() => {})
               : undefined
           }
           onRelease={
             selectedPregen && selectedPregen.claimed_by.trim() === you && online
-              ? () => void transportSend({ type: "input", text: `.pc release ${selected.name}` }).catch(() => { })
+              ? () =>
+                  void transportSend({ type: "input", text: `.pc release ${selected.name}` }).catch(() => {})
               : undefined
           }
           onClose={() => setSelectedName(null)}
@@ -1249,9 +1276,7 @@ export function ClueCard({ game }: { game: StateFrame }) {
         {clues.map((clue, index) => (
           <li key={`${clue.title}-${index}`} className="clue-row">
             <strong className="clue-title">{stripControlChars(clue.title)}</strong>
-            {clue.content ? (
-              <p className="clue-content">{stripControlChars(clue.content)}</p>
-            ) : null}
+            {clue.content ? <p className="clue-content">{stripControlChars(clue.content)}</p> : null}
           </li>
         ))}
       </ul>
@@ -1261,10 +1286,14 @@ export function ClueCard({ game }: { game: StateFrame }) {
 
 export function SceneCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
+  const art = sceneImage(game.scene)
   if (!game.scene && !game.clock) return null
   return (
     <section className="desk-card">
       <header className="desk-title">{t("session.scene")}</header>
+      {art !== null && game.scene ? (
+        <SceneArt image={art} sceneName={stripControlChars(game.scene.name)} />
+      ) : null}
       {game.scene ? (
         <p className="scene-line">
           {stripControlChars(game.scene.name)}
@@ -1285,6 +1314,7 @@ export function SceneCard({ game }: { game: StateFrame }) {
 
 export function InitiativeCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
+  if (game.combat) return <CombatCard combat={game.combat} />
   if (game.initiative.length === 0) return null
   return (
     <section className="desk-card">
@@ -1294,6 +1324,29 @@ export function InitiativeCard({ game }: { game: StateFrame }) {
           <li key={entry.name} className={entry.current ? "is-current" : ""}>
             <span className="initiative-value">{entry.value}</span>
             {stripControlChars(entry.name)}
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+function CombatCard({ combat }: { combat: NonNullable<StateFrame["combat"]> }) {
+  const { t } = useTranslation()
+  return (
+    <section className="desk-card">
+      <header className="desk-title">{t("session.combat")}</header>
+      <p className="scene-line">
+        {t("session.combatPhase", { phase: combat.phase, round: combat.round })}
+        {combat.current ? ` · ${stripControlChars(combat.current)}` : ""}
+      </p>
+      <p className="scene-line">{t("session.combatBudget", { budget: JSON.stringify(combat.budget) })}</p>
+      <ol className="initiative-list">
+        {combat.combatants.map((entry) => (
+          <li key={entry.id} className={entry.id === combat.current ? "is-current" : ""}>
+            <span className="initiative-value">{entry.initiative}</span>
+            {stripControlChars(entry.name)}
+            {entry.state && entry.state !== "ready" ? ` · ${stripControlChars(entry.state)}` : ""}
           </li>
         ))}
       </ol>

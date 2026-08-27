@@ -43,7 +43,14 @@ describe("MessageNotifier", () => {
     ageGrace()
     // A player line first — this is who triggered the reply.
     act(() => {
-      ingest({ type: "narrative", id: "p1", speaker: "player", name: "Ash", text: "我检查账本。", format: "plain" })
+      ingest({
+        type: "narrative",
+        id: "p1",
+        speaker: "player",
+        name: "Ash",
+        text: "我检查账本。",
+        format: "plain",
+      })
     })
     act(() => vi.advanceTimersByTime(500))
     // Player chatter itself never nudges.
@@ -66,7 +73,14 @@ describe("MessageNotifier", () => {
     render(<MessageNotifier />)
     ageGrace()
     act(() => {
-      ingest({ type: "narrative", id: "p1", speaker: "player", name: "Ash", text: "我检查账本。", format: "plain" })
+      ingest({
+        type: "narrative",
+        id: "p1",
+        speaker: "player",
+        name: "Ash",
+        text: "我检查账本。",
+        format: "plain",
+      })
       ingest({ type: "narrative", id: "k1", speaker: "kp", text: "灯芯矮了一下。", format: "markdown" })
     })
     act(() => vi.advanceTimersByTime(500))
@@ -80,7 +94,14 @@ describe("MessageNotifier", () => {
     render(<MessageNotifier />)
     // Replay arrives immediately after mount — inside the grace window.
     act(() => {
-      ingest({ type: "narrative", id: "r1", speaker: "player", name: "Old", text: "历史消息。", format: "plain" })
+      ingest({
+        type: "narrative",
+        id: "r1",
+        speaker: "player",
+        name: "Old",
+        text: "历史消息。",
+        format: "plain",
+      })
       ingest({ type: "narrative", id: "r2", speaker: "kp", text: "历史的回应。", format: "markdown" })
     })
     act(() => vi.advanceTimersByTime(500))
@@ -94,7 +115,14 @@ describe("MessageNotifier", () => {
     render(<MessageNotifier />)
     ageGrace()
     act(() => {
-      ingest({ type: "narrative", id: "p1", speaker: "player", name: "Ash", text: "我检查账本。", format: "plain" })
+      ingest({
+        type: "narrative",
+        id: "p1",
+        speaker: "player",
+        name: "Ash",
+        text: "我检查账本。",
+        format: "plain",
+      })
       ingest({ type: "narrative", id: "k1", speaker: "kp", text: "灯芯矮了一下。", format: "markdown" })
     })
     act(() => vi.advanceTimersByTime(500))

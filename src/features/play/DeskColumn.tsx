@@ -191,9 +191,13 @@ export default function DeskColumn() {
 
   // --- drag reorder (fine pointers only) ---
   const [drag, setDrag] = useState<LiveDrag | null>(null)
-  const dragRef = useRef<{ id: DeskSlotId; pointerId: number; startX: number; startY: number; moved: boolean } | null>(
-    null,
-  )
+  const dragRef = useRef<{
+    id: DeskSlotId
+    pointerId: number
+    startX: number
+    startY: number
+    moved: boolean
+  } | null>(null)
   const liveRef = useRef<LiveDrag | null>(null)
   const metricsRef = useRef<DragMetrics | null>(null)
   const slotRefs = useRef(new Map<DeskSlotId, HTMLElement>())
@@ -341,7 +345,11 @@ export default function DeskColumn() {
     // The stack changed under the drag (a card appeared or vanished) — the
     // captured geometry is stale, so abandon the move instead of guessing.
     const metrics = metricsRef.current
-    if (!metrics || metrics.visible.length !== visible.length || metrics.visible.some((id, i) => id !== visible[i])) {
+    if (
+      !metrics ||
+      metrics.visible.length !== visible.length ||
+      metrics.visible.some((id, i) => id !== visible[i])
+    ) {
       cancelDrag()
       return
     }

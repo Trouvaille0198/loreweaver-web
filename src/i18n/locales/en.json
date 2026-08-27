@@ -82,11 +82,18 @@
     "avatarOpen": "Enlarge {{name}}'s portrait",
     "avatarPreview": "Portrait preview for {{name}}",
     "avatarClose": "Close portrait preview",
+    "sceneArtOpen": "Enlarge the scene art for {{name}}",
+    "sceneArtPreview": "Scene art for {{name}}",
+    "sceneArtClose": "Close scene art",
     "scene": "Scene",
     "clock": "Clock",
     "round": "round {{n}}",
     "initiative": "Initiative",
+    "combat": "Combat",
+    "combatPhase": "{{phase}} · round {{round}}",
+    "combatBudget": "Budget {{budget}}",
     "trackers": "Trackers",
+    "resources": "Resources",
     "presence": "At the table",
     "online": "{{n}} online",
     "context": "Context",
@@ -136,6 +143,16 @@
     "deskGrip": "Drag to reorder",
     "deskGripHint": "Drag along the right edge to reorder; focus and use ↑ ↓ to move",
     "clues": "Discovered clues",
+    "chronicle": {
+      "title": "Campaign chronicle",
+      "loading": "Loading the chronicle…",
+      "empty": "No chronicle records yet — they're written as the story advances.",
+      "summarySection": "Story so far",
+      "summaryThrough": "Covers through turn {{turn}}",
+      "recordsSection": "Chronicle records",
+      "recordTurn": "Turn {{turn}}",
+      "covered": "In summary"
+    },
     "poke": "Poke",
     "pokeBanner": "{{actor}} poked you",
     "pokeTitle": "{{actor}} poked you",
@@ -370,22 +387,22 @@
           "cover": "Cover",
           "scenes": "Scenes",
           "npcs": "NPC portraits",
-          "items": "Clues",
-          "pregens": "Investigators"
+          "pregens": "Investigators",
+          "clue": "Clues"
         },
         "mediaHints": {
           "cover": "One opening image for the module.",
-          "scenes": "One atmospheric image per key scene.",
-          "npcs": "One portrait per key NPC.",
-          "items": "One image per key clue.",
-          "pregens": "Portraits for the module's claimable investigators — each becomes the avatar of the player who claims them."
+          "scenes": "One image per scene entry.",
+          "npcs": "One portrait per NPC.",
+          "pregens": "Portraits for the module's claimable investigators — each becomes the avatar of the player who claims them.",
+          "clue": "One image per clue entry."
         },
         "mediaCaps": {
           "cover": "1",
-          "scenes": "up to 6",
-          "npcs": "up to 6",
-          "items": "up to 6",
-          "pregens": "≤ 6"
+          "scenes": "1 each",
+          "npcs": "1 each",
+          "pregens": "≤ 6",
+          "clue": "1 each"
         },
         "extendsTitle": "Rule strategy",
         "extendsNone": "Follow room system (default: {{system}})",
@@ -469,13 +486,15 @@
       "itemHolder": "Original holder",
       "itemSlot": "Slot",
       "packMedia": "Illustrations",
+      "packMediaCount": "{{count}} images",
       "packMediaGroups": {
         "cover": "Cover",
         "scenes": "Scenes",
         "npcs": "NPC portraits",
         "items": "Clues",
         "asset": "Assets",
-        "pregens": "Investigators"
+        "pregens": "Investigators",
+        "clue": "Clues"
       },
       "mediaOpen": "Enlarge {{name}}",
       "mediaPreview": "Image preview for {{name}}",
@@ -747,7 +766,7 @@
       "detail": {
         "bonus": "bonus dice",
         "penalty": "penalty dice",
-        "modifier": "modifier",
+        "modifier": "skill",
         "proficient": "proficient",
         "advantage": "advantage",
         "disadvantage": "disadvantage",
@@ -835,13 +854,18 @@
     },
     "commands": {
       "amb": "Ambience (alias)",
-      "attack": "Attack check (alias)",
+      "attack": "Typed attack action",
       "audio": "Audio layers",
       "avatar": "Set your avatar",
       "bind": "Bind a character",
       "bot": "Bot replies",
       "botlist": "Bot list",
       "cast": "Cast & NPCs",
+      "combat": "Combat tracker and turn control",
+      "encounter": "Structured encounters and budgets",
+      "advance": "Advancement plan",
+      "level": "Advancement (alias)",
+      "xp": "Advancement XP (alias)",
       "check": "Skill check (full name)",
       "chronicle": "Campaign chronicle",
       "characters": "Your character sheets",
@@ -895,6 +919,9 @@
       "rd": "Roll (alias)",
       "recap": "Recap the story",
       "mem": "Character memories",
+      "resource": "Character resource pools",
+      "rest": "Short and long rests",
+      "statblock": "Reusable NPC stat blocks",
       "rename": "Rename yourself",
       "report": "Session report",
       "replyPrivate": "Private",
@@ -958,7 +985,13 @@
     "module.shareHint": "Publish a player-facing link to this module in the chronicle",
     "moduleShare.title": "Shared module",
     "moduleShare.eyebrow": "The room's current module",
-    "moduleShare.hint": "This is what the Keeper shared. Join the table to play."
+    "moduleShare.hint": "This is what the Keeper shared. Join the table to play.",
+    "mentionCard": {
+      "close": "Close info card",
+      "memories": "Public memory",
+      "effect": "Effect",
+      "foundTurn": "Found on turn {{turn}}"
+    }
   },
   "studio": {
     "project": "Project",

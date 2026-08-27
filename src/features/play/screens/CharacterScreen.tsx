@@ -467,10 +467,7 @@ function ItemCard({
         <p className="play-character-item-bonus">
           {t("play.character.itemsBonus")}:{" "}
           {Object.entries(item.bonus)
-            .map(
-              ([canon, delta]) =>
-                `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`,
-            )
+            .map(([canon, delta]) => `${String(canon)} ${Number(delta) > 0 ? "+" : ""}${String(delta)}`)
             .join(" · ")}
         </p>
       ) : null}
@@ -672,7 +669,11 @@ function CharacterDetailsView({
       ) : null}
       {activeItems.length > 0 || archivedItems.length > 0 ? (
         <CharacterDetailSection title={t("play.character.equipmentDetails")}>
-          <div className="play-character-tabs" role="tablist" aria-label={t("play.character.equipmentDetails")}>
+          <div
+            className="play-character-tabs"
+            role="tablist"
+            aria-label={t("play.character.equipmentDetails")}
+          >
             <button
               type="button"
               role="tab"
@@ -793,12 +794,7 @@ function CharacterDetailsView({
               )}
             </>
           ) : (
-            <Button
-              type="button"
-              variant="primary"
-              disabled={!online || !onActivate}
-              onClick={onActivate}
-            >
+            <Button type="button" variant="primary" disabled={!online || !onActivate} onClick={onActivate}>
               {t("play.character.activate")}
             </Button>
           )}

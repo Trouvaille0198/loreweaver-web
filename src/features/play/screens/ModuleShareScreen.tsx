@@ -20,15 +20,12 @@ export default function ModuleShareScreen({
 
   const name = share?.name ?? moduleName
   return (
-    <ScreenShell
-      title={t("play.moduleShare.title")}
-      onBack={onBack}
-    >
+    <ScreenShell title={t("play.moduleShare.title")} onBack={onBack}>
       <div className="module-share-card">
         <p className="ui-eyebrow">{t("play.moduleShare.eyebrow")}</p>
         <h2 className="module-share-title">{name}</h2>
         {share?.description ? <p className="module-share-description">{share.description}</p> : null}
-               <p className="module-share-hint">{t("play.moduleShare.hint")}</p>
+        <p className="module-share-hint">{t("play.moduleShare.hint")}</p>
         <Button type="button" variant="quiet" onClick={onBack}>
           {t("play.back")}
         </Button>

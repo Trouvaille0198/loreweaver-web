@@ -121,13 +121,12 @@ describe("additive web transport frames", () => {
   })
 
   it("rejects an admin_room_settings frame with an unknown or missing ai_length", () => {
-    expect(
-      isAdditiveServerFrame({ type: "admin_room_settings", room: "table", ai_length: "verbose" }),
-    ).toBe(false)
+    expect(isAdditiveServerFrame({ type: "admin_room_settings", room: "table", ai_length: "verbose" })).toBe(
+      false,
+    )
     expect(isAdditiveServerFrame({ type: "admin_room_settings", room: "table" })).toBe(false)
   })
 })
-
 
 describe("narrative_draft additive frame", () => {
   it("accepts a keeper-only discarded draft and rejects malformed ones", () => {

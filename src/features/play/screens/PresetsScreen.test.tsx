@@ -52,7 +52,11 @@ describe("PresetsScreen", () => {
     useAdminStore.setState({ presets: [], busy: false })
     render(<PresetsScreen onBack={() => {}} />)
     act(() => useAdminStore.setState({ busy: false }))
-    expect(screen.getByText("No presets yet. Paste a SillyTavern preset JSON below to create your first prompt template.")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "No presets yet. Paste a SillyTavern preset JSON below to create your first prompt template.",
+      ),
+    ).toBeInTheDocument()
   })
 
   it("groups system presets apart from custom ones and marks the rating", () => {
@@ -117,7 +121,10 @@ describe("PresetsScreen", () => {
     // The engine's bundle reply triggers the download; the frame clears itself.
     act(() =>
       useAdminStore.setState({
-        presetExport: { type: "admin_preset_export_all", presets: [{ id: "duo", text: '{"name":"Duo","prompts":[]}' }] },
+        presetExport: {
+          type: "admin_preset_export_all",
+          presets: [{ id: "duo", text: '{"name":"Duo","prompts":[]}' }],
+        },
         busy: false,
       }),
     )
@@ -131,7 +138,13 @@ describe("PresetsScreen", () => {
     render(<PresetsScreen onBack={() => {}} />)
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File(
-      [JSON.stringify({ kind: "loreweaver-presets", version: 1, presets: [{ id: "duo", text: '{"name":"Duo","prompts":[]}' }] })],
+      [
+        JSON.stringify({
+          kind: "loreweaver-presets",
+          version: 1,
+          presets: [{ id: "duo", text: '{"name":"Duo","prompts":[]}' }],
+        }),
+      ],
       "bundle.json",
       { type: "application/json" },
     )

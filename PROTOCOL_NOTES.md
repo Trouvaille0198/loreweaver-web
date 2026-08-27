@@ -25,6 +25,35 @@ pc`, `world` → the keeper-only `.import <ref> world`. Before it existed the st
 > local pack source. The gap was only ever that the wire did not carry what the manifest
 > already knew.
 
+> **Update — protocol 2.7 (`list_chronicle` → `chronicle_records`), 2026-08-27.**
+> The engine added the player-open campaign catch-up feed: the campaign summary
+> plus every chronicle record, all through the PLAYER document projections (the
+> same contract `.recap` keeps), answered off the turn lock so a browse never
+> queues behind an AI turn. The play lane's chronicle browser (the session
+> header's 📜 button) is built on it. The pinned npm package (2.3.1) predates
+> the frame
+> pair, so the types ride `src/protocol-augment.d.ts` and the runtime check
+> rides `isAdditiveServerFrame` in `src/lib/webTransport.ts`; the request is
+> cast at the transport boundary in `src/store/session.ts` (`requestChronicle`).
+> The fold watermark is derivable client-side (`record.turn <=
+> summary.through_turn`) — fold bookkeeping itself stays keeper-side by design,
+> and the feed carries no `folded` flag. Delete the shims once the published
+> package types the pair.
+>
+> **Update — protocol 2.8 (mentions generalize to items + clues), 2026-08-27.**
+> Narrative `mentions` no longer stop at NPCs: item links (`item://`, granted
+> instances plus non-secret catalog presets) and discovered-clue links
+> (`clue://`, entries of the discovered-clue log only — an undiscovered clue
+> never yields a mention) join in, and every mention names its `kind`. The
+> server annotates live replies and join replay alike; a secret item stays
+> invisible by construction because keys and cards come from PLAYER-view
+> projections. The pinned npm package (2.3.1) predates the shape, so
+> `Mention` / `MentionKind` / `MentionCard` ride `src/protocol-augment.d.ts`
+> (replacing the v2.6-era `NpcMention*` augment); clicks resolve by scheme +
+> kind in `src/features/play/NarrativeLog.tsx` and open the shared
+> `MentionCard`. `mention.kind` is absent on pre-2.8 servers — treated as npc.
+> Delete the shim with the others once the published package catches up.
+>
 > **Update — the major-version check.** The shared package grew the compatibility
 > predicate (`protocolMajor` / `protocolMismatch`) on 2026-08-08, hours after 2.1.0 was
 > published; **2.1.1** carries it, and the studio pins that. The studio REFUSES a

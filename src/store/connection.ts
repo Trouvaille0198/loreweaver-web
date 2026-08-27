@@ -174,8 +174,9 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     // quiet would leave the app online with no room and nothing to show for it.
     if (isAdditiveServerFrame(frame)) {
       // Keeper-only discarded drafts belong to the chronicle (attached to their
-      // reply bubble), not the admin store — everything else additive is admin.
-      if (frame.type === "narrative_draft") {
+      // reply bubble), and the player-open catch-up feed belongs to the session
+      // store — everything else additive is admin.
+      if (frame.type === "narrative_draft" || frame.type === "chronicle_records") {
         useSessionStore.getState().ingest(frame)
       } else {
         useAdminStore.getState().ingest(frame)

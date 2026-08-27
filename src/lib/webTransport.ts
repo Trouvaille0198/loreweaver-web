@@ -19,6 +19,7 @@ import {
   type AdminGenerateProgressFrame,
   type AdminGenerateStartedFrame,
   type ClientFrame,
+  type ChronicleRecordsFrame,
   type MediaFrame,
   type MediaPayload,
   type MediaUpload,
@@ -42,6 +43,7 @@ type AdditiveServerFrame =
   | AdminPresetsFrame
   | AdminPresetExportAllFrame
   | AdminRoomSettingsFrame
+  | ChronicleRecordsFrame
   | NarrativeDraftFrame
 
 function isStringArray(value: unknown): value is string[] {
@@ -54,6 +56,27 @@ export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFram
   const frame = data as Record<string, unknown>
   if (frame.type === "narrative_draft") {
     return typeof frame.id === "string" && typeof frame.text === "string"
+  }
+  if (frame.type === "chronicle_records") {
+    const summary = frame.summary
+    const summaryOk =
+      summary === null ||
+      (typeof summary === "object" &&
+        summary !== null &&
+        typeof (summary as Record<string, unknown>).text === "string" &&
+        typeof (summary as Record<string, unknown>).through_turn === "number")
+    return (
+      summaryOk &&
+      Array.isArray(frame.records) &&
+      frame.records.every(
+        (record) =>
+          typeof record === "object" &&
+          record !== null &&
+          typeof (record as Record<string, unknown>).id === "string" &&
+          typeof (record as Record<string, unknown>).turn === "number" &&
+          typeof (record as Record<string, unknown>).text === "string",
+      )
+    )
   }
   if (frame.type === "admin_generate_started") {
     return frame.kind === "module" || frame.kind === "pack"
@@ -86,9 +109,7 @@ export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFram
   if (frame.type === "admin_room_settings") {
     return (
       typeof frame.room === "string" &&
-      (frame.ai_length === "normal" ||
-        frame.ai_length === "concise" ||
-        frame.ai_length === "brief")
+      (frame.ai_length === "normal" || frame.ai_length === "concise" || frame.ai_length === "brief")
     )
   }
   if (frame.type !== "admin_room_config") {
@@ -265,9 +286,7 @@ function installNetworkGates(): void {
     const params = activeParams
     // The store hears the whole status ladder again (connecting → …), so the
     // table rides this dial exactly like any other reconnect.
-    doWebConnect(params).catch(() =>
-      emit({ kind: "status", status: "offline", attempt: 0, error: null }),
-    )
+    doWebConnect(params).catch(() => emit({ kind: "status", status: "offline", attempt: 0, error: null }))
   })
 }
 

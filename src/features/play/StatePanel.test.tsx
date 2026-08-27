@@ -110,7 +110,9 @@ describe("StatePanel", () => {
     expect(screen.getByRole("heading", { name: "Bo" })).toBeInTheDocument()
     // The modal shows the FULL background once; the roster one-liner (blurb) is
     // a list affordance and must not be repeated in the dialog.
-    expect(screen.queryByText("A careful observer.", { selector: ".character-modal-blurb" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("A careful observer.", { selector: ".character-modal-blurb" }),
+    ).not.toBeInTheDocument()
     expect(screen.getByText("A quiet scout.")).toBeInTheDocument()
     expect(screen.getByText("Stealth")).toBeInTheDocument()
     expect(screen.queryByText("Private clue")).not.toBeInTheDocument()
@@ -150,7 +152,9 @@ describe("StatePanel", () => {
     const background = screen.getByText("本地客家山民，熟悉丛林草药与兽径。")
     const attributesHeading = screen.getByRole("heading", { name: "Attributes" })
     // The persona paragraph sits ABOVE the sheet attributes, not below them.
-    expect(background.compareDocumentPosition(attributesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(
+      background.compareDocumentPosition(attributesHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
     fireEvent.keyDown(window, { key: "Escape" })
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
@@ -516,7 +520,9 @@ describe("PregenCard", () => {
     // The ACTIVE character's own sheet offers release only — nothing to switch to.
     fireEvent.doubleClick(screen.getAllByText("白榆生", { selector: ".party-name" })[0])
     expect(screen.getByRole("dialog")).toBeInTheDocument()
-    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Switch" })).not.toBeInTheDocument()
+    expect(
+      within(screen.getByRole("dialog")).queryByRole("button", { name: "Switch" }),
+    ).not.toBeInTheDocument()
     fireEvent.keyDown(window, { key: "Escape" })
 
     // A held-but-not-played pregen's sheet offers the switch; the same

@@ -174,7 +174,6 @@ describe("NarrativeLog", () => {
   })
 })
 
-
 describe("NarrativeLog discarded draft (keeper-only)", () => {
   beforeEach(() => {
     useSessionStore.getState().clear()
@@ -252,7 +251,6 @@ describe("NarrativeLog discarded draft (keeper-only)", () => {
   })
 })
 
-
 describe("NarrativeLog private lines", () => {
   beforeEach(() => {
     useSessionStore.getState().clear()
@@ -284,7 +282,6 @@ describe("NarrativeLog private lines", () => {
     expect(screen.getAllByText("Only you")).toHaveLength(2)
   })
 })
-
 
 describe("NarrativeLog windowing", () => {
   beforeEach(() => {
@@ -331,7 +328,6 @@ describe("NarrativeLog windowing", () => {
   })
 })
 
-
 describe("NarrativeLog table of contents", () => {
   beforeEach(() => {
     useSessionStore.getState().clear()
@@ -345,7 +341,14 @@ describe("NarrativeLog table of contents", () => {
         now - 2 * 60 * 60_000,
       )
       ingest(
-        { type: "narrative", id: "c2", speaker: "player", name: "Nyx", text: "I search the desk.", format: "plain" },
+        {
+          type: "narrative",
+          id: "c2",
+          speaker: "player",
+          name: "Nyx",
+          text: "I search the desk.",
+          format: "plain",
+        },
         now - 60 * 60_000,
       )
       ingest({ type: "narrative", id: "c3", speaker: "kp", text: "Second scene.", format: "markdown" }, now)
@@ -369,7 +372,10 @@ describe("NarrativeLog table of contents", () => {
   it("treats consecutive system notices as one chapter, not many", () => {
     const now = Date.now()
     act(() => {
-      ingest({ type: "narrative", id: "s0", speaker: "kp", text: "Opening.", format: "markdown" }, now - 60_000)
+      ingest(
+        { type: "narrative", id: "s0", speaker: "kp", text: "Opening.", format: "markdown" },
+        now - 60_000,
+      )
       ingest({ type: "system", level: "info", text: "Round 1." }, now)
       ingest({ type: "system", level: "info", text: "The fog thickens." }, now + 1)
       ingest({ type: "system", level: "info", text: "Roll initiative." }, now + 2)

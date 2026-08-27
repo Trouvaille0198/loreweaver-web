@@ -173,10 +173,11 @@ describe("ModelScreen provider defaults", () => {
 
     await user.selectOptions(within(editor).getByLabelText("Provider"), "minimax-cn")
     const capabilities = within(editor).getByLabelText("Model capability")
-    expect(within(capabilities).getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "Chat",
-      "Image generation",
-    ])
+    expect(
+      within(capabilities)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Chat", "Image generation"])
   })
 
   it("can leave a selected profile and start a completely blank model configuration", async () => {
@@ -270,7 +271,12 @@ describe("ModelScreen per-kind default", () => {
         provider_catalog: [
           { id: "deepseek", default_base_url: "", auth_type: "api_key", model_kinds: ["chat"] },
           { id: "minimax-cn", default_base_url: "", auth_type: "api_key", model_kinds: ["chat", "image"] },
-          { id: "siliconflow", default_base_url: "", auth_type: "api_key", model_kinds: ["chat", "embedding", "image"] },
+          {
+            id: "siliconflow",
+            default_base_url: "",
+            auth_type: "api_key",
+            model_kinds: ["chat", "embedding", "image"],
+          },
         ],
         saved_providers: [],
         llms: PROFILE,

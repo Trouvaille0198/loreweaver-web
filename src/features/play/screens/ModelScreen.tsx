@@ -607,7 +607,12 @@ export default function ModelScreen({
                   event.target.value = ""
                 }}
               />
-              <Button type="button" variant="quiet" disabled={profileAction !== null} onClick={startNewProfile}>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={profileAction !== null}
+                onClick={startNewProfile}
+              >
                 {t("play.model.newLlm")}
               </Button>
             </>

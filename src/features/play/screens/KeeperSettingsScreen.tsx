@@ -15,7 +15,16 @@ import WorldbookScreen from "./WorldbookScreen"
 
 type KeeperSection = "keys" | "module" | "worldbook" | "rules" | "skills" | "presets" | "model" | "room"
 
-const SECTION_KEYS: KeeperSection[] = ["keys", "module", "worldbook", "rules", "skills", "presets", "model", "room"]
+const SECTION_KEYS: KeeperSection[] = [
+  "keys",
+  "module",
+  "worldbook",
+  "rules",
+  "skills",
+  "presets",
+  "model",
+  "room",
+]
 
 const SECTION_STORAGE_KEY = "loreweaver-web.keeper-settings-section"
 function readInitialSection(): KeeperSection {

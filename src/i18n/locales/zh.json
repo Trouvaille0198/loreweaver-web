@@ -82,11 +82,18 @@
     "avatarOpen": "放大查看{{name}}的头像",
     "avatarPreview": "{{name}}的头像预览",
     "avatarClose": "关闭头像预览",
+    "sceneArtOpen": "放大查看场景「{{name}}」的配图",
+    "sceneArtPreview": "「{{name}}」场景配图",
+    "sceneArtClose": "关闭场景配图",
     "scene": "场景",
     "clock": "时钟",
     "round": "第 {{n}} 轮",
     "initiative": "先攻",
+    "combat": "战斗",
+    "combatPhase": "{{phase}} · 第 {{round}} 轮",
+    "combatBudget": "预算 {{budget}}",
     "trackers": "状态量",
+    "resources": "资源",
     "presence": "在座",
     "online": "{{n}} 人在线",
     "context": "上下文",
@@ -136,6 +143,16 @@
     "deskGrip": "拖动排序",
     "deskGripHint": "沿右侧拖动调整顺序；聚焦后可用 ↑ ↓ 移动",
     "clues": "已发现线索",
+    "chronicle": {
+      "title": "剧情编年史",
+      "loading": "正在读取编年史…",
+      "empty": "还没有编年记录——剧情推进后会自动记录。",
+      "summarySection": "前情摘要",
+      "summaryThrough": "已涵盖至第 {{turn}} 回合",
+      "recordsSection": "编年记录",
+      "recordTurn": "第 {{turn}} 回合",
+      "covered": "已收入摘要"
+    },
     "poke": "拍一拍",
     "pokeBanner": "{{actor}} 拍了拍你",
     "pokeTitle": "{{actor}} 拍了拍你",
@@ -370,22 +387,22 @@
           "cover": "封面/海报",
           "scenes": "场景图",
           "npcs": "NPC 立绘",
-          "items": "线索",
-          "pregens": "调查员"
+          "pregens": "调查员",
+          "clue": "线索"
         },
         "mediaHints": {
           "cover": "为剧本生成一张开场封面图。",
-          "scenes": "为每个关键场景生成一张气氛图。",
-          "npcs": "为主要 NPC 各生成一张肖像（每人一张）。",
-          "items": "为关键线索各生成一张图。",
-          "pregens": "可认领调查员的立绘——每张会成为认领该调查员的玩家的角色头像。"
+          "scenes": "为每个场景条目生成一张图。",
+          "npcs": "为每个 NPC 各生成一张肖像（每人一张）。",
+          "pregens": "可认领调查员的立绘——每张会成为认领该调查员的玩家的角色头像。",
+          "clue": "为每个线索条目生成一张图。"
         },
         "mediaCaps": {
           "cover": "1 张",
-          "scenes": "最多 6 张",
-          "npcs": "最多 6 张",
-          "items": "最多 6 张",
-          "pregens": "≤ 6"
+          "scenes": "每个 1 张",
+          "npcs": "每个 1 张",
+          "pregens": "≤ 6",
+          "clue": "每个 1 张"
         },
         "extendsTitle": "规则策略",
         "extendsNone": "跟随房间系统（默认：{{system}}）",
@@ -469,13 +486,15 @@
       "itemHolder": "原主",
       "itemSlot": "槽位",
       "packMedia": "配图",
+      "packMediaCount": "共 {{count}} 张",
       "packMediaGroups": {
         "cover": "封面",
         "scenes": "场景图",
         "npcs": "NPC 立绘",
         "items": "线索",
         "asset": "素材",
-        "pregens": "调查员"
+        "pregens": "调查员",
+        "clue": "线索"
       },
       "mediaOpen": "放大查看{{name}}",
       "mediaPreview": "{{name}}图片预览",
@@ -747,7 +766,7 @@
       "detail": {
         "bonus": "奖励骰",
         "penalty": "惩罚骰",
-        "modifier": "修正",
+        "modifier": "技能",
         "proficient": "熟练",
         "advantage": "优势",
         "disadvantage": "劣势",
@@ -835,13 +854,18 @@
     },
     "commands": {
       "amb": "环境音（别名）",
-      "attack": "攻击检定（别名）",
+      "attack": "类型化攻击动作",
       "audio": "音频分层",
       "avatar": "设置头像",
       "bind": "绑定角色",
       "bot": "机器人回复",
       "botlist": "机器人名单",
       "cast": "角色与 NPC",
+      "combat": "战斗追踪与回合控制",
+      "encounter": "结构化遭遇与预算",
+      "advance": "升级计划",
+      "level": "升级（别名）",
+      "xp": "升级经验（别名）",
       "check": "技能检定（全名）",
       "chronicle": "剧本编年史",
       "characters": "我的角色卡",
@@ -893,6 +917,9 @@
       "rc": "技能检定（别名）",
       "rcv": "对抗检定（别名）",
       "rd": "掷骰（别名）",
+      "resource": "角色资源池",
+      "rest": "短休与长休",
+      "statblock": "可复用 NPC 数值块",
       "recap": "剧情回顾",
       "mem": "角色记忆",
       "rename": "改名",
@@ -958,7 +985,13 @@
     "module.shareHint": "在对话中发布本模组的玩家可见链接",
     "moduleShare.title": "模组分享",
     "moduleShare.eyebrow": "本房当前模组",
-    "moduleShare.hint": "这是守秘人分享的内容，加入牌桌即可游玩。"
+    "moduleShare.hint": "这是守秘人分享的内容，加入牌桌即可游玩。",
+    "mentionCard": {
+      "close": "关闭信息卡",
+      "memories": "公开记忆",
+      "effect": "效果",
+      "foundTurn": "发现于第 {{turn}} 回合"
+    }
   },
   "studio": {
     "project": "项目",

@@ -91,11 +91,22 @@ describe("ModuleDetailScreen", () => {
                 focus: "explore",
                 description: "A rotting jetty over black water.",
                 keeper_notes: "The ferryman rows only after midnight.",
-                clues: [{ name: "A wet ledger", description: "Names crossed out in salt.", discovery_method: "Lift the bench" }],
+                clues: [
+                  {
+                    name: "A wet ledger",
+                    description: "Names crossed out in salt.",
+                    discovery_method: "Lift the bench",
+                  },
+                ],
               },
             ],
             npcs: [
-              { name: "The Ferryman", role: "antagonist", description: "A quiet old man.", secret: "He is bound to the old pact." },
+              {
+                name: "The Ferryman",
+                role: "antagonist",
+                description: "A quiet old man.",
+                secret: "He is bound to the old pact.",
+              },
             ],
             clues: [{ name: "Salt on the sill", location: "Boathouse", leads_to: "The ferryman" }],
             timeline: [{ time: "23:00", event: "The bell rings from the water." }],
@@ -122,7 +133,9 @@ describe("ModuleDetailScreen", () => {
     expect(screen.getByRole("heading", { name: "Clues" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Timeline" })).toBeInTheDocument()
     // …with the actual analyzed content rendered as readable text…
-    expect(screen.getByText("Investigators uncover the truth behind the marsh disappearances.")).toBeInTheDocument()
+    expect(
+      screen.getByText("Investigators uncover the truth behind the marsh disappearances."),
+    ).toBeInTheDocument()
     expect(screen.getByText("The ferry crossing")).toBeInTheDocument()
     expect(screen.getByText("A rotting jetty over black water.")).toBeInTheDocument()
     expect(screen.getByText("The ferryman rows only after midnight.")).toBeInTheDocument()
@@ -156,7 +169,14 @@ describe("ModuleDetailScreen", () => {
           { title: "失踪摄影师", content: "摄影师失踪前留下了一卷未冲洗的胶卷。", secret: true },
         ],
         variables: [
-          { id: "fear", kind: "number", labels: { zh: "恐惧", en: "Fear" }, default: 0, minimum: 0, maximum: 10 },
+          {
+            id: "fear",
+            kind: "number",
+            labels: { zh: "恐惧", en: "Fear" },
+            default: 0,
+            minimum: 0,
+            maximum: 10,
+          },
           { id: "photo_ritual", kind: "bool", labels: { zh: "显影仪式" }, default: false },
         ],
         pregens: [

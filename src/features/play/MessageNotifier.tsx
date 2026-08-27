@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import type { NarrativeFrame } from "@loreweaver/protocol"
 import { useSessionStore, type LogEntry } from "../../store/session"
 
 /** Persisted opt-in for new-message nudges. */
@@ -73,7 +72,9 @@ export default function MessageNotifier() {
 
     // Taskbar/tab nudge: flash the title, named for the player who triggered
     // the reply (like a poke).
-    const label = t("session.messageNotifyTitle", { name: triggerName(useSessionStore.getState().entries, t) })
+    const label = t("session.messageNotifyTitle", {
+      name: triggerName(useSessionStore.getState().entries, t),
+    })
     const original = document.title
     let step = 0
     const flash = window.setInterval(() => {

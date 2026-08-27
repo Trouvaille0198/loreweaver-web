@@ -7,11 +7,14 @@ import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import AppMenu from "./AppMenu"
 import { AudioPlayers } from "./AudioDeck"
+import ChronicleModal from "./ChronicleModal"
 import DeskColumn from "./DeskColumn"
 import InputBox from "./InputBox"
 import MessageNotifier from "./MessageNotifier"
 import NarrativeLog from "./NarrativeLog"
 import PokeBanner from "./PokeBanner"
+import SceneArt from "./SceneArt"
+import { sceneImage } from "./sceneImage"
 import PanelMenu from "./panels/PanelMenu"
 import PanelModalHost from "./panels/PanelModalHost"
 import PanelNotice from "./panels/PanelNotice"
@@ -36,11 +39,16 @@ function SceneLine() {
     if (typeof game.clock.round === "number") parts.push(t("session.round", { n: game.clock.round }))
   }
   if (parts.length === 0) return null
+  const art = sceneImage(game.scene)
   return (
     <p className="scene-strip">
-      <span className="scene-strip-glyph" aria-hidden="true">
-        ◎
-      </span>
+      {art !== null && game.scene ? (
+        <SceneArt image={art} sceneName={stripControlChars(game.scene.name)} />
+      ) : (
+        <span className="scene-strip-glyph" aria-hidden="true">
+          ◎
+        </span>
+      )}
       <span className="scene-strip-text">{parts.join(" · ")}</span>
     </p>
   )
@@ -144,6 +152,11 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
   const closeDesk = () => setDeskOpen(false)
   const toggleDesk = () => setDeskOpen((open) => !open)
 
+  // The chronicle browser (campaign summary + every record) is an on-demand
+  // catch-up overlay, opened from the session header — occasional reading, so
+  // a modal rather than a permanent desk card.
+  const [chronicleOpen, setChronicleOpen] = useState(false)
+
   // Escape closes the drawer (the ≡ app menu and the header popovers own
   // their own Esc; there is no global Esc that navigates anywhere).
   useEffect(() => {
@@ -183,6 +196,18 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
           <span className="session-room">{welcome ? `${welcome.room} · ${welcome.you.name}` : "…"}</span>
           <StatusPill />
           <MessageNotifier />
+          {/* The campaign chronicle (summary + every record) — catch-up reading
+              for anyone who just sat down at the table. */}
+          <Button
+            type="button"
+            variant="quiet"
+            size="icon"
+            aria-label={t("session.chronicle.title")}
+            title={t("session.chronicle.title")}
+            onClick={() => setChronicleOpen(true)}
+          >
+            📜
+          </Button>
           <PanelMenu />
         </header>
         <OnboardingBanner onNavigate={onNavigate} />
@@ -227,6 +252,7 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
         <DeskColumn />
       </aside>
       <PanelModalHost />
+      {chronicleOpen ? <ChronicleModal onClose={() => setChronicleOpen(false)} /> : null}
     </div>
   )
 }

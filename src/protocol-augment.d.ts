@@ -58,6 +58,34 @@ declare module "@loreweaver/protocol" {
     text: string
   }
 
+  interface RuntimeCombatant {
+    id: string
+    name: string
+    initiative: number
+    position: number
+    state?: string
+    budget?: Record<string, number>
+    conditions?: { id: string; visibility?: string; stacks?: number }[]
+    health?: unknown
+    health_presentation?: unknown
+  }
+
+  interface RuntimeCombatState {
+    schema_version: number
+    id: string
+    revision: number
+    phase: string
+    round: number
+    turn_index: number
+    current?: string | null
+    budget: Record<string, number>
+    order: string[]
+    combatants: RuntimeCombatant[]
+    reaction_window?: Record<string, unknown> | null
+    event_seq: number
+    events?: Record<string, unknown>[]
+  }
+
   interface StateFrame {
     /** The room's resolved rule system, distinct from the complete systems list. */
     room_system?: string
@@ -78,11 +106,26 @@ declare module "@loreweaver/protocol" {
     /** `.share` publishes a player-facing module link: the public face (name +
      * description) rides every member's state frame. */
     module_share?: { name?: string; description?: string }
+    combat?: RuntimeCombatState
   }
 
   interface CharacterState {
     /** v2.4 wire: trained skills, name → current value. Absent pre-2.4. */
     skills?: Record<string, unknown>
+    resource_groups?: {
+      id: string
+      resources: {
+        id: string
+        label: string
+        value: number
+        max?: number
+        role?: string
+        group?: string
+        revision?: number
+        die?: string
+        prominent?: boolean
+      }[]
+    }[]
     secondary_attributes?: Record<string, unknown>
     fields?: Record<string, unknown>
     equipment?: unknown[]
@@ -426,18 +469,74 @@ declare module "@loreweaver/protocol" {
     skipped?: { id: string; reason: string }[]
   }
 
-  /** v2.6 wire: `.poke` nudge attached to a system frame (`event.data["poke"]`
-   * in gateway/commands/rooms.py). Absent on ordinary system frames; the
-   * published npm protocol predates it. */
-  interface SystemFrame {
-    data?: {
-      poke?: {
-        actor?: string
-        actor_user?: string
-        target?: string
-        target_name?: string
-        target_user?: string
-      }
-    }
+  /** v2.8 wire: tracked-record mentions annotated into a narrative line — a
+   * name appears in `text` as `[name](<kind>://<id>)`, and `mentions` carries
+   * each mentioned record's kind and PLAYER-visible card (never keeper-side
+   * knowledge). The published npm protocol predates it.
+   * (v2.6 introduced the array for NPCs; the shape below is the current wire.) */
+  interface NarrativeFrame {
+    mentions?: Mention[]
+  }
+
+  /** Which room record a mention binds to — also its link scheme. Absent on
+   * pre-2.8 servers, which annotated npcs only. */
+  type MentionKind = "npc" | "item" | "clue"
+
+  interface Mention {
+    id: string
+    kind?: MentionKind
+    name: string
+    card?: MentionCard
+  }
+
+  /** The PLAYER-visible subset of one record's projection, flattened into a
+   * bag: only fields the matching kind exposes may appear. For item cards
+   * `kind` is the item's CATEGORY label (武器, tool, …) — not Mention["kind"]. */
+  interface MentionCard {
+    name?: string
+    public_description?: string
+    location?: string
+    status?: string
+    avatar?: string // media-blob content hash
+    public_memory?: string[]
+    kind?: string // item only: category label (武器, tool, …)
+    slot?: string
+    quantity?: number
+    equipped_slot?: string
+    description?: string
+    effect?: string
+    content?: string
+    found_turn?: number
+  }
+
+  // --- v2.7 wire: the campaign catch-up feed (list_chronicle →
+  // chronicle_records) — the campaign summary plus every chronicle record, all
+  // through the PLAYER document projections (the same contract `.recap`
+  // keeps). The published npm protocol predates it; ClientFrame/ServerFrame
+  // are type aliases and cannot be augmented — callers cast at the transport
+  // boundary.
+
+  /** Client → server: ask for the campaign catch-up feed. Player-open,
+   * read-only, answered off the turn lock. */
+  interface ListChronicleFrame {
+    type: "list_chronicle"
+  }
+
+  interface ChronicleRecordEntry {
+    id: string
+    turn: number
+    text: string
+    pcs: string[]
+    scene: string
+  }
+
+  /** Server → client: the unicast answer to `list_chronicle`. `summary` is
+   * null (not absent) before the first fold creates it; records with
+   * `turn <= summary.through_turn` are already condensed into the summary
+   * text, so a catch-up view can group them under it. */
+  interface ChronicleRecordsFrame {
+    type: "chronicle_records"
+    summary: { text: string; through_turn: number } | null
+    records: ChronicleRecordEntry[]
   }
 }

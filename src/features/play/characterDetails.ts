@@ -24,9 +24,7 @@ export interface ItemBonusContribution {
 
 /** Aggregate equipped items' `bonus` maps by sheet canonical, so a hover over a stat
  * can say "which items give this stat what". Unequipped items contribute nothing. */
-export function equippedItemBonuses(
-  items: ItemView[] | undefined,
-): Record<string, ItemBonusContribution[]> {
+export function equippedItemBonuses(items: ItemView[] | undefined): Record<string, ItemBonusContribution[]> {
   const out: Record<string, ItemBonusContribution[]> = {}
   for (const item of items ?? []) {
     if (!item.equipped_slot) continue
@@ -37,5 +35,3 @@ export function equippedItemBonuses(
   }
   return out
 }
-
-

@@ -203,7 +203,8 @@ function parseModuleSources(value: unknown): ModuleSource[] {
     ) {
       return []
     }
-    const generating = item.generating === true || item.source_kind === "generating" || item.sourceKind === "generating"
+    const generating =
+      item.generating === true || item.source_kind === "generating" || item.sourceKind === "generating"
     const sourceKind = generating
       ? "generating"
       : item.source_kind === "pack" || item.sourceKind === "pack"
@@ -224,10 +225,10 @@ function parseModuleSources(value: unknown): ModuleSource[] {
         ...(item.importing === true ? { importing: true } : {}),
         ...(generating
           ? {
-            generating: true,
-            stage: typeof item.stage === "string" ? item.stage : "",
-            detail: typeof item.detail === "string" ? item.detail : "",
-          }
+              generating: true,
+              stage: typeof item.stage === "string" ? item.stage : "",
+              detail: typeof item.detail === "string" ? item.detail : "",
+            }
           : {}),
       },
     ]
@@ -244,7 +245,14 @@ function updateGeneratingSource(
   const updated = sources.map((source) => {
     if (!source.generating && source.sourceKind !== "generating") return source
     found = true
-    return { ...source, sourceKind: "generating" as const, generating: true, generationKind: kind, stage, detail }
+    return {
+      ...source,
+      sourceKind: "generating" as const,
+      generating: true,
+      generationKind: kind,
+      stage,
+      detail,
+    }
   })
   if (found) return updated
   return [
@@ -304,114 +312,114 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
     sourceKind: value.source_kind === "pack" ? "pack" : value.source_kind === "text" ? "text" : undefined,
     worldbookEntries: Array.isArray(value.worldbook_entries)
       ? value.worldbook_entries.filter(
-        (item): item is { title: string; content: string; secret: boolean } =>
-          typeof item === "object" && item !== null && "title" in item && "content" in item,
-      )
+          (item): item is { title: string; content: string; secret: boolean } =>
+            typeof item === "object" && item !== null && "title" in item && "content" in item,
+        )
       : undefined,
     variables: Array.isArray(value.variables)
       ? value.variables
-        .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
-        .map((item) => ({
-          id: String(item.id ?? ""),
-          kind: typeof item.kind === "string" ? item.kind : undefined,
-          labels:
-            typeof item.labels === "object" && item.labels !== null && !Array.isArray(item.labels)
-              ? Object.fromEntries(
-                Object.entries(item.labels).filter(([, v]) => typeof v === "string"),
-              )
+          .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+          .map((item) => ({
+            id: String(item.id ?? ""),
+            kind: typeof item.kind === "string" ? item.kind : undefined,
+            labels:
+              typeof item.labels === "object" && item.labels !== null && !Array.isArray(item.labels)
+                ? Object.fromEntries(Object.entries(item.labels).filter(([, v]) => typeof v === "string"))
+                : undefined,
+            default:
+              typeof item.default === "number" ||
+              typeof item.default === "string" ||
+              typeof item.default === "boolean"
+                ? item.default
+                : undefined,
+            minimum: typeof item.minimum === "number" ? item.minimum : undefined,
+            maximum: typeof item.maximum === "number" ? item.maximum : undefined,
+            options: Array.isArray(item.options)
+              ? item.options.map((o) => String(o)).filter((o) => o.length > 0)
               : undefined,
-          default:
-            typeof item.default === "number" || typeof item.default === "string" || typeof item.default === "boolean"
-              ? item.default
-              : undefined,
-          minimum: typeof item.minimum === "number" ? item.minimum : undefined,
-          maximum: typeof item.maximum === "number" ? item.maximum : undefined,
-          options: Array.isArray(item.options)
-            ? item.options.map((o) => String(o)).filter((o) => o.length > 0)
-            : undefined,
-        }))
-        .filter((item) => item.id.length > 0)
+          }))
+          .filter((item) => item.id.length > 0)
       : undefined,
     pregens: Array.isArray(value.pregens)
       ? value.pregens
-        .filter(
-          (item): item is { name: string; concept?: string } => typeof item === "object" && item !== null,
-        )
-        .map((item) => ({
-          name: String((item as { name?: unknown }).name ?? ""),
-          concept:
-            typeof (item as { concept?: unknown }).concept === "string"
-              ? String((item as { concept?: unknown }).concept)
-              : undefined,
-          avatar:
-            typeof (item as { avatar?: unknown }).avatar === "string"
-              ? String((item as { avatar?: unknown }).avatar)
-              : undefined,
-        }))
+          .filter(
+            (item): item is { name: string; concept?: string } => typeof item === "object" && item !== null,
+          )
+          .map((item) => ({
+            name: String((item as { name?: unknown }).name ?? ""),
+            concept:
+              typeof (item as { concept?: unknown }).concept === "string"
+                ? String((item as { concept?: unknown }).concept)
+                : undefined,
+            avatar:
+              typeof (item as { avatar?: unknown }).avatar === "string"
+                ? String((item as { avatar?: unknown }).avatar)
+                : undefined,
+          }))
       : undefined,
     rulepacks: Array.isArray(value.rulepacks)
       ? value.rulepacks.filter(
-        (item): item is { name: string; title: string; content: string } =>
-          typeof item === "object" && item !== null && "name" in item,
-      )
+          (item): item is { name: string; title: string; content: string } =>
+            typeof item === "object" && item !== null && "name" in item,
+        )
       : undefined,
     skills: Array.isArray(value.skills)
       ? value.skills.filter(
-        (item): item is { name: string; content: string } =>
-          typeof item === "object" && item !== null && "name" in item,
-      )
+          (item): item is { name: string; content: string } =>
+            typeof item === "object" && item !== null && "name" in item,
+        )
       : undefined,
     items: Array.isArray(value.items)
       ? value.items
-        .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
-        .map((item) => ({
-          name: String(item.name ?? ""),
-          kind: typeof item.kind === "string" ? item.kind : undefined,
-          slot: typeof item.slot === "string" ? item.slot : undefined,
-          scope: typeof item.scope === "string" ? item.scope : undefined,
-          description: typeof item.description === "string" ? item.description : undefined,
-          effect: typeof item.effect === "string" ? item.effect : undefined,
-          lore: typeof item.lore === "string" ? item.lore : undefined,
-          origin: typeof item.origin === "string" ? item.origin : undefined,
-          original_holder: typeof item.original_holder === "string" ? item.original_holder : undefined,
-          quantity: typeof item.quantity === "number" ? item.quantity : undefined,
-          bonus:
-            typeof item.bonus === "object" && item.bonus !== null && !Array.isArray(item.bonus)
-              ? (item.bonus as Record<string, number>)
-              : undefined,
-        }))
-        .filter((item) => item.name.length > 0)
+          .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+          .map((item) => ({
+            name: String(item.name ?? ""),
+            kind: typeof item.kind === "string" ? item.kind : undefined,
+            slot: typeof item.slot === "string" ? item.slot : undefined,
+            scope: typeof item.scope === "string" ? item.scope : undefined,
+            description: typeof item.description === "string" ? item.description : undefined,
+            effect: typeof item.effect === "string" ? item.effect : undefined,
+            lore: typeof item.lore === "string" ? item.lore : undefined,
+            origin: typeof item.origin === "string" ? item.origin : undefined,
+            original_holder: typeof item.original_holder === "string" ? item.original_holder : undefined,
+            quantity: typeof item.quantity === "number" ? item.quantity : undefined,
+            bonus:
+              typeof item.bonus === "object" && item.bonus !== null && !Array.isArray(item.bonus)
+                ? (item.bonus as Record<string, number>)
+                : undefined,
+          }))
+          .filter((item) => item.name.length > 0)
       : undefined,
     pool,
     media: Array.isArray(value.media)
       ? value.media
-        .filter(
-          (item): item is ModuleMediaRecord =>
-            typeof item === "object" &&
-            item !== null &&
-            typeof (item as ModuleMediaRecord).name === "string" &&
-            typeof (item as ModuleMediaRecord).hash === "string" &&
-            typeof (item as ModuleMediaRecord).mime === "string" &&
-            typeof (item as ModuleMediaRecord).size === "number",
-        )
-        .map((item) => ({
-          name: item.name,
-          hash: item.hash,
-          mime: item.mime,
-          size: item.size,
-          kind:
-            typeof (item as { kind?: unknown }).kind === "string"
-              ? String((item as { kind?: unknown }).kind)
-              : undefined,
-          subject:
-            typeof (item as { subject?: unknown }).subject === "string"
-              ? String((item as { subject?: unknown }).subject)
-              : undefined,
-          data:
-            typeof (item as { data?: unknown }).data === "string"
-              ? String((item as { data?: unknown }).data)
-              : undefined,
-        }))
+          .filter(
+            (item): item is ModuleMediaRecord =>
+              typeof item === "object" &&
+              item !== null &&
+              typeof (item as ModuleMediaRecord).name === "string" &&
+              typeof (item as ModuleMediaRecord).hash === "string" &&
+              typeof (item as ModuleMediaRecord).mime === "string" &&
+              typeof (item as ModuleMediaRecord).size === "number",
+          )
+          .map((item) => ({
+            name: item.name,
+            hash: item.hash,
+            mime: item.mime,
+            size: item.size,
+            kind:
+              typeof (item as { kind?: unknown }).kind === "string"
+                ? String((item as { kind?: unknown }).kind)
+                : undefined,
+            subject:
+              typeof (item as { subject?: unknown }).subject === "string"
+                ? String((item as { subject?: unknown }).subject)
+                : undefined,
+            data:
+              typeof (item as { data?: unknown }).data === "string"
+                ? String((item as { data?: unknown }).data)
+                : undefined,
+          }))
       : [],
   }
 }
@@ -477,13 +485,13 @@ function parseWorldbookDetailValue(value: Record<string, unknown>): WorldbookDet
       const record = Object.fromEntries(Object.entries(entry))
       return typeof record.title === "string" && typeof record.content === "string"
         ? [
-          {
-            title: record.title,
-            content: record.content,
-            keys: record.keys ?? [],
-            secret: record.secret === true,
-          },
-        ]
+            {
+              title: record.title,
+              content: record.content,
+              keys: record.keys ?? [],
+              secret: record.secret === true,
+            },
+          ]
         : []
     }),
   }
@@ -704,10 +712,7 @@ function moduleAction(
   )
 }
 
-function sendModulePrompt(
-  frame: ClientFrame,
-  set: (patch: Partial<AdminState>) => void,
-): void {
+function sendModulePrompt(frame: ClientFrame, set: (patch: Partial<AdminState>) => void): void {
   const deliver = () =>
     transportSend(frame).catch((cause) => {
       set({
@@ -848,14 +853,17 @@ export const useAdminStore = create<AdminState>((set) => ({
             set((state) => ({
               moduleSources: nextSources,
               moduleDetail: null,
-              generationKind:
-                generating?.generationKind ?? (generating ? state.generationKind : null),
+              generationKind: generating?.generationKind ?? (generating ? state.generationKind : null),
               // Restore the in-flight progress from the persisted generating entry so a fresh
               // connection (or a reload) still sees "正在生成…" — progress frames are unicast to
               // the connection that triggered the generation and never reach another tab.
               busy: Boolean(generating),
-              generationStage: generating ? (generating.stage ?? state.generationStage) : state.generationStage,
-              generationDetail: generating ? (generating.detail ?? state.generationDetail) : state.generationDetail,
+              generationStage: generating
+                ? (generating.stage ?? state.generationStage)
+                : state.generationStage,
+              generationDetail: generating
+                ? (generating.detail ?? state.generationDetail)
+                : state.generationDetail,
               lastError: null,
             }))
           } else if (kind === "module_detail") {
@@ -875,8 +883,8 @@ export const useAdminStore = create<AdminState>((set) => ({
                 status: typeof detail.status === "string" ? detail.status : undefined,
                 choices: Array.isArray(detail.choices)
                   ? detail.choices.filter(
-                    (choice): choice is string => typeof choice === "string" && !!choice,
-                  )
+                      (choice): choice is string => typeof choice === "string" && !!choice,
+                    )
                   : undefined,
               },
               ...(kind === "module_import" ? { moduleImporting: null } : {}),
@@ -916,7 +924,13 @@ export const useAdminStore = create<AdminState>((set) => ({
           }
           return true
         }
-        set({ generated: frame, busy: false, generationStage: null, generationDetail: "", generationKind: null })
+        set({
+          generated: frame,
+          busy: false,
+          generationStage: null,
+          generationDetail: "",
+          generationKind: null,
+        })
         return true
       }
       case "admin_room_op":
@@ -969,8 +983,7 @@ export const useAdminStore = create<AdminState>((set) => ({
     ),
   deleteLlm: (profileId) => send({ type: "admin_delete_llm", id: profileId } as unknown as ClientFrame, set),
   exportLLMConfig: () => send({ type: "admin_export_llm" } as unknown as ClientFrame, set),
-  importLLMConfig: (config) =>
-    send({ type: "admin_import_llm", config } as unknown as ClientFrame, set),
+  importLLMConfig: (config) => send({ type: "admin_import_llm", config } as unknown as ClientFrame, set),
   setLlmLane: (lane, patch) =>
     send(
       {
@@ -1039,17 +1052,16 @@ export const useAdminStore = create<AdminState>((set) => ({
     send({ type: "admin_enable_skill", id, on, ...(locale ? { locale } : {}) }, set),
   listRules: () => send({ type: "admin_list_rules" }, set),
   listPresets: () => send({ type: "admin_list_presets" } as unknown as ClientFrame, set),
-  enablePreset: (id, on) =>
-    send({ type: "admin_enable_preset", id, on } as unknown as ClientFrame, set),
+  enablePreset: (id, on) => send({ type: "admin_enable_preset", id, on } as unknown as ClientFrame, set),
   savePreset: (text, id) =>
     send({ type: "admin_save_preset", ...(id ? { id } : {}), text } as unknown as ClientFrame, set),
   deletePreset: (id) => send({ type: "admin_delete_preset", id } as unknown as ClientFrame, set),
   exportPresets: () => send({ type: "admin_export_presets" } as unknown as ClientFrame, set),
-  importPresets: (presets) =>
-    send({ type: "admin_import_presets", presets } as unknown as ClientFrame, set),
+  importPresets: (presets) => send({ type: "admin_import_presets", presets } as unknown as ClientFrame, set),
   clearPresetExport: () => set({ presetExport: null }),
   generateModulePrompt: (description, options) => {
-    const requestId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const requestId =
+      globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
     const idea = description.trim()
     const mode = idea ? "rewrite" : "suggest"
     set({

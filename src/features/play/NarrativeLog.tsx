@@ -1,27 +1,31 @@
 import {
   memo,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
 } from "react"
 import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
-import ReactMarkdown from "react-markdown"
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
   stripControlChars,
   type ErrorFrame,
   type MediaFrame,
+  type Mention,
   type NarrativeFrame,
   type SystemFrame,
 } from "@loreweaver/protocol"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore, type LogEntry, type PendingEcho } from "../../store/session"
 import DiceLine from "./DiceLine"
+import MentionCard from "./MentionCard"
 import { assetReadBytes } from "./panels/assets"
 import { ECHO_SWEEP_MS, FOLLOW_SLACK_PX } from "./timing"
 import UiBlocks from "./UiBlocks"
@@ -44,6 +48,9 @@ const CHAPTER_GAP_MS = 10 * 60_000
 const EST_LINE_PX = 25
 /** Speaker head + body top padding/border of a bubble. */
 const EST_HEAD_PX = 54
+/** Internal mention schemes — `npc`/`item`/`clue`, each also the mention kind
+ * its links bind to (`[name](<scheme>://<id>)`). */
+const MENTION_SCHEME_RE = /^(npc|item|clue):/
 
 function speakerLabel(frame: NarrativeFrame, systemLabel: string, playerLabel: string): string {
   if (frame.speaker === "kp") return "KP"
@@ -93,12 +100,7 @@ function estimateHeight(entry: LogEntry): number {
 }
 
 /** Content offset of line `index`: every line height plus its row gap. */
-function positionOf(
-  index: number,
-  entries: LogEntry[],
-  heights: Map<number, number>,
-  gap: number,
-): number {
+function positionOf(index: number, entries: LogEntry[], heights: Map<number, number>, gap: number): number {
   let pos = 0
   for (let i = 0; i < index; i++) {
     pos += (heights.get(entries[i].seq) ?? estimateHeight(entries[i])) + gap
@@ -107,12 +109,7 @@ function positionOf(
 }
 
 /** Index of the first line whose top is at or below `y`. */
-function indexAt(
-  y: number,
-  entries: LogEntry[],
-  heights: Map<number, number>,
-  gap: number,
-): number {
+function indexAt(y: number, entries: LogEntry[], heights: Map<number, number>, gap: number): number {
   let lo = 0
   let hi = entries.length
   while (lo < hi) {
@@ -134,10 +131,7 @@ function computeWindow(
   if (len === 0) return [0, 0]
   if (positionOf(len, entries, heights, gap) <= clientHeight) return [0, len]
   const start = Math.max(0, indexAt(scrollTop, entries, heights, gap) - OVERSCAN)
-  const end = Math.min(
-    len,
-    indexAt(scrollTop + clientHeight, entries, heights, gap) + OVERSCAN + 1,
-  )
+  const end = Math.min(len, indexAt(scrollTop + clientHeight, entries, heights, gap) + OVERSCAN + 1)
   return [start, Math.max(start + 1, end)]
 }
 
@@ -160,7 +154,9 @@ function NarrativeEntry({
   onOpenDraft: (text: string) => void
 }) {
   const { t, i18n } = useTranslation()
-  const text = stripControlChars(frame.text)
+  // Strip any `[[ ]]` mark the server's annotator failed to consume (its own
+  // strip/fallback normally removes them; this is the last-resort display guard).
+  const text = stripControlChars(frame.text).replace(/\[\[|\]\]/g, "")
   const hasDiscardedDraft = Boolean(discardedDraft)
   return (
     <article
@@ -182,11 +178,25 @@ function NarrativeEntry({
         <time className="entry-time" dateTime={new Date(at).toISOString()}>
           {formatTime(at, i18n.language)}
         </time>
-        {hasDiscardedDraft ? <span className="draft-mark" aria-hidden="true">{"◆"}</span> : null}
+        {hasDiscardedDraft ? (
+          <span className="draft-mark" aria-hidden="true">
+            {"◆"}
+          </span>
+        ) : null}
       </header>
       <div className="entry-body">
         {frame.format === "markdown" ? (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            // Mention links (`npc:`/`item:`/`clue:`) carry the record id the
+            // log's click delegation resolves; react-markdown's default URL
+            // transform would strip the scheme (not in its http/https/mailto
+            // whitelist) to an empty href, turning a highlight into a
+            // self-navigating dead link.
+            urlTransform={(url) => (MENTION_SCHEME_RE.test(url) ? url : defaultUrlTransform(url))}
+          >
+            {text}
+          </ReactMarkdown>
         ) : (
           <p className="entry-plain">{text}</p>
         )}
@@ -280,15 +290,7 @@ function linkify(text: string): ReactNode[] {
 /** The server refusing something, told where the player is already looking. */
 /** A generated/uploaded picture in the chronicle — loads the content-addressed
  * bytes through the same asset channel as the media deck. */
-function MediaEntry({
-  frame,
-  seq,
-  isJumpTarget,
-}: {
-  frame: MediaFrame
-  seq: number
-  isJumpTarget: boolean
-}) {
+function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: number; isJumpTarget: boolean }) {
   const { t } = useTranslation()
   const [src, setSrc] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
@@ -302,9 +304,10 @@ function MediaEntry({
     assetReadBytes(frame.hash)
       .then((bytes) => {
         if (!live) return
-        // The cache never hands out SharedArrayBuffer-backed views; narrow the
-        // view's buffer so recent lib.dom typings accept it as a BlobPart.
-        url = URL.createObjectURL(new Blob([bytes.buffer as ArrayBuffer], { type: frame.mime }))
+        // `bytes` is a subarray view of the WS media frame — its `.buffer`
+        // also holds the frame header, which would corrupt the blob and
+        // render a broken image. `slice()` copies just the view's bytes.
+        url = URL.createObjectURL(new Blob([bytes.slice()], { type: frame.mime }))
         setSrc(url)
       })
       .catch(() => {
@@ -317,17 +320,14 @@ function MediaEntry({
   }, [frame.hash, frame.mime])
 
   return (
-    <article
-      className={`log-entry log-media${isJumpTarget ? " log-jump-target" : ""}`}
-      data-seq={seq}
-    >
+    <article className={`log-entry log-media${isJumpTarget ? " log-jump-target" : ""}`} data-seq={seq}>
       <header className="entry-speaker">{frame.from || t("log.media")}</header>
       {src !== null ? (
         <img
           className="log-media-img"
           src={src}
           alt={frame.name ?? ""}
-          title={frame.prompt ? t("log.mediaPromptTitle", { prompt: frame.prompt }) : frame.name ?? ""}
+          title={frame.prompt ? t("log.mediaPromptTitle", { prompt: frame.prompt }) : (frame.name ?? "")}
         />
       ) : (
         <span className="log-media-empty" aria-hidden="true">
@@ -340,15 +340,7 @@ function MediaEntry({
   )
 }
 
-function ErrorEntry({
-  frame,
-  seq,
-  isJumpTarget,
-}: {
-  frame: ErrorFrame
-  seq: number
-  isJumpTarget: boolean
-}) {
+function ErrorEntry({ frame, seq, isJumpTarget }: { frame: ErrorFrame; seq: number; isJumpTarget: boolean }) {
   const { t } = useTranslation()
   const detail = stripControlChars(frame.message).trim()
   return (
@@ -475,9 +467,7 @@ function chapterAt(index: number, chapters: Chapter[]): number {
 }
 
 const raf =
-  typeof requestAnimationFrame === "function"
-    ? requestAnimationFrame
-    : (cb: () => void) => setTimeout(cb, 16)
+  typeof requestAnimationFrame === "function" ? requestAnimationFrame : (cb: () => void) => setTimeout(cb, 16)
 
 export default function NarrativeLog() {
   const { t, i18n } = useTranslation()
@@ -485,6 +475,7 @@ export default function NarrativeLog() {
   const expireEchoes = useSessionStore((s) => s.expirePendingEchoes)
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
   const [openDraft, setOpenDraft] = useState<string | null>(null)
+  const [openMention, setOpenMention] = useState<Mention | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   // Streaming turns one reply into dozens of updates; only follow when the
   // reader is already pinned at the bottom, so scrolling up to reread history
@@ -515,7 +506,7 @@ export default function NarrativeLog() {
   const tocRoot = useRef<HTMLDivElement | null>(null)
   const tocToggle = useRef<HTMLButtonElement | null>(null)
 
-  const scheduleWindow = () => {
+  const scheduleWindow = useCallback(() => {
     if (rafRef.current) return
     rafRef.current = raf(() => {
       rafRef.current = 0
@@ -524,7 +515,7 @@ export default function NarrativeLog() {
       const next = computeWindow(el.scrollTop, el.clientHeight, entries, heightsRef.current, logGap(el))
       setWindowRange((prev) => (prev[0] === next[0] && prev[1] === next[1] ? prev : next))
     })
-  }
+  }, [entries])
 
   const onScroll = () => {
     const el = scroller.current
@@ -533,6 +524,38 @@ export default function NarrativeLog() {
     const chapter = chapterAt(indexAt(el.scrollTop, entries, heightsRef.current, logGap(el)), chapters)
     setCurrentChapter((prev) => (prev === chapter ? prev : chapter))
     scheduleWindow()
+  }
+
+  // Tracked-name links render as `[name](<kind>://<id>)` through remark — bare
+  // anchors the browser would try to navigate. Delegate clicks on the log root:
+  // resolve against the clicked bubble's mentions first (the same name recurs
+  // across lines), then the whole log, and open the player-visible card instead
+  // (ReactMarkdown `a` overrides would re-parse every bubble on every stream
+  // delta; one delegated handler costs nothing).
+  const handleLogClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement
+    const anchor = target.closest('a[href^="npc://"], a[href^="item://"], a[href^="clue://"]')
+    if (!anchor || !(anchor instanceof HTMLAnchorElement)) return
+    event.preventDefault()
+    const href = anchor.getAttribute("href") ?? ""
+    const schemeEnd = href.indexOf(":")
+    if (schemeEnd < 0) return
+    const scheme = href.slice(0, schemeEnd)
+    const id = decodeURIComponent(href.slice(scheme.length + 3))
+    const isMatch = (mention: Mention) => mention.id === id && (mention.kind ?? "npc") === scheme
+    const bubbleSeq = Number(target.closest("[data-seq]")?.getAttribute("data-seq"))
+    const bubble = Number.isFinite(bubbleSeq)
+      ? entries.find((entry) => entry.kind === "narrative" && entry.seq === bubbleSeq)
+      : undefined
+    // The clicked bubble first, then every other retained line.
+    for (const entry of bubble ? [bubble, ...entries] : entries) {
+      if (!entry || entry.kind !== "narrative") continue
+      const hit = entry.frame.mentions?.find(isMatch)
+      if (hit) {
+        setOpenMention(hit)
+        return
+      }
+    }
   }
 
   // New lines while pinned: keep the window on the tail of the log.
@@ -562,11 +585,7 @@ export default function NarrativeLog() {
         const node = item.target as HTMLElement
         const seq = Number(node.dataset.seq)
         const height = item.borderBoxSize?.[0]?.blockSize ?? node.getBoundingClientRect().height
-        if (
-          Number.isFinite(height) &&
-          height > 0 &&
-          Math.abs(height - (heights.get(seq) ?? -1)) > 0.5
-        ) {
+        if (Number.isFinite(height) && height > 0 && Math.abs(height - (heights.get(seq) ?? -1)) > 0.5) {
           heights.set(seq, height)
           changed = true
         }
@@ -670,7 +689,7 @@ export default function NarrativeLog() {
     el.scrollTop = modelTop
     scheduleWindow()
     setVersion((v) => v + 1)
-  }, [windowRange, version, entries])
+  }, [windowRange, version, entries, scheduleWindow])
 
   // A line the table never reflected back has to say so rather than sit there
   // looking sent. The sweep only runs while something is actually waiting.
@@ -722,7 +741,9 @@ export default function NarrativeLog() {
   const safeEnd = Math.max(safeStart, Math.min(windowEnd, entries.length))
   const gap = logGap(scroller.current)
   const topPad = positionOf(safeStart, entries, heightsRef.current, gap)
-  const bottomPad = positionOf(entries.length, entries, heightsRef.current, gap) - positionOf(safeEnd, entries, heightsRef.current, gap)
+  const bottomPad =
+    positionOf(entries.length, entries, heightsRef.current, gap) -
+    positionOf(safeEnd, entries, heightsRef.current, gap)
 
   // Roving focus inside the open contents: arrows walk the chapters (a menu's
   // contract), Home/End jump to the ends. Buttons stay tabbable as fallback.
@@ -730,18 +751,27 @@ export default function NarrativeLog() {
     const items = Array.from(tocRoot.current?.querySelectorAll<HTMLButtonElement>(".log-toc-item") ?? [])
     if (items.length === 0) return
     const current = items.indexOf(document.activeElement as HTMLButtonElement)
-    let next = -1
-    if (event.key === "ArrowDown") next = current === -1 ? 0 : Math.min(current + 1, items.length - 1)
-    else if (event.key === "ArrowUp") next = current === -1 ? items.length - 1 : Math.max(current - 1, 0)
-    else if (event.key === "Home") next = 0
-    else if (event.key === "End") next = items.length - 1
-    else return
+    const next =
+      event.key === "ArrowDown"
+        ? current === -1
+          ? 0
+          : Math.min(current + 1, items.length - 1)
+        : event.key === "ArrowUp"
+          ? current === -1
+            ? items.length - 1
+            : Math.max(current - 1, 0)
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? items.length - 1
+              : null
+    if (next === null) return
     event.preventDefault()
     items[next]?.focus()
   }
 
   return (
-    <div className="narrative-log" ref={scroller} onScroll={onScroll}>
+    <div className="narrative-log" ref={scroller} onScroll={onScroll} onClick={handleLogClick}>
       {/* Two chapters at least — a lone beat has nowhere to navigate to. */}
       {chapters.length >= 2 ? (
         <div className="log-toc-anchor" ref={tocRoot}>
@@ -805,7 +835,12 @@ export default function NarrativeLog() {
           >
             <header className="panel-modal-header">
               <h2>{t("log.draftTitle")}</h2>
-              <button ref={draftCloseRef} type="button" className="ui-button" onClick={() => setOpenDraft(null)}>
+              <button
+                ref={draftCloseRef}
+                type="button"
+                className="ui-button"
+                onClick={() => setOpenDraft(null)}
+              >
                 {t("log.draftClose")}
               </button>
             </header>
@@ -815,6 +850,7 @@ export default function NarrativeLog() {
           </div>
         </div>
       ) : null}
+      {openMention ? <MentionCard mention={openMention} onClose={() => setOpenMention(null)} /> : null}
     </div>
   )
 }

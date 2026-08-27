@@ -999,42 +999,105 @@ select {
   gap: var(--space-5);
 }
 
+/* The gallery reads as one column: the cover leads as a hero, then each media
+   kind forms its own labeled band. Columns of unequal groups left long empty
+   rails beside tall stacks, so no split layout here. */
 .module-media-layout {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
-  gap: var(--space-4);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
 }
 
-.module-detail-subsection {
+.module-media-group {
+  display: flex;
   min-width: 0;
-  padding: var(--space-4);
-  background: var(--surface-inset);
-  border: 1px solid var(--line-subtle);
-  border-radius: var(--radius-md);
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.module-detail-subsection--cover {
-  grid-row: span 2;
+.module-media-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
 }
 
-.module-detail-subsection > .ui-section-header {
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--line-subtle);
+.module-media-group-label {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 600 11px/1.4 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.module-detail-subsection .ui-section-title {
-  font-size: 15px;
+.module-media-group-count {
+  color: var(--text-tertiary);
+  font: 11px/1.4 var(--font-mono);
 }
 
 .module-detail-media-card .module-media-grid {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--space-3);
 }
 
 .module-detail-media-card .module-media-item img {
   aspect-ratio: 4 / 3;
   object-fit: cover;
+}
+
+/* Scene plates are landscape; portraits stand upright. */
+.module-detail-media-card .module-media-grid--scenes {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+.module-detail-media-card .module-media-grid--scenes .module-media-item img {
+  aspect-ratio: 16 / 9;
+}
+
+.module-detail-media-card .module-media-grid--npcs {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.module-detail-media-card .module-media-grid--npcs .module-media-item img {
+  aspect-ratio: 3 / 4;
+}
+
+/* The cover leads the gallery at its natural shape, caption seated beside it. */
+.module-detail-media-card .module-media-grid--cover {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.module-detail-media-card .module-media-grid--cover .module-media-item {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.module-detail-media-card .module-media-grid--cover .module-media-trigger {
+  width: auto;
+  max-width: min(100%, 620px);
+  flex: 0 1 auto;
+}
+
+.module-detail-media-card .module-media-grid--cover .module-media-item img {
+  width: auto;
+  max-width: 100%;
+  max-height: clamp(220px, 30vw, 380px);
+  aspect-ratio: auto;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+}
+
+.module-detail-media-card .module-media-grid--cover .module-media-caption {
+  flex: 1 1 200px;
+  gap: var(--space-2);
+}
+
+.module-detail-media-card .module-media-grid--cover .module-media-subject {
+  font: 650 17px/1.35 var(--font-story);
+}
+
+.module-detail-media-card .module-media-grid:not(.module-media-grid--cover) .module-media-filename {
+  display: none;
 }
 
 .module-media-trigger {
@@ -1056,9 +1119,15 @@ select {
 
 .module-media-trigger img {
   display: block;
+  border-color: var(--line-subtle);
+  transition: border-color 120ms var(--ease-out);
 }
 
-.module-image-lightbox-backdrop {
+.module-media-trigger:hover img {
+  border-color: var(--line-strong);
+}
+
+.image-lightbox-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1400;
@@ -1069,7 +1138,7 @@ select {
   background: rgb(8 7 5 / 88%);
 }
 
-.module-image-lightbox {
+.image-lightbox {
   position: relative;
   display: flex;
   max-width: min(1120px, 100%);
@@ -1083,7 +1152,7 @@ select {
   border-radius: var(--radius-lg);
 }
 
-.module-image-lightbox-image {
+.image-lightbox-image {
   display: block;
   width: auto;
   max-width: min(1040px, calc(100vw - 2 * var(--space-10)));
@@ -1092,8 +1161,11 @@ select {
   border-radius: var(--radius-sm);
 }
 
-.module-image-lightbox-caption {
+.image-lightbox-caption {
+  display: flex;
   max-width: 100%;
+  flex-direction: column;
+  gap: var(--space-1);
   margin: 0;
   color: var(--text-secondary);
   font: 12px/1.4 var(--font-mono);
@@ -1101,7 +1173,12 @@ select {
   text-align: center;
 }
 
-.module-image-lightbox-close {
+.image-lightbox-caption .module-media-subject {
+  color: var(--text-primary);
+  font: 650 13px/1.4 var(--font-ui);
+}
+
+.image-lightbox-close {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
@@ -1120,18 +1197,14 @@ select {
   line-height: 1;
 }
 
-.module-image-lightbox-close:hover {
+.image-lightbox-close:hover {
   color: var(--text-accent);
   background: var(--surface-hover);
 }
 
-.module-image-lightbox-close:focus-visible {
+.image-lightbox-close:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
-}
-
-.module-detail-media-card .module-detail-subsection--cover .module-media-grid {
-  grid-template-columns: minmax(0, 1fr);
 }
 
 .module-detail-content-card .worldbook-entry-list {
@@ -1158,7 +1231,7 @@ select {
 }
 
 .module-detail-pregens-card .module-source-select.has-portrait {
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr);
 }
 
 .module-detail-pregens-card .module-source-copy {
@@ -1182,14 +1255,14 @@ select {
 }
 
 .module-detail-pregens-card .module-source-select .module-media-item {
-  width: 64px;
-  flex: 0 0 64px;
+  width: 104px;
+  flex: 0 0 104px;
   gap: 0;
 }
 
 .module-detail-pregens-card .module-source-select .module-media-item img {
-  width: 64px;
-  height: 64px;
+  width: 104px;
+  height: 104px;
   aspect-ratio: 1;
   object-fit: cover;
 }
@@ -1200,6 +1273,47 @@ select {
 
 .module-detail-pregens-card .module-source-list {
   gap: var(--space-4);
+}
+
+/* Detail cards keep one shared inset treatment: legacy row chrome is leveled onto
+   the same tokens the worldbook and tracker entries use. */
+.module-detail-pregens-card .module-source-row {
+  padding: var(--space-3);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+}
+
+@media (min-width: 761px) {
+  .module-detail-pregens-card .module-source-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3) var(--space-4);
+  }
+}
+
+.module-detail-content-card .module-variable-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.module-detail-content-card .module-variable-item {
+  padding: var(--space-4);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+}
+
+.module-detail-content-card .module-variable-head {
+  gap: var(--space-2);
+}
+
+.module-detail-content-card .module-variable-item p {
+  margin-top: var(--space-2);
 }
 
 .module-rich-entry-list {
@@ -2455,27 +2569,35 @@ select {
   }
 
   .module-media-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .module-detail-subsection--cover {
-    grid-row: auto;
+    gap: var(--space-5);
   }
 
   .module-detail-media-card .module-media-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .module-detail-media-card .module-detail-subsection--cover .module-media-grid {
+  /* The cover hero stacks: image above its caption, both full width. */
+  .module-detail-media-card .module-media-grid--cover {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .module-image-lightbox {
+  .module-detail-media-card .module-media-grid--cover .module-media-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .module-detail-media-card .module-media-grid--cover .module-media-trigger {
+    width: 100%;
+    max-width: none;
+  }
+
+  .image-lightbox {
     width: 100%;
     max-height: calc(100vh - 2 * var(--space-4));
   }
 
-  .module-image-lightbox-image {
+  .image-lightbox-image {
     max-width: calc(100vw - 2 * var(--space-6));
     max-height: calc(100vh - 112px);
   }
@@ -2484,23 +2606,28 @@ select {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .module-detail-content-card .module-variable-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .module-detail-pregens-card .module-source-select {
     grid-template-columns: minmax(0, 1fr);
+    align-items: start;
     gap: var(--space-3);
   }
 
   .module-detail-pregens-card .module-source-select.has-portrait {
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: 80px minmax(0, 1fr);
   }
 
   .module-detail-pregens-card .module-source-select .module-media-item {
-    width: 56px;
-    flex-basis: 56px;
+    width: 80px;
+    flex-basis: 80px;
   }
 
   .module-detail-pregens-card .module-source-select .module-media-item img {
-    width: 56px;
-    height: 56px;
+    width: 80px;
+    height: 80px;
   }
 
   .settings-workspace {
