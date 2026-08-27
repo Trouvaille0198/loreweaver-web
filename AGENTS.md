@@ -1,1 +1,1 @@
-- 写功能后别跑lint
+- 禁止跑 test、lint、typecheck（用户明确要求，最高优先级）；构建和部署只跑 `docker compose build` / `docker compose up`（vite 构建本身不做类型检查，够用）
