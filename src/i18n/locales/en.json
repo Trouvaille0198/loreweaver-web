@@ -2182,5 +2182,11 @@
   "play.module.options.difficultyHint": "Design driver: peril, threat strength, resources, time pressure (level-based systems only)",
   "play.module.options.levelsLabel": "Levels",
   "play.module.options.levelsPlaceholder": "e.g. 1-3, 5-10",
-  "play.module.options.levelsHint": "Recommended character level range (level-based systems only)"
+  "play.module.options.levelsHint": "Recommended character level range (level-based systems only)",
+  "play.character.retired": "Retired",
+  "play.character.retire": "Leave scenario",
+  "play.character.retireHint": "Step out of this scenario's party; the sheet is kept and can re-join anytime",
+  "play.character.join": "Join scenario",
+  "play.character.joinHint": "Bring this character into the current scenario's party",
+  "session.partyRetire": "Leave scenario (keep sheet)"
 }

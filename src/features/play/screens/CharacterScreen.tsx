@@ -337,6 +337,7 @@ function CharacterRosterList({
                   <span>{stripControlChars(item.system)}</span>
                 </span>
                 {active ? <span className="chip">{t("play.character.active")}</span> : null}
+                {item.retired ? <span className="chip chip-warn">{t("play.character.retired")}</span> : null}
               </button>
             </li>
           )
@@ -868,6 +869,15 @@ function CharacterDetailsView({
               >
                 {t("play.character.finalize")}
               </Button>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={!online}
+                title={t("play.character.retireHint")}
+                onClick={() => send(".st retire")}
+              >
+                {t("play.character.retire")}
+              </Button>
               {confirmDelete ? (
                 <>
                   <Button
@@ -896,6 +906,16 @@ function CharacterDetailsView({
                 </Button>
               )}
             </>
+          ) : character.retired ? (
+            <Button
+              type="button"
+              variant="primary"
+              disabled={!online}
+              title={t("play.character.joinHint")}
+              onClick={() => send(`.st join ${character.name}`)}
+            >
+              {t("play.character.join")}
+            </Button>
           ) : (
             <Button type="button" variant="primary" disabled={!online || !onActivate} onClick={onActivate}>
               {t("play.character.activate")}

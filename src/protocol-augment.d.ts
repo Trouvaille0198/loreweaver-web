@@ -115,6 +115,10 @@ declare module "@loreweaver/protocol" {
   interface CharacterState {
     /** v2.4 wire: trained skills, name → current value. Absent pre-2.4. */
     skills?: Record<string, unknown>
+    /** True when the sheet has stepped out of this scenario's party (kept in
+     * the character library, excluded from the party roster) — the library
+     * renders a "join" affordance on retired cards. Absent pre-retirement. */
+    retired?: boolean
     resource_groups?: {
       id: string
       resources: {

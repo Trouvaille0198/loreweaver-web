@@ -2182,5 +2182,11 @@
   "play.module.options.difficultyHint": "设计驱动：影响环境险恶度、威胁强度、资源分布与时间压力（仅 D&D 等有等级的系统生效）",
   "play.module.options.levelsLabel": "适合等级",
   "play.module.options.levelsPlaceholder": "如 1-3、5-10",
-  "play.module.options.levelsHint": "本剧本推荐的角色等级范围（仅 D&D 等有等级的系统生效）"
+  "play.module.options.levelsHint": "本剧本推荐的角色等级范围（仅 D&D 等有等级的系统生效）",
+  "play.character.retired": "已退队",
+  "play.character.retire": "退出剧本",
+  "play.character.retireHint": "移出本剧本队伍，角色卡保留，可随时再加入",
+  "play.character.join": "加入剧本",
+  "play.character.joinHint": "让该角色加入当前剧本队伍",
+  "session.partyRetire": "退出剧本（卡保留）"
 }

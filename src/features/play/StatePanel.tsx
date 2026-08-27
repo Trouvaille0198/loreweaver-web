@@ -847,6 +847,15 @@ export function PartyCard({ game }: { game: StateFrame }) {
     const claimedBy = pregen?.claimed_by?.trim() ?? ""
     const mine = claimedBy !== "" && claimedBy === you
     const active = mine && game.character?.name === name
+    // A retire target: one of MY OWN character sheets (the character library
+    // lists every owned card, retired or not), that is NOT a pregen claim and
+    // NOT an AI companion — retiring a claimed pregen would fight its release
+    // semantics, and companions leave through `.party remove`. The sheet is
+    // kept, so the row's owner can re-join from the character library.
+    const ownCard =
+      (game.characters ?? []).some((card) => card.name === name) &&
+      !pregen &&
+      !game.party.find((member) => member.name === name)?.ai
     return {
       view: true,
       mine,
@@ -854,6 +863,7 @@ export function PartyCard({ game }: { game: StateFrame }) {
       switchTo: mine && !active && online,
       release: mine && online,
       forceRelease: !mine && claimedBy !== "" && isKeeper && online,
+      retire: ownCard && online,
       generateAvatar: isKeeper && online,
     }
   }
@@ -862,7 +872,12 @@ export function PartyCard({ game }: { game: StateFrame }) {
     const actions = menuActions(name)
     if (
       !actions ||
-      (!actions.view && !actions.switchTo && !actions.release && !actions.forceRelease && !actions.generateAvatar)
+      (!actions.view &&
+        !actions.switchTo &&
+        !actions.release &&
+        !actions.forceRelease &&
+        !actions.retire &&
+        !actions.generateAvatar)
     )
       return
     event.preventDefault()
@@ -1029,6 +1044,14 @@ export function PartyCard({ game }: { game: StateFrame }) {
                     setMenu(null)
                   },
                 },
+                actions.retire && {
+                  key: "retire",
+                  label: t("session.partyRetire"),
+                  run: () => {
+                    send(`.st retire ${menu.name}`)
+                    setMenu(null)
+                  },
+                },
                 actions.release && {
                   key: "release",
                   label: t("session.pregenRelease"),
@@ -1145,7 +1168,12 @@ export function PregenCard({ game }: { game: StateFrame }) {
     const actions = menuActions(name)
     if (
       !actions ||
-      (!actions.view && !actions.switchTo && !actions.release && !actions.forceRelease && !actions.generateAvatar)
+      (!actions.view &&
+        !actions.switchTo &&
+        !actions.release &&
+        !actions.forceRelease &&
+        !actions.canDelete &&
+        !actions.generateAvatar)
     )
       return
     event.preventDefault()
