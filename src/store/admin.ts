@@ -701,6 +701,9 @@ interface AdminState {
   uploadModule: (name: string, content: string) => void
   updateModule: (name: string, content: string) => void
   uploadModuleBundle: (name: string, archive: string) => void
+  /** Delete an installed module source ("pack" deletes the installed content pack by id;
+   * "text" deletes the flat Markdown source file). Keeper-gated server-side. */
+  deleteModule: (name: string, sourceKind: "pack" | "text") => void
 
   /** Queue fresh illustration jobs (`kinds`) or re-queue failed ones (`retry` ids) for an
    * installed pack — the async media lane renders them in the background. */
@@ -1214,6 +1217,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   uploadModule: (name, content) => moduleAction("module_upload", { name, content }, set),
   updateModule: (name, content) => moduleAction("module_update", { name, content }, set),
   uploadModuleBundle: (name, archive) => moduleAction("module_bundle_upload", { name, archive }, set),
+  deleteModule: (name, sourceKind) => moduleAction("module_delete", { name, source_kind: sourceKind }, set),
   importModule: (name) => {
     set({ busy: true, lastError: null, moduleImporting: name })
     transportSend({
