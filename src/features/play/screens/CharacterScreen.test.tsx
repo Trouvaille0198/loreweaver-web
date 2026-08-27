@@ -394,4 +394,63 @@ describe("CharacterScreen — item detail", () => {
     await userEvent.click(restore)
     expect(sent).toContainEqual({ type: "input", text: ".item unarchive Bronze Mirror" })
   })
+  it("deletes an item permanently behind a two-step confirm", async () => {
+    useSessionStore.getState().ingest(
+      stateFrame({
+        character: {
+          ...SHEET,
+          items: [{ name: "Fencing Sword", kind: "weapon", quantity: 1 }],
+        },
+      }),
+    )
+    render(<CharacterScreen onBack={() => {}} />)
+
+    // The card carries a permanent-delete action; the first click only arms
+    // the confirm, so nothing is sent until the second, explicit click.
+    const deleteButton = screen.getByRole("button", { name: "Delete permanently" })
+    await userEvent.click(deleteButton)
+    expect(sent).toEqual([])
+    await userEvent.click(screen.getByRole("button", { name: "Delete for good?" }))
+    expect(sent).toEqual([{ type: "input", text: ".item drop Fencing Sword" }])
+  })
+
+  it("cancels an armed item delete without sending anything", async () => {
+    useSessionStore.getState().ingest(
+      stateFrame({
+        character: {
+          ...SHEET,
+          items: [{ name: "Fencing Sword", kind: "weapon", quantity: 1 }],
+        },
+      }),
+    )
+    render(<CharacterScreen onBack={() => {}} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete permanently" }))
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(sent).toEqual([])
+    // The card is back to the armed-off state (no stuck confirm).
+    expect(screen.getByRole("button", { name: "Delete permanently" })).toBeInTheDocument()
+  })
+  it("manages a retired character's bag with --on targeting", async () => {
+    useSessionStore.getState().ingest(
+      stateFrame({
+        character: SHEET,
+        characters: [
+          SHEET,
+          { ...ALT_SHEET, items: [{ name: "Torch", kind: "tool", quantity: 1 }] },
+        ],
+      }),
+    )
+    render(<CharacterScreen onBack={() => {}} />)
+
+    // The retired (non-active) sheet still carries bag actions, and every verb
+    // addresses it by name so the active character is never touched.
+    await userEvent.click(screen.getByRole("button", { name: "Mira Vale" }))
+    await userEvent.click(screen.getByRole("button", { name: "Archive" }))
+    expect(sent).toContainEqual({ type: "input", text: ".item archive Torch --on Mira Vale" })
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete permanently" }))
+    await userEvent.click(screen.getByRole("button", { name: "Delete for good?" }))
+    expect(sent).toContainEqual({ type: "input", text: ".item drop Torch --on Mira Vale" })
+  })
 })

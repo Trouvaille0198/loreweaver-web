@@ -407,25 +407,30 @@ export default function CharacterScreen({ onBack }: { onBack: () => void }) {
     </ScreenShell>
   )
 }
-
 /** One held item card: name + chips, kind, plus an optional trailing action
- * (archive / restore). Hovering (or focusing, or tapping on touch) pops a
- * floating tooltip with the full prose — the card itself stays compact, so the
- * grid never reflows. Shared by the active and shelved sections. */
+ * (archive / restore) and an optional permanent-delete (two-step confirm).
+ * Hovering (or focusing, or tapping on touch) pops a floating tooltip with the
+ * full prose — the card itself stays compact, so the grid never reflows.
+ * Shared by the active and shelved sections. */
 function ItemCard({
   item,
   index,
   action,
+  onDelete,
+  deleteDisabled,
   t,
 }: {
   item: ItemView
   index: number
   action?: ReactNode
+  onDelete?: () => void
+  deleteDisabled?: boolean
   t: TFunction
 }) {
   // Tooltip anchor follows the pointer on hover-capable devices; on touch it
   // toggles on tap, anchored to the card. One portal per open tooltip.
   const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const touch = useRef(false)
   if (!touch.current && typeof window !== "undefined" && typeof window.matchMedia === "function") {
     touch.current = window.matchMedia("(hover: none)").matches
@@ -481,7 +486,44 @@ function ItemCard({
         {item.quantity && Number(item.quantity) > 1 ? (
           <span className="chip">×{Number(item.quantity)}</span>
         ) : null}
-        {action}
+        <div className="play-character-item-actions">
+          {action}
+          {onDelete ? (
+            confirmDelete ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    onDelete()
+                    setConfirmDelete(false)
+                  }}
+                >
+                  {t("play.character.deleteItemConfirm")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="quiet"
+                  onClick={() => setConfirmDelete(false)}
+                >
+                  {t("play.character.deleteItemCancel")}
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                variant="danger"
+                disabled={deleteDisabled}
+                onClick={() => setConfirmDelete(true)}
+              >
+                {t("play.character.deleteItem")}
+              </Button>
+            )
+          ) : null}
+        </div>
       </div>
       {item.kind ? (
         <span className="play-character-item-kind">
@@ -586,6 +628,9 @@ function CharacterDetailsView({
   const [itemTab, setItemTab] = useState<"active" | "archived">("active")
   if (!character) return null
   const details = asCharacterDetails(character)
+  // Owned (possibly retired) characters can manage their bag; a retired sheet
+  // addresses itself by name (`--on`) so the verb never touches the active one.
+  const itemTarget = active ? "" : ` --on ${character.name}`
   const fieldEntries = Object.entries(details.fields ?? {})
   const localizedFieldEntries: [string, unknown][] = fieldEntries.map(([key, value]) => {
     if (key === "character_class" && typeof value === "string" && value) {
@@ -805,18 +850,18 @@ function CharacterDetailsView({
                     index={index}
                     t={t}
                     action={
-                      active ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="quiet"
-                          disabled={!online}
-                          onClick={() => send(`.item archive ${item.name ?? ""}`)}
-                        >
-                          {t("play.character.archiveItem")}
-                        </Button>
-                      ) : undefined
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="quiet"
+                        disabled={!online}
+                        onClick={() => send(`.item archive ${item.name ?? ""}${itemTarget}`)}
+                      >
+                        {t("play.character.archiveItem")}
+                      </Button>
                     }
+                    onDelete={() => send(`.item drop ${item.name ?? ""}${itemTarget}`)}
+                    deleteDisabled={!online}
                   />
                 ))}
               </ul>
@@ -832,18 +877,18 @@ function CharacterDetailsView({
                       index={index}
                       t={t}
                       action={
-                        active ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="quiet"
-                            disabled={!online}
-                            onClick={() => send(`.item unarchive ${item.name ?? ""}`)}
-                          >
-                            {t("play.character.unarchiveItem")}
-                          </Button>
-                        ) : undefined
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="quiet"
+                          disabled={!online}
+                          onClick={() => send(`.item unarchive ${item.name ?? ""}${itemTarget}`)}
+                        >
+                          {t("play.character.unarchiveItem")}
+                        </Button>
                       }
+                      onDelete={() => send(`.item drop ${item.name ?? ""}${itemTarget}`)}
+                      deleteDisabled={!online}
                     />
                   ))}
                 </ul>

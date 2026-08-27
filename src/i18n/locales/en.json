@@ -698,7 +698,10 @@
       "archiveItem": "Archive",
       "unarchiveItem": "Restore",
       "archivedItems": "Archived equipment",
-      "archivedHint": "Archived items stay out of play until restored."
+      "archivedHint": "Archived items stay out of play until restored.",
+      "deleteItem": "Delete permanently",
+      "deleteItemConfirm": "Delete for good?",
+      "deleteItemCancel": "Cancel"
     },
     "settings": {
       "appearanceSection": "Appearance & reading",

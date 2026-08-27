@@ -4028,7 +4028,11 @@ body {
   overflow-wrap: anywhere;
 }
 
-.play-character-item-head > .ui-button {
+.play-character-item-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2);
   margin-left: auto;
 }
 
@@ -4302,9 +4306,14 @@ body {
     align-items: flex-start;
   }
 
-  .play-character-item-head > .ui-button {
+  .play-character-item-actions {
     width: 100%;
     margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .play-character-item-actions > .ui-button {
+    flex: 1 1 0;
   }
 }
 

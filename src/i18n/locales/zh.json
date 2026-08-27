@@ -698,7 +698,10 @@
       "archiveItem": "归档",
       "unarchiveItem": "恢复",
       "archivedItems": "已归档装备",
-      "archivedHint": "已归档的装备不会带入剧本，恢复后可重新使用。"
+      "archivedHint": "已归档的装备不会带入剧本，恢复后可重新使用。",
+      "deleteItem": "彻底删除",
+      "deleteItemConfirm": "确认彻底删除？",
+      "deleteItemCancel": "取消"
     },
     "settings": {
       "appearanceSection": "外观与阅读",
