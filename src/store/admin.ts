@@ -63,6 +63,10 @@ export interface ModuleSource {
 export interface GenerateModuleOptions {
   media?: string[]
   companion?: string[]
+  /** Difficulty tier (easy/standard/hard/deadly) — level-based systems only. */
+  difficulty?: string
+  /** Recommended character level range ("1-3") — level-based systems only. */
+  levels?: string
 }
 
 
@@ -96,6 +100,10 @@ export interface ModuleDetail {
   sourceKind?: "text" | "pack"
   /** A pack's worldbook entries (its lore). */
   worldbookEntries?: { title: string; content: string; secret: boolean }[]
+  /** Recommended character level range ("1-3") for level-based systems. */
+  levels?: string
+  /** Difficulty tier (easy/standard/hard/deadly) the module was authored for. */
+  difficulty?: string
   /** A pack's typed variable specs (its module trackers). */
   variables?: {
     id: string
@@ -182,6 +190,7 @@ export interface ModuleOperation {
     | "module_import"
     | "module_delete"
     | "module_media_generate"
+    | "pregen_avatar"
   ok: boolean
   name: string
   error?: string
@@ -684,6 +693,8 @@ interface AdminState {
     companion?: string[],
     extendsBase?: string,
     system?: string,
+    difficulty?: string,
+    levels?: string,
   ) => void
   listModules: () => void
   getModuleDetail: (name: string) => void
@@ -694,6 +705,9 @@ interface AdminState {
   /** Queue fresh illustration jobs (`kinds`) or re-queue failed ones (`retry` ids) for an
    * installed pack — the async media lane renders them in the background. */
   moduleMediaRequest: (name: string, options?: { kinds?: string[]; retry?: string[] }) => void
+  /** Queue ONE roster character's portrait through the same async illustration lane the
+   * module detail page uses (module-imported and `.pc gen`-born characters alike). */
+  pregenAvatarRequest: (name: string) => void
   listWorldbooks: () => void
   getWorldbookDetail: (name: string) => void
   uploadWorldbook: (name: string, content: string) => void
@@ -1164,23 +1178,34 @@ export const useAdminStore = create<AdminState>((set) => ({
     const frame: Record<string, unknown> = { type: "admin_generate", kind: "module", description, locale }
     const media = options?.media?.length ? options.media : null
     const companion = options?.companion?.length ? options.companion : null
-    if (media || companion)
-      frame.options = { ...(media ? { media } : {}), ...(companion ? { companion } : {}) }
+    const difficulty = options?.difficulty?.trim() || null
+    const levels = options?.levels?.trim() || null
+    if (media || companion || difficulty || levels)
+      frame.options = {
+        ...(media ? { media } : {}),
+        ...(companion ? { companion } : {}),
+        ...(difficulty ? { difficulty } : {}),
+        ...(levels ? { levels } : {}),
+      }
     send(frame as unknown as ClientFrame, set)
   },
-  generatePackModule: (description, media, companion, extendsBase, system) => {
+  generatePackModule: (description, media, companion, extendsBase, system, difficulty, levels) => {
     const locale = i18n.resolvedLanguage === "zh" ? "zh" : "en"
     const frame: Record<string, unknown> = { type: "admin_generate", kind: "pack", description, locale }
     const m = media?.length ? media : null
     const c = companion?.length ? companion : null
     const e = extendsBase?.trim() || null
     const s = system?.trim() || null
-    if (m || c || e || s)
+    const d = difficulty?.trim() || null
+    const l = levels?.trim() || null
+    if (m || c || e || s || d || l)
       frame.options = {
         ...(m ? { media: m } : {}),
         ...(c ? { companion: c } : {}),
         ...(e ? { extends: e } : {}),
         ...(s ? { system: s } : {}),
+        ...(d ? { difficulty: d } : {}),
+        ...(l ? { levels: l } : {}),
       }
     send(frame as unknown as ClientFrame, set)
   },
@@ -1214,6 +1239,13 @@ export const useAdminStore = create<AdminState>((set) => ({
     if (kinds?.length) payload.kinds = kinds
     if (retry?.length) payload.retry = retry
     moduleAction("module_media_generate", payload, set)
+  },
+  pregenAvatarRequest: (name) => {
+    moduleAction(
+      "pregen_avatar",
+      { name, locale: i18n.resolvedLanguage === "zh" ? "zh" : "en" },
+      set,
+    )
   },
   exportRoom: (room, path) => send({ type: "admin_export_room", room, ...(path ? { path } : {}) }, set),
   importRoom: (path) => send({ type: "admin_import_room", path }, set),

@@ -16,7 +16,8 @@
 // its budgets and ranges live in a pack's `creation_constraints` and no frame
 // carries them. Rolling, describing and importing all resolve server-side.
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import type { TFunction } from "i18next"
 import { useTranslation } from "react-i18next"
 import {
@@ -234,9 +235,9 @@ function AttributeRow({
   const bonusTotal = bonus && bonus.length > 0 ? bonus.reduce((s, b) => s + b.delta, 0) : undefined
   if (!editable || !isEditable(value)) {
     return (
-      <tr>
-        <td className="play-attr-name">{stripControlChars(name)}</td>
-        <td title={bonusHint}>
+      <div className="play-character-attr-cell" role="listitem">
+        <span className="play-attr-name">{stripControlChars(name)}</span>
+        <span title={bonusHint}>
           {attrText(value)}
           {bonusTotal ? (
             <span className="stat-bonus">
@@ -244,8 +245,8 @@ function AttributeRow({
               {bonusTotal}
             </span>
           ) : null}
-        </td>
-      </tr>
+        </span>
+      </div>
     )
   }
 
@@ -257,45 +258,43 @@ function AttributeRow({
   }
 
   return (
-    <tr>
-      <td className="play-attr-name">{stripControlChars(name)}</td>
-      <td>
-        {draft === null ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="quiet"
-            disabled={!online}
-            title={bonusHint ? `${t("play.character.editHint")}\n${bonusHint}` : t("play.character.editHint")}
-            onClick={() => setDraft(String(value))}
-          >
-            {value}
-          </Button>
-        ) : (
-          <input
-            autoFocus
-            // NOT `type="number"`. Pasting into that input reloaded the whole WebView —
-            // three times out of three, on a value as ordinary as `47`, while the same
-            // paste into every other field in the app was fine (2026-08-20 play-test).
-            // The crash is below our floor (WebKit's own native paste path for number
-            // inputs), so this is a dodge rather than a diagnosis; it is also the better
-            // control regardless — no spinner arrows, and no scroll wheel silently
-            // rewriting a character's stat. `inputMode` keeps the numeric keypad on
-            // touch, and `commit` already parses and validates whatever lands here.
-            type="text"
-            inputMode="numeric"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commit()
-              if (e.key === "Escape") setDraft(null)
-            }}
-            aria-label={name}
-          />
-        )}
-      </td>
-    </tr>
+    <div className="play-character-attr-cell" role="listitem">
+      <span className="play-attr-name">{stripControlChars(name)}</span>
+      {draft === null ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="quiet"
+          disabled={!online}
+          title={bonusHint ? `${t("play.character.editHint")}\n${bonusHint}` : t("play.character.editHint")}
+          onClick={() => setDraft(String(value))}
+        >
+          {value}
+        </Button>
+      ) : (
+        <input
+          autoFocus
+          // NOT `type="number"`. Pasting into that input reloaded the whole WebView —
+          // three times out of three, on a value as ordinary as `47`, while the same
+          // paste into every other field in the app was fine (2026-08-20 play-test).
+          // The crash is below our floor (WebKit's own native paste path for number
+          // inputs), so this is a dodge rather than a diagnosis; it is also the better
+          // control regardless — no spinner arrows, and no scroll wheel silently
+          // rewriting a character's stat. `inputMode` keeps the numeric keypad on
+          // touch, and `commit` already parses and validates whatever lands here.
+          type="text"
+          inputMode="numeric"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit()
+            if (e.key === "Escape") setDraft(null)
+          }}
+          aria-label={name}
+        />
+      )}
+    </div>
   )
 }
 
@@ -408,9 +407,10 @@ export default function CharacterScreen({ onBack }: { onBack: () => void }) {
   )
 }
 
-/** One held item card: name + chips, kind, description, effect, bonus, lore,
- * origin — plus an optional trailing action (archive / restore). Shared by the
- * active-inventory section and the shelved-items section. */
+/** One held item card: name + chips, kind, plus an optional trailing action
+ * (archive / restore). Hovering (or focusing, or tapping on touch) pops a
+ * floating tooltip with the full prose — the card itself stays compact, so the
+ * grid never reflows. Shared by the active and shelved sections. */
 function ItemCard({
   item,
   index,
@@ -422,8 +422,44 @@ function ItemCard({
   action?: ReactNode
   t: TFunction
 }) {
+  // Tooltip anchor follows the pointer on hover-capable devices; on touch it
+  // toggles on tap, anchored to the card. One portal per open tooltip.
+  const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null)
+  const touch = useRef(false)
+  if (!touch.current && typeof window !== "undefined" && typeof window.matchMedia === "function") {
+    touch.current = window.matchMedia("(hover: none)").matches
+  }
   return (
-    <li key={`${index}-${String(item.name ?? "")}`} className="play-character-item">
+    <li
+      key={`${index}-${String(item.name ?? "")}`}
+      className="play-character-item"
+      onMouseEnter={(event) => {
+        if (!touch.current) setTooltip({ x: event.clientX, y: event.clientY })
+      }}
+      onMouseMove={(event) => {
+        if (!touch.current) setTooltip({ x: event.clientX, y: event.clientY })
+      }}
+      onMouseLeave={() => {
+        if (!touch.current) setTooltip(null)
+      }}
+      onFocus={(event) => {
+        if (!touch.current) {
+          const rect = event.currentTarget.getBoundingClientRect()
+          setTooltip({ x: rect.right - 48, y: rect.bottom - 8 })
+        }
+      }}
+      onBlur={() => {
+        if (!touch.current) setTooltip(null)
+      }}
+      onClick={(event) => {
+        if (touch.current) {
+          const rect = event.currentTarget.getBoundingClientRect()
+          setTooltip((current) =>
+            current ? null : { x: rect.left + rect.width / 2, y: rect.bottom - 4 },
+          )
+        }
+      }}
+    >
       <div className="play-character-item-head">
         <strong>{stripControlChars(String(item.name ?? ""))}</strong>
         {item.improvised ? (
@@ -451,6 +487,43 @@ function ItemCard({
           {t("play.character.itemsKind")}: {stripControlChars(String(item.kind))}
         </span>
       ) : null}
+      {tooltip ? <ItemTooltip anchor={tooltip} item={item} t={t} /> : null}
+    </li>
+  )
+}
+
+/** The floating item detail popover — the game-style hover tooltip. Portaled to
+ * <body> so the scroll container never clips it; repositioned once measured so
+ * it never runs off the viewport edge. */
+function ItemTooltip({
+  anchor,
+  item,
+  t,
+}: {
+  anchor: { x: number; y: number }
+  item: ItemView
+  t: TFunction
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ left: anchor.x + 14, top: anchor.y + 14 })
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const w = el.offsetWidth
+    const h = el.offsetHeight
+    let left = anchor.x + 14
+    let top = anchor.y + 14
+    if (left + w > window.innerWidth - 8) left = anchor.x - w - 14
+    if (top + h > window.innerHeight - 8) top = Math.max(8, window.innerHeight - h - 8)
+    setPos({ left: Math.max(8, left), top })
+  }, [anchor, item])
+  return createPortal(
+    <div
+      ref={ref}
+      className="play-character-item-tooltip"
+      role="tooltip"
+      style={{ left: pos.left, top: pos.top }}
+    >
       {item.description ? (
         <p>
           <span className="play-character-item-label">{t("play.character.itemsDescription")}:</span>{" "}
@@ -487,7 +560,8 @@ function ItemCard({
           {t("play.module.itemHolder")}: {stripControlChars(String(item.original_holder))}
         </p>
       ) : null}
-    </li>
+    </div>,
+    document.body,
   )
 }
 
@@ -512,6 +586,13 @@ function CharacterDetailsView({
   if (!character) return null
   const details = asCharacterDetails(character)
   const fieldEntries = Object.entries(details.fields ?? {})
+  const localizedFieldEntries: [string, unknown][] = fieldEntries.map(([key, value]) => {
+    if (key === "character_class" && typeof value === "string" && value) {
+      // The class id ("wizard"/"bard"/...) displays as its localized name.
+      return [key, t(`play.character.class.${value}`, { defaultValue: value })]
+    }
+    return [key, value]
+  })
   const secondaryEntries = Object.entries(details.secondary_attributes ?? {})
   const skillEntries = Object.entries(details.skills ?? {})
   const equipment = details.equipment ?? []
@@ -529,6 +610,9 @@ function CharacterDetailsView({
   const archivedItems = items.filter((item) => item.archived)
   const memory = details.memory
   const relationships = details.relationships ?? []
+  const visibleResources = character.resources.filter(
+    (resource) => !(typeof resource.max === "number" && resource.max <= 0),
+  )
   const hasExtra =
     fieldEntries.length > 0 ||
     secondaryEntries.length > 0 ||
@@ -538,7 +622,6 @@ function CharacterDetailsView({
     Boolean(background || notes) ||
     Boolean(memory && (memory.summary || (memory.entries?.length ?? 0) > 0)) ||
     relationships.length > 0
-
   return (
     <Surface tone="accent" className="character-detail" labelledBy="character-detail-name">
       <div className="character-profile-summary">
@@ -559,11 +642,13 @@ function CharacterDetailsView({
             </div>
           </div>
         </div>
-        <div className="character-profile-resources">
-          {character.resources.map((resource) => (
-            <ResourceRow key={resource.id} resource={resource} />
-          ))}
-        </div>
+        {visibleResources.length > 0 ? (
+          <div className="character-profile-resources">
+            {visibleResources.map((resource) => (
+              <ResourceRow key={resource.id} resource={resource} />
+            ))}
+          </div>
+        ) : null}
       </div>
       {character.status_effects.length > 0 ? (
         <div className="chip-row">
@@ -574,11 +659,29 @@ function CharacterDetailsView({
           ))}
         </div>
       ) : null}
-      {fieldEntries.length > 0 ? (
+      {localizedFieldEntries.length > 0 ? (
         <CharacterDetailSection title={t("play.character.fields")}>
-          <DetailTable entries={fieldEntries} />
+          <DetailTable entries={localizedFieldEntries} />
         </CharacterDetailSection>
       ) : null}
+      {(character.resource_groups ?? []).map((group) =>
+        group.resources.some((resource) => typeof resource.max !== "number" || resource.max > 0) ? (
+          <CharacterDetailSection
+            key={group.id || "resources"}
+            title={
+              group.id
+                ? t(`session.resourceGroups.${group.id}`, { defaultValue: stripControlChars(group.id) })
+                : t("play.character.fields")
+            }
+          >
+            <div className="character-resources" role="group" aria-label={stripControlChars(group.id)}>
+              {group.resources.map((resource) => (
+                <ResourceRow key={resource.id} resource={resource} />
+              ))}
+            </div>
+          </CharacterDetailSection>
+        ) : null,
+      )}
       {background ? (
         <CharacterDetailSection title={t("play.character.background")}>
           <p className="play-character-prose">{stripControlChars(background)}</p>
@@ -621,13 +724,11 @@ function CharacterDetailsView({
         </CharacterDetailSection>
       ) : null}
       <CharacterDetailSection title={t("session.attributes")}>
-        <table className="play-table">
-          <tbody>
-            {Object.entries(character.attributes).map(([key, value]) => (
-              <AttributeRow key={key} name={key} value={value} bonus={bonuses[key]} editable={active} />
-            ))}
-          </tbody>
-        </table>
+        <div className="play-character-attr-grid" role="list">
+          {Object.entries(character.attributes).map(([key, value]) => (
+            <AttributeRow key={key} name={key} value={value} bonus={bonuses[key]} editable={active} />
+          ))}
+        </div>
       </CharacterDetailSection>
       {secondaryEntries.length > 0 ? (
         <CharacterDetailSection title={t("play.character.secondary")}>
@@ -693,36 +794,10 @@ function CharacterDetailsView({
               {t("play.character.archivedItems")} ({archivedItems.length})
             </button>
           </div>
-          {itemTab === "active" && activeItems.length > 0 ? (
-            <ul className="play-character-items">
-              {activeItems.map((item, index) => (
-                <ItemCard
-                  key={`${index}-${String(item.name ?? "")}`}
-                  item={item}
-                  index={index}
-                  t={t}
-                  action={
-                    active ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="quiet"
-                        disabled={!online}
-                        onClick={() => send(`.item archive ${item.name ?? ""}`)}
-                      >
-                        {t("play.character.archiveItem")}
-                      </Button>
-                    ) : undefined
-                  }
-                />
-              ))}
-            </ul>
-          ) : null}
-          {itemTab === "archived" && archivedItems.length > 0 ? (
-            <>
-              <p className="studio-hint">{t("play.character.archivedHint")}</p>
+          <div className="play-character-items-scroll">
+            {itemTab === "active" && activeItems.length > 0 ? (
               <ul className="play-character-items">
-                {archivedItems.map((item, index) => (
+                {activeItems.map((item, index) => (
                   <ItemCard
                     key={`${index}-${String(item.name ?? "")}`}
                     item={item}
@@ -735,17 +810,45 @@ function CharacterDetailsView({
                           size="sm"
                           variant="quiet"
                           disabled={!online}
-                          onClick={() => send(`.item unarchive ${item.name ?? ""}`)}
+                          onClick={() => send(`.item archive ${item.name ?? ""}`)}
                         >
-                          {t("play.character.unarchiveItem")}
+                          {t("play.character.archiveItem")}
                         </Button>
                       ) : undefined
                     }
                   />
                 ))}
               </ul>
-            </>
-          ) : null}
+            ) : null}
+            {itemTab === "archived" && archivedItems.length > 0 ? (
+              <>
+                <p className="studio-hint">{t("play.character.archivedHint")}</p>
+                <ul className="play-character-items">
+                  {archivedItems.map((item, index) => (
+                    <ItemCard
+                      key={`${index}-${String(item.name ?? "")}`}
+                      item={item}
+                      index={index}
+                      t={t}
+                      action={
+                        active ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="quiet"
+                            disabled={!online}
+                            onClick={() => send(`.item unarchive ${item.name ?? ""}`)}
+                          >
+                            {t("play.character.unarchiveItem")}
+                          </Button>
+                        ) : undefined
+                      }
+                    />
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </div>
         </CharacterDetailSection>
       ) : null}
       {!hasExtra ? <p className="studio-hint">{t("play.character.noDetails")}</p> : null}

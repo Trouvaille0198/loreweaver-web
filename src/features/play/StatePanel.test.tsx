@@ -215,6 +215,7 @@ describe("StatePanel", () => {
               bonus: { STR: 2 },
             },
             { name: "Healing Potion", kind: "consumable", effect: "Heals 1d4", origin: "the apothecary" },
+            { name: "Bronze Mirror", kind: "gear", description: "A heavy bronze mirror.", archived: true },
           ],
         },
       ],
@@ -235,6 +236,9 @@ describe("StatePanel", () => {
     expect(screen.getByText("A captain's blade.")).toBeInTheDocument()
     expect(screen.getByText(/the sunken galleon/)).toBeInTheDocument()
     expect(screen.getByText("Healing Potion")).toBeInTheDocument()
+    // An archived item stays out of the popup, with a hint that shelving works.
+    expect(screen.queryByText("Bronze Mirror")).not.toBeInTheDocument()
+    expect(screen.getByText(/Archived equipment \(1\)/)).toBeInTheDocument()
     // Hovering the STR stat shows the equipped item's bonus contribution.
     expect(screen.getByTitle(/Fencing Sword \+2/)).toBeInTheDocument()
   })

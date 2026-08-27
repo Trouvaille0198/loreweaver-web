@@ -123,6 +123,8 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
     }
   })()
 
+  const showPanelHeading = !["rules", "skills", "presets"].includes(section)
+
   return (
     <ScreenShell title={t("play.menu.keeperSettings")} onBack={onBack} showAdminError wide>
       {currentModule ? (
@@ -148,9 +150,11 @@ export default function KeeperSettingsScreen({ onBack }: { onBack: () => void })
         onSelect={selectSection}
       >
         <div className="keeper-settings-detail">
-          <header className="keeper-settings-panel-head">
-            <h3>{t(`play.menu.${section}`)}</h3>
-          </header>
+          {showPanelHeading ? (
+            <header className="keeper-settings-panel-head">
+              <h3>{t(`play.menu.${section}`)}</h3>
+            </header>
+          ) : null}
           {content}
         </div>
       </SettingsWorkspace>

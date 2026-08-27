@@ -162,15 +162,6 @@ function NarrativeEntry({
     <article
       className={`log-entry speaker-${frame.speaker}${hasDiscardedDraft ? " has-draft" : ""}${isJumpTarget ? " log-jump-target" : ""}`}
       data-seq={seq}
-      onContextMenu={
-        hasDiscardedDraft
-          ? (event) => {
-              event.preventDefault()
-              onOpenDraft(discardedDraft!)
-            }
-          : undefined
-      }
-      title={hasDiscardedDraft ? t("log.draftHint") : undefined}
     >
       <header className="entry-speaker">
         {speakerLabel(frame, t("log.system"), t("log.player"))}
@@ -179,9 +170,15 @@ function NarrativeEntry({
           {formatTime(at, i18n.language)}
         </time>
         {hasDiscardedDraft ? (
-          <span className="draft-mark" aria-hidden="true">
+          <button
+            type="button"
+            className="draft-mark"
+            onClick={() => onOpenDraft(discardedDraft!)}
+            title={t("log.draftHint")}
+            aria-label={t("log.draftHint")}
+          >
             {"◆"}
-          </span>
+          </button>
         ) : null}
       </header>
       <div className="entry-body">
@@ -558,6 +555,19 @@ export default function NarrativeLog() {
     }
   }
 
+  // Right-click on a tracked-name highlight copies the entry NAME to the
+  // clipboard (the left click opens the detail card). Same delegation: resolve
+  // the anchor, suppress the browser menu, copy the visible name verbatim.
+  const handleLogContextMenu = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement
+    const anchor = target.closest('a[href^="npc://"], a[href^="item://"], a[href^="clue://"]')
+    if (!anchor || !(anchor instanceof HTMLAnchorElement)) return
+    event.preventDefault()
+    const name = anchor.textContent?.trim() ?? ""
+    if (!name) return
+    void navigator.clipboard.writeText(name).catch(() => {})
+  }
+
   // New lines while pinned: keep the window on the tail of the log.
   useEffect(() => {
     if (!pinned.current) return
@@ -771,7 +781,13 @@ export default function NarrativeLog() {
   }
 
   return (
-    <div className="narrative-log" ref={scroller} onScroll={onScroll} onClick={handleLogClick}>
+    <div
+      className="narrative-log"
+      ref={scroller}
+      onScroll={onScroll}
+      onClick={handleLogClick}
+      onContextMenu={handleLogContextMenu}
+    >
       {/* Two chapters at least — a lone beat has nowhere to navigate to. */}
       {chapters.length >= 2 ? (
         <div className="log-toc-anchor" ref={tocRoot}>

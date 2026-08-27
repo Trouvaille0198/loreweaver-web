@@ -381,6 +381,8 @@ export default function ModuleScreen({
   const [companionOptions, setCompanionOptions] = useState<string[]>([])
   const [ruleStrategy, setRuleStrategy] = useState<RuleStrategy>("")
   const [packMode, setPackMode] = useState(false)
+  const [difficulty, setDifficulty] = useState("")
+  const [levels, setLevels] = useState("")
   const [view, setView] = useState<"library" | "forge">("library")
   const [path, setPath] = useState("")
   const [packRef, setPackRef] = useState("")
@@ -403,6 +405,8 @@ export default function ModuleScreen({
       if (Array.isArray(s.companionOptions)) setCompanionOptions(s.companionOptions as string[])
       if (typeof s.ruleStrategy === "string") setRuleStrategy(s.ruleStrategy as RuleStrategy)
       if (typeof s.packMode === "boolean") setPackMode(s.packMode as boolean)
+      if (typeof s.difficulty === "string") setDifficulty(s.difficulty as string)
+      if (typeof s.levels === "string") setLevels(s.levels as string)
     } catch {
       /* a corrupt/oversized entry just resets to defaults */
     }
@@ -412,12 +416,12 @@ export default function ModuleScreen({
     try {
       localStorage.setItem(
         FORGE_OPTIONS_KEY,
-        JSON.stringify({ mediaOptions, companionOptions, ruleStrategy, packMode }),
+        JSON.stringify({ mediaOptions, companionOptions, ruleStrategy, packMode, difficulty, levels }),
       )
     } catch {
       /* quota — persisting the forge prefs is best-effort */
     }
-  }, [mediaOptions, companionOptions, ruleStrategy, packMode])
+  }, [mediaOptions, companionOptions, ruleStrategy, packMode, difficulty, levels])
   useEffect(() => {
     listModules()
   }, [listModules])
@@ -897,6 +901,49 @@ export default function ModuleScreen({
               </select>
             )}
           </Field>
+          {(packMode
+            ? ruleStrategy === "use:dnd5e" || ruleStrategy === "patch:dnd5e"
+            : roomSystemId === "dnd5e") ? (
+            <div className="module-generate-difficulty">
+              <Field
+                label={t("play.module.options.difficultyLabel")}
+                hint={t("play.module.options.difficultyHint")}
+              >
+                {({ id, describedBy }) => (
+                  <select
+                    id={id}
+                    className="module-extends-select"
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value)}
+                    aria-describedby={describedBy}
+                  >
+                    <option value="">{t("play.module.options.difficultyDefault")}</option>
+                    {(["easy", "standard", "hard", "deadly"] as const).map((tier) => (
+                      <option key={tier} value={tier}>
+                        {t(`play.module.options.difficulty.${tier}`, { defaultValue: tier })}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+              <Field
+                label={t("play.module.options.levelsLabel")}
+                hint={t("play.module.options.levelsHint")}
+              >
+                {({ id, describedBy }) => (
+                  <input
+                    id={id}
+                    type="text"
+                    className="play-input"
+                    value={levels}
+                    onChange={(e) => setLevels(e.target.value)}
+                    placeholder={t("play.module.options.levelsPlaceholder")}
+                    aria-describedby={describedBy}
+                  />
+                )}
+              </Field>
+            </div>
+          ) : null}
           <Button
             type="button"
             variant="primary"
@@ -908,7 +955,12 @@ export default function ModuleScreen({
                 ? [...companionOptions, "rulepacks"]
                 : companionOptions
               if (!packMode) {
-                generateModule(description.trim(), { media: mediaOptions, companion: selectedCompanion })
+                generateModule(description.trim(), {
+                  media: mediaOptions,
+                  companion: selectedCompanion,
+                  difficulty,
+                  levels,
+                })
                 return
               }
               // Split the raw rule-system choice into the engine's two exclusive knobs.
@@ -923,6 +975,8 @@ export default function ModuleScreen({
                 selectedCompanion,
                 extendsValue,
                 systemValue,
+                difficulty,
+                levels,
               )
             }}
           >

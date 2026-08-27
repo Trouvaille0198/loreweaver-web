@@ -1436,6 +1436,7 @@ select {
 .settings-workspace {
   display: grid;
   grid-template-columns: 238px minmax(0, 1fr);
+  align-items: start;
   gap: clamp(var(--space-5), 3vw, var(--space-8));
   width: 100%;
   min-height: 560px;
@@ -2087,6 +2088,13 @@ select {
   align-items: center;
   gap: var(--space-3);
   width: 100%;
+  cursor: pointer;
+}
+
+.play-skill-row:focus-visible {
+  outline: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--focus-ring);
 }
 
 .play-skill-desc {

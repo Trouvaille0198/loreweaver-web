@@ -35,8 +35,18 @@ export default function SkillsScreen({
   }, [listSkills, i18n.language])
 
   useEffect(() => {
+    if (!detail) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDetail(null)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [detail])
+
+  useEffect(() => {
     if (detail) closeRef.current?.focus()
   }, [detail])
+
 
   const submit = () => {
     const text = description.trim()
@@ -44,8 +54,8 @@ export default function SkillsScreen({
     generateSkill(text)
     setDescription("")
   }
-
   const result = generated && generated.kind === "skill" ? generated : null
+
 
   return (
     <ScreenShell title={t("play.menu.skills")} onBack={onBack} showAdminError embedded={embedded}>
@@ -55,7 +65,17 @@ export default function SkillsScreen({
         <ul className="play-list">
           {skills.map((skill) => (
             <li key={skill.id}>
-              <label className="play-skill-row" onDoubleClick={() => setDetail(skill)}>
+              <label
+                className="play-skill-row"
+                tabIndex={0}
+                onDoubleClick={() => setDetail(skill)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    setDetail(skill)
+                  }
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={skill.enabled}

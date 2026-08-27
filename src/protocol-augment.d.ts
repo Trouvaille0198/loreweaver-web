@@ -18,6 +18,9 @@ declare module "@loreweaver/protocol" {
     fields?: Record<string, unknown>
     background?: string
     avatar?: MediaRef
+    /** Where the character came from — "room" for a `.pc gen`-born character, a
+     * module/card source otherwise. The delete gate reads it. */
+    source?: string
   }
 
   interface DiceFrame {
@@ -177,6 +180,9 @@ declare module "@loreweaver/protocol" {
     improvised?: boolean
     /** True when the owner shelved this item (restorable with `.item unarchive`). */
     archived?: boolean
+    /** v2.4 wire: the scenario/module id this item came from (origin traceability;
+     * never shown to the AI keeper's context). */
+    source_module_id?: string
   }
 
   interface WelcomeFrame {

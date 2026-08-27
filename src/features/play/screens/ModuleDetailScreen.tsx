@@ -4,7 +4,12 @@ import { createPortal } from "react-dom"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Button, Notice, SectionHeader, Surface } from "../../../components/ui"
-import { useAdminStore, type ModuleDetail, type ModuleMediaJob, type ModuleMediaRecord } from "../../../store/admin"
+import {
+  useAdminStore,
+  type ModuleDetail,
+  type ModuleMediaJob,
+  type ModuleMediaRecord,
+} from "../../../store/admin"
 import { transportSend } from "../../../lib/transport"
 import { assetFetch, assetReadBase64 } from "../panels/assets"
 import ScreenShell from "./ScreenShell"
@@ -186,7 +191,9 @@ function MediaJobRow({ job, onRetry }: { job: ModuleMediaJob; onRetry: (id: stri
     return (
       <li className="module-media-job module-media-job--busy">
         <span className="module-media-job-spinner" aria-hidden="true" />
-        <span className="module-media-job-text">{t("play.module.mediaJobGenerating", { subject: label })}</span>
+        <span className="module-media-job-text">
+          {t("play.module.mediaJobGenerating", { subject: label })}
+        </span>
       </li>
     )
   }
@@ -194,9 +201,7 @@ function MediaJobRow({ job, onRetry }: { job: ModuleMediaJob; onRetry: (id: stri
     return (
       <li className="module-media-job module-media-job--failed">
         <span className="module-media-job-label">{label}</span>
-        <span className="module-media-job-error">
-          {job.error || t("play.module.mediaJobFailedUnknown")}
-        </span>
+        <span className="module-media-job-error">{job.error || t("play.module.mediaJobFailedUnknown")}</span>
         <Button type="button" size="sm" onClick={() => onRetry(job.id)}>
           {t("play.module.mediaJobRetry")}
         </Button>
@@ -286,7 +291,9 @@ function PackDetailView({
     if (ids.length > 0) moduleMediaRequest(detail.name, { retry: ids })
   }
   const toggleKind = (kind: string) => {
-    setPickerKinds((current) => (current.includes(kind) ? current.filter((k) => k !== kind) : [...current, kind]))
+    setPickerKinds((current) =>
+      current.includes(kind) ? current.filter((k) => k !== kind) : [...current, kind],
+    )
   }
   const startGenerate = () => {
     if (pickerKinds.length === 0) return
@@ -327,7 +334,13 @@ function PackDetailView({
           title={detail.title || detail.name}
           description={`${formatBytes(detail.size)}${
             detail.worldbookEntries ? ` · ${detail.worldbookEntries.length} ${t("play.module.entries")}` : ""
-          }${detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}`}
+          }${detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}${
+            detail.levels ? ` · ${t("play.module.levels")}: ${detail.levels}` : ""
+          }${
+            detail.difficulty
+              ? ` · ${t("play.module.difficulty." + detail.difficulty, { defaultValue: detail.difficulty })}`
+              : ""
+          }`}
           actions={
             <div className="module-detail-actions">
               {detail.current && !importing ? (
@@ -362,78 +375,105 @@ function PackDetailView({
         {detail.content ? <p className="studio-hint">{detail.content}</p> : null}
       </Surface>
 
-      {detail.media.length > 0 || mediaJobs.length > 0 ? (
-        <Surface className="module-detail-card module-detail-media-card" labelledBy="pack-media-title">
-          <SectionHeader
-            titleId="pack-media-title"
-            title={t("play.module.packMedia")}
-            description={t("play.module.packMediaCount", { count: galleryCount })}
-            actions={
-              <div className="module-detail-actions">
-                {failedJobs.length > 0 ? (
-                  <Button type="button" size="sm" onClick={retryAll}>
-                    {t("play.module.mediaJobRetryAll", { count: failedJobs.length })}
-                  </Button>
-                ) : null}
-                <Button type="button" size="sm" onClick={() => setPickerOpen((open) => !open)}>
-                  {t("play.module.mediaGenerate")}
+      <Surface className="module-detail-card module-detail-media-card" labelledBy="pack-media-title">
+        <SectionHeader
+          titleId="pack-media-title"
+          title={t("play.module.packMedia")}
+          description={t("play.module.packMediaCount", { count: galleryCount })}
+          actions={
+            <div className="module-detail-actions">
+              {failedJobs.length > 0 ? (
+                <Button type="button" size="sm" onClick={retryAll}>
+                  {t("play.module.mediaJobRetryAll", { count: failedJobs.length })}
                 </Button>
-              </div>
-            }
-          />
-          {generateNotice ? (
-            <Notice tone="info" role="status">
-              {t("play.module.mediaGenerateQueued")}
-            </Notice>
-          ) : null}
-          {pickerOpen ? (
-            <div className="module-media-picker" role="group" aria-label={t("play.module.mediaGenerateHint")}>
-              {MODULE_MEDIA_OPTIONS.map((kind) => (
-                <label className="module-media-picker-kind" key={kind}>
-                  <input
-                    type="checkbox"
-                    checked={pickerKinds.includes(kind)}
-                    onChange={() => toggleKind(kind)}
-                  />
-                  <span>{t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })}</span>
-                </label>
-              ))}
-              <Button type="button" size="sm" onClick={startGenerate} disabled={pickerKinds.length === 0}>
-                {t("play.module.mediaGenerateStart")}
-              </Button>
-              <Button type="button" size="sm" variant="quiet" onClick={() => setPickerOpen(false)}>
-                {t("play.module.mediaGenerateCancel")}
+              ) : null}
+              <Button type="button" size="sm" onClick={() => setPickerOpen((open) => !open)}>
+                {t("play.module.mediaGenerate")}
               </Button>
             </div>
+          }
+        />
+        {generateNotice ? (
+          <Notice tone="info" role="status">
+            {t("play.module.mediaGenerateQueued")}
+          </Notice>
+        ) : null}
+        {pickerOpen ? (
+          <div className="module-media-picker" role="group" aria-label={t("play.module.mediaGenerateHint")}>
+            {MODULE_MEDIA_OPTIONS.map((kind) => (
+              <label className="module-media-picker-kind" key={kind}>
+                <input
+                  type="checkbox"
+                  checked={pickerKinds.includes(kind)}
+                  onChange={() => toggleKind(kind)}
+                />
+                <span>{t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })}</span>
+              </label>
+            ))}
+            <Button type="button" size="sm" onClick={startGenerate} disabled={pickerKinds.length === 0}>
+              {t("play.module.mediaGenerateStart")}
+            </Button>
+            <Button type="button" size="sm" variant="quiet" onClick={() => setPickerOpen(false)}>
+              {t("play.module.mediaGenerateCancel")}
+            </Button>
+          </div>
+        ) : null}
+        {mediaJobs.length > 0 ? (
+          <ul className="module-media-jobs">
+            {mediaJobs.map((job) => (
+              <MediaJobRow key={job.id} job={job} onRetry={retryJob} />
+            ))}
+          </ul>
+        ) : null}
+        <div className="module-media-layout">
+          {covers.length > 0 ? (
+            <section
+              className="module-media-group module-media-group--cover"
+              aria-label={t("play.module.packMediaGroups.cover")}
+            >
+              <header className="module-media-group-head">
+                <h4 className="module-media-group-label">{t("play.module.packMediaGroups.cover")}</h4>
+                {covers.length > 1 ? <span className="module-media-group-count">{covers.length}</span> : null}
+              </header>
+              <ul className="module-media-grid module-media-grid--cover">
+                {covers.map((record, index) => {
+                  const regen = jobFor(record)
+                  return (
+                    <li key={record.hash}>
+                      <ModuleMediaImage
+                        record={record}
+                        fallbackLabel={t("play.module.mediaFallback", {
+                          kind: t("play.module.packMediaGroups.cover"),
+                          index: index + 1,
+                        })}
+                        onRegenerate={regen ? () => retryJob(regen.id) : undefined}
+                      />
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
           ) : null}
-          {mediaJobs.length > 0 ? (
-            <ul className="module-media-jobs">
-              {mediaJobs.map((job) => (
-                <MediaJobRow key={job.id} job={job} onRetry={retryJob} />
-              ))}
-            </ul>
-          ) : null}
-          <div className="module-media-layout">
-            {covers.length > 0 ? (
-              <section
-                className="module-media-group module-media-group--cover"
-                aria-label={t("play.module.packMediaGroups.cover")}
-              >
+          {groupIds.map((kind) => {
+            const records = mediaGroups.get(kind) ?? []
+            const label = t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })
+            return (
+              <section className="module-media-group" key={kind}>
                 <header className="module-media-group-head">
-                  <h4 className="module-media-group-label">{t("play.module.packMediaGroups.cover")}</h4>
-                  {covers.length > 1 ? (
-                    <span className="module-media-group-count">{covers.length}</span>
+                  <h4 className="module-media-group-label">{label}</h4>
+                  {records.length > 1 ? (
+                    <span className="module-media-group-count">{records.length}</span>
                   ) : null}
                 </header>
-                <ul className="module-media-grid module-media-grid--cover">
-                  {covers.map((record, index) => {
+                <ul className={`module-media-grid module-media-grid--${kind}`}>
+                  {records.map((record, index) => {
                     const regen = jobFor(record)
                     return (
                       <li key={record.hash}>
                         <ModuleMediaImage
                           record={record}
                           fallbackLabel={t("play.module.mediaFallback", {
-                            kind: t("play.module.packMediaGroups.cover"),
+                            kind: label,
                             index: index + 1,
                           })}
                           onRegenerate={regen ? () => retryJob(regen.id) : undefined}
@@ -443,41 +483,11 @@ function PackDetailView({
                   })}
                 </ul>
               </section>
-            ) : null}
-            {groupIds.map((kind) => {
-              const records = mediaGroups.get(kind) ?? []
-              const label = t(`play.module.packMediaGroups.${kind}`, { defaultValue: kind })
-              return (
-                <section className="module-media-group" key={kind}>
-                  <header className="module-media-group-head">
-                    <h4 className="module-media-group-label">{label}</h4>
-                    {records.length > 1 ? (
-                      <span className="module-media-group-count">{records.length}</span>
-                    ) : null}
-                  </header>
-                  <ul className={`module-media-grid module-media-grid--${kind}`}>
-                    {records.map((record, index) => {
-                      const regen = jobFor(record)
-                      return (
-                        <li key={record.hash}>
-                          <ModuleMediaImage
-                            record={record}
-                            fallbackLabel={t("play.module.mediaFallback", {
-                              kind: label,
-                              index: index + 1,
-                            })}
-                            onRegenerate={regen ? () => retryJob(regen.id) : undefined}
-                          />
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </section>
-              )
-            })}
-          </div>
-        </Surface>
-      ) : null}
+            )
+          })}
+          {galleryCount === 0 ? <p className="studio-hint">{t("play.module.mediaEmpty")}</p> : null}
+        </div>
+      </Surface>
 
       {detail.worldbookEntries && detail.worldbookEntries.length > 0 ? (
         <Surface className="module-detail-card module-detail-content-card" labelledBy="pack-worldbook-title">
@@ -670,11 +680,14 @@ export default function ModuleDetailScreen({
   const detailReady = detail?.name === moduleName ? detail : null
 
   const jobsBusy =
-    (detailReady?.mediaJobs ?? []).some((job) => job.status === "pending" || job.status === "generating") ?? false
+    (detailReady?.mediaJobs ?? []).some((job) => job.status === "pending" || job.status === "generating") ??
+    false
   // Fresh-shot requests plan OUTSIDE the room turn lock (the LLM shot-list call can take tens
   // of seconds) — keep polling until the jobs materialize, with a bounded wait window.
   const planning =
-    operation?.kind === "module_media_generate" && operation.planning === true && operation.name === moduleName
+    operation?.kind === "module_media_generate" &&
+    operation.planning === true &&
+    operation.name === moduleName
   const [planWaitElapsed, setPlanWaitElapsed] = useState(false)
   const pollActive = jobsBusy || (planning && !planWaitElapsed)
 

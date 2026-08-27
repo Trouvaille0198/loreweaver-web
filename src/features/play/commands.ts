@@ -112,6 +112,7 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "preset" },
   { word: "dev" },
   { word: "habits" },
+  { word: "trace" },
 ]
 
 /** Does this word match the typed prefix (after the dot)? Case-insensitive. */
@@ -203,6 +204,7 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
   { word: "language", line: ".language", keeper: true, dataMode: "write" },
   { word: "dev", line: ".dev", keeper: true, dataMode: "mixed" },
   { word: "habits", line: ".habits", keeper: true, privateReply: true, dataMode: "mixed" },
+  { word: "trace", line: ".trace", keeper: true, dataMode: "read" },
 ]
 
 export interface CommandAnnotation {
@@ -285,6 +287,10 @@ export const COMMON_SKILLS: readonly string[] = [
 export interface ArgSpec {
   /** Fixed candidates for the next token, prefix-filtered, inserted whole. */
   tokens?: readonly string[]
+  /** Keeper-only candidates — offered to a keeper seat only, never to players
+   * (the engine enforces the same gate server-side; the client just does not
+   * advertise what a player cannot run). */
+  keeperTokens?: readonly string[]
   /** Per-token completion description, keyed by the candidate (`play.commands.<word>.<token>`). */
   hints?: Record<string, string>
   /** The dice-expression grammar — suggestions follow what's typed. */
@@ -321,7 +327,28 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   sc: { sanity: true },
   st: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
   sheet: { tokens: ["HP-1", "HP+1", "理智-1", "理智+1", "finalize"] }, // i18n-exempt: data
-  roster: { tokens: ["list", "claim", "release"] },
+  pc: {
+    tokens: ["list", "claim", "release"],
+    keeperTokens: ["gen", "delete"],
+    hints: {
+      list: "play.commands.pc.list",
+      claim: "play.commands.pc.claim",
+      release: "play.commands.pc.release",
+      gen: "play.commands.pc.gen",
+      delete: "play.commands.pc.delete",
+    },
+  },
+  roster: {
+    tokens: ["list", "claim", "release"],
+    keeperTokens: ["gen", "delete"],
+    hints: {
+      list: "play.commands.pc.list",
+      claim: "play.commands.pc.claim",
+      release: "play.commands.pc.release",
+      gen: "play.commands.pc.gen",
+      delete: "play.commands.pc.delete",
+    },
+  },
   characters: { tokens: ["list", "switch"] },
   chars: { tokens: ["list", "switch"] },
   party: { tokens: ["add", "new", "recruit", "act", "go", "auto", "remove", "list"] },
@@ -375,8 +402,8 @@ const ARG_TOKEN_DATA_MODES: Record<string, Record<string, QuickCommandDataMode>>
   advance: { status: "read", grant: "write", choose: "write", apply: "write", cancel: "write", xp: "write" },
   level: { status: "read", apply: "write" },
   xp: { status: "read" },
-  pc: { list: "read", claim: "write", release: "write" },
-  roster: { list: "read", claim: "write", release: "write" },
+  pc: { list: "read", claim: "write", release: "write", gen: "write", delete: "write" },
+  roster: { list: "read", claim: "write", release: "write", gen: "write", delete: "write" },
   characters: { list: "read", switch: "write" },
   chars: { list: "read", switch: "write" },
   party: {
@@ -490,6 +517,7 @@ export function suggestArgs(
   word: string,
   token: string,
   dynamic?: { npcs?: string[]; clues?: string[] },
+  keeper?: boolean,
 ): ArgSuggestion[] {
   const spec = ARG_SPECS[word]
   if (!spec) return []
@@ -513,8 +541,9 @@ export function suggestArgs(
     candidates.push(...nouns.map((n) => n))
     return annotate(candidates.slice(0, 8).map((text) => ({ text, mode: "replace" as const })))
   }
+  const candidates = [...(spec.tokens ?? []), ...(keeper ? (spec.keeperTokens ?? []) : [])]
   return annotate(
-    (spec.tokens ?? [])
+    candidates
       .filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p))
       .slice(0, 8)
       .map((text) => ({ text, mode: "replace" as const, hintKey: spec.hints?.[text] })),

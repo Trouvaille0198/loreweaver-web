@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react"
 import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
 import {
@@ -10,6 +10,7 @@ import {
 } from "@loreweaver/protocol"
 import { Button } from "../../components/ui"
 import { transportSend } from "../../lib/transport"
+import { useAdminStore } from "../../store/admin"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore } from "../../store/session"
 import Avatar from "./Avatar"
@@ -30,13 +31,6 @@ function resourceTone(id: string): MeterTone {
   return "accent"
 }
 
-function resourceLevel(resource: ResourceState): "low" | "medium" | "high" | "neutral" {
-  if (typeof resource.max !== "number" || resource.max <= 0) return "neutral"
-  const ratio = Math.max(0, Math.min(1, resource.value / resource.max))
-  if (ratio <= 1 / 3) return "low"
-  if (ratio <= 2 / 3) return "medium"
-  return "high"
-}
 
 /**
  * Protocol 2.0 vitals: one generic `resources` entry each — bounded entries
@@ -69,7 +63,11 @@ export function CharacterCard({ character }: { character: CharacterState }) {
       <header className="desk-title">
         <Avatar ref={character.avatar} name={character.name} />
         {stripControlChars(character.name)}
-        <span className="desk-tag">{stripControlChars(character.system)}</span>
+        {typeof (details.fields as Record<string, unknown> | undefined)?.level === "number" ? (
+          <span className="character-level-chip" title={t("play.character.level")}>
+            Lv {(details.fields as Record<string, unknown>).level as number}
+          </span>
+        ) : null}
       </header>
       <div className="character-card-body">
         {attributeEntries.length > 0 ? (
@@ -383,6 +381,10 @@ type PartyCharacterInfo = StateFrame["party"][number] & {
   background?: string
   notes?: string
   status_effects?: string[]
+  resource_groups?: {
+    id: string
+    resources: { id: string; label: string; value: number; max?: number | null; prominent?: boolean }[]
+  }[]
 }
 
 function detailText(value: unknown): string {
@@ -483,10 +485,21 @@ function PartyCharacterModal({
   const attributes = Object.entries(info.attributes ?? {})
   const secondary = Object.entries(info.secondary_attributes ?? {})
   const fields = Object.entries(info.fields ?? {})
+  const localizedFields: [string, unknown][] = fields.map(([key, value]) => {
+    if (key === "character_class" && typeof value === "string" && value) {
+      // The class id ("wizard"/"bard"/...) displays as its localized name.
+      return [key, t(`play.character.class.${value}`, { defaultValue: value })]
+    }
+    return [key, value]
+  })
   const skills = Object.entries(info.skills ?? {})
   const equipment = info.equipment ?? []
-  const items = info.items ?? []
-  const bonuses = equippedItemBonuses(info.items ?? [])
+  const allItems = info.items ?? []
+  // Archived items are out of play (same rule as the character screen): they
+  // neither render here nor contribute stat bonuses.
+  const items = allItems.filter((item) => !item.archived)
+  const archivedItems = allItems.filter((item) => item.archived)
+  const bonuses = equippedItemBonuses(items)
   const hintFor = (key: string): string | undefined => {
     const list = bonuses[key]
     return list && list.length > 0
@@ -498,7 +511,7 @@ function PartyCharacterModal({
     return list && list.length > 0 ? list.reduce((sum, b) => sum + b.delta, 0) : undefined
   }
   const hasExtra =
-    attributes.length + secondary.length + fields.length + skills.length + equipment.length + items.length > 0
+      attributes.length + secondary.length + fields.length + skills.length + equipment.length + allItems.length > 0
 
   // Portaled to the body like the avatar lightbox: the desk pane carries a
   // transform (its slide animation), and a `position: fixed` dialog inside a
@@ -535,14 +548,18 @@ function PartyCharacterModal({
               </div>
             ) : null}
           </div>
-          <button
+          <Button
             type="button"
+            variant="quiet"
+            size="icon"
             className="character-modal-close"
             aria-label={t("session.partyClose")}
+            title={t("session.partyClose")}
+            autoFocus
             onClick={onClose}
           >
             ×
-          </button>
+          </Button>
         </header>
         {info.status_effects && info.status_effects.length > 0 ? (
           <div className="chip-row">
@@ -564,9 +581,25 @@ function PartyCharacterModal({
             {fields.length > 0 ? (
               <section className="character-modal-section">
                 <h3>{t("play.character.fields")}</h3>
-                <PartyDetailTable entries={fields} t={t} />
+                <PartyDetailTable entries={localizedFields} t={t} />
               </section>
             ) : null}
+            {(info.resource_groups ?? []).map((group) =>
+              group.resources.some((resource) => typeof resource.max !== "number" || resource.max > 0) ? (
+                <section className="character-modal-section" key={group.id || "resources"}>
+                  <h3>
+                    {group.id
+                      ? t(`session.resourceGroups.${group.id}`, { defaultValue: stripControlChars(group.id) })
+                      : t("session.resources")}
+                  </h3>
+                  <div className="character-resources" role="group" aria-label={stripControlChars(group.id)}>
+                    {group.resources.map((resource) => (
+                      <ResourceRow key={resource.id} resource={resource} />
+                    ))}
+                  </div>
+                </section>
+              ) : null,
+            )}
             {attributes.length > 0 ? (
               <section className="character-modal-section">
                 <h3>{t("session.attributes")}</h3>
@@ -689,6 +722,11 @@ function PartyCharacterModal({
                 </ul>
               </section>
             ) : null}
+            {archivedItems.length > 0 ? (
+              <p className="studio-hint">
+                {t("play.character.archivedItems")} ({archivedItems.length}) · {t("play.character.archivedHint")}
+              </p>
+            ) : null}
           </div>
         </div>
         {ownCharacter && info.notes ? (
@@ -764,14 +802,19 @@ export function PartyCard({ game }: { game: StateFrame }) {
   const [menu, setMenu] = useState<{ name: string; x: number; y: number } | null>(null)
   const [confirming, setConfirming] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const characterTriggerRef = useRef<HTMLLIElement | null>(null)
+  const closeCharacter = useCallback(() => {
+    setSelectedName(null)
+    window.setTimeout(() => characterTriggerRef.current?.focus(), 0)
+  }, [])
   useEffect(() => {
     if (!selectedName) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedName(null)
+      if (event.key === "Escape") closeCharacter()
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [selectedName])
+  }, [closeCharacter, selectedName])
   // Close the row menu on outside tap / Escape, like every other popover.
   useEffect(() => {
     if (!menu) return
@@ -811,12 +854,17 @@ export function PartyCard({ game }: { game: StateFrame }) {
       switchTo: mine && !active && online,
       release: mine && online,
       forceRelease: !mine && claimedBy !== "" && isKeeper && online,
+      generateAvatar: isKeeper && online,
     }
   }
 
   const openMenu = (event: ReactMouseEvent<HTMLLIElement>, name: string) => {
     const actions = menuActions(name)
-    if (!actions || (!actions.view && !actions.switchTo && !actions.release && !actions.forceRelease)) return
+    if (
+      !actions ||
+      (!actions.view && !actions.switchTo && !actions.release && !actions.forceRelease && !actions.generateAvatar)
+    )
+      return
     event.preventDefault()
     // A keyboard-triggered context menu (Shift+F10) reports no pointer
     // coordinates; anchor to the row itself then.
@@ -850,11 +898,15 @@ export function PartyCard({ game }: { game: StateFrame }) {
               role="button"
               tabIndex={0}
               title={t("session.partyMemberHint")}
-              onDoubleClick={() => setSelectedName(member.name)}
+              onDoubleClick={(event) => {
+                characterTriggerRef.current = event.currentTarget
+                setSelectedName(member.name)
+              }}
               onContextMenu={(event) => openMenu(event, member.name)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault()
+                  characterTriggerRef.current = event.currentTarget
                   setSelectedName(member.name)
                 }
               }}
@@ -881,13 +933,7 @@ export function PartyCard({ game }: { game: StateFrame }) {
               {(member.resources ?? []).length > 0 ? (
                 <div className="party-resources" role="group" aria-label={t("session.partyStats")}>
                   {(member.resources ?? []).map((resource) => (
-                    <span key={resource.id} className="party-stat">
-                      <span className="party-stat-label">{stripControlChars(resource.label)}</span>
-                      <strong className={`party-stat-value is-${resourceLevel(resource)}`}>
-                        {resource.value}
-                        {typeof resource.max === "number" && resource.max > 0 ? `/${resource.max}` : ""}
-                      </strong>
-                    </span>
+                    <ResourceRow key={resource.id} resource={resource} />
                   ))}
                 </div>
               ) : null}
@@ -914,7 +960,7 @@ export function PartyCard({ game }: { game: StateFrame }) {
                 void transportSend({ type: "input", text: `.pc release ${selected.name}` }).catch(() => { })
               : undefined
           }
-          onClose={() => setSelectedName(null)}
+          onClose={closeCharacter}
         />
       ) : null}
       {menu && actions ? (
@@ -964,6 +1010,14 @@ export function PartyCard({ game }: { game: StateFrame }) {
                   label: t("session.poke"),
                   run: () => {
                     send(`.poke ${menu.name}`)
+                    setMenu(null)
+                  },
+                },
+                actions.generateAvatar && {
+                  key: "avatar",
+                  label: t("session.pregenAvatar"),
+                  run: () => {
+                    useAdminStore.getState().pregenAvatarRequest(menu.name)
                     setMenu(null)
                   },
                 },
@@ -1082,12 +1136,18 @@ export function PregenCard({ game }: { game: StateFrame }) {
       switchTo: mine && !active && online,
       release: mine && online,
       forceRelease: !mine && claimedBy !== "" && isKeeper && online,
+      generateAvatar: isKeeper && online,
+      canDelete: isKeeper && online && !claimedBy && pregen.source === "room",
     }
   }
 
   const openMenu = (event: ReactMouseEvent<HTMLLIElement>, name: string) => {
     const actions = menuActions(name)
-    if (!actions || (!actions.view && !actions.switchTo && !actions.release && !actions.forceRelease)) return
+    if (
+      !actions ||
+      (!actions.view && !actions.switchTo && !actions.release && !actions.forceRelease && !actions.generateAvatar)
+    )
+      return
     event.preventDefault()
     // A keyboard-triggered context menu (Shift+F10 on the focused row)
     // reports no pointer coordinates; anchor to the row itself then.
@@ -1230,6 +1290,22 @@ export function PregenCard({ game }: { game: StateFrame }) {
                   label: t("session.pregenSwitch"),
                   run: () => {
                     send(`.pc claim ${menu.name}`)
+                    setMenu(null)
+                  },
+                },
+                actions.generateAvatar && {
+                  key: "avatar",
+                  label: t("session.pregenAvatar"),
+                  run: () => {
+                    useAdminStore.getState().pregenAvatarRequest(menu.name)
+                    setMenu(null)
+                  },
+                },
+                actions.canDelete && {
+                  key: "delete",
+                  label: t("session.pregenDelete"),
+                  run: () => {
+                    send(`.pc delete ${menu.name}`)
                     setMenu(null)
                   },
                 },

@@ -179,7 +179,7 @@ describe("NarrativeLog discarded draft (keeper-only)", () => {
     useSessionStore.getState().clear()
   })
 
-  it("lets a keeper right-click a reply to review its discarded pre-tool draft", () => {
+  it("lets a keeper open the discarded pre-tool draft from the draft mark", () => {
     useConnectionStore.setState({
       status: "online",
       welcome: { you: { id: "k1", name: "Keeper", role: "keeper" } } as never,
@@ -189,7 +189,8 @@ describe("NarrativeLog discarded draft (keeper-only)", () => {
 
     render(<NarrativeLog />)
 
-    fireEvent.contextMenu(screen.getByText("骰子落定：突袭失败。"))
+    // The draft opens from the ◆ mark (left click) — right-click is the mention-copy lane.
+    fireEvent.click(screen.getByRole("button", { name: /discarded pre-tool draft/ }))
     expect(screen.getByRole("dialog")).toHaveTextContent("美咲的刀锋抵上岩本的喉咙")
     fireEvent.click(screen.getByRole("button", { name: "Close" }))
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()

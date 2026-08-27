@@ -33,6 +33,7 @@ interface Hint {
 export default function InputBox() {
   const { t } = useTranslation()
   const status = useConnectionStore((s) => s.status)
+  const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
   const seat = useConnectionStore((s) => s.welcome?.you.name ?? "")
   const echoLocalInput = useSessionStore((s) => s.echoLocalInput)
   const failEcho = useSessionStore((s) => s.failEcho)
@@ -79,7 +80,7 @@ export default function InputBox() {
     const tokenStart = typed.lastIndexOf(" ") + 1
     const token = typed.slice(tokenStart)
     const before = text.slice(0, text.length - token.length)
-    return suggestArgs(word, token, imageNames).map((arg: ArgSuggestion, index) => {
+    return suggestArgs(word, token, imageNames, isKeeper).map((arg: ArgSuggestion, index) => {
       const baseHint = arg.hintKey ? t(arg.hintKey) : t(`play.commands.${word}`)
       return {
         key: `a-${word}-${arg.text}-${index}`,

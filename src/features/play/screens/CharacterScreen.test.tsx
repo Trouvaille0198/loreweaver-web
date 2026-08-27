@@ -3,7 +3,7 @@
 // wire — pinned here, because the failure mode is a client quietly growing its own
 // copy of CoC and D&D (which is what the TUI's equivalent screen did).
 
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -342,6 +342,9 @@ describe("CharacterScreen — item detail", () => {
     expect(screen.getByText("Fencing Sword")).toBeInTheDocument()
     expect(screen.getByText(/main_hand/)).toBeInTheDocument()
     expect(screen.getByText("Kind: weapon")).toBeInTheDocument()
+    // The prose rows live in the hover tooltip: hidden until the card is hovered.
+    expect(screen.queryByText("A balanced blade.")).not.toBeInTheDocument()
+    fireEvent.mouseEnter(screen.getByText("Fencing Sword").closest(".play-character-item")!)
     expect(screen.getByText("A balanced blade.")).toBeInTheDocument()
     expect(screen.getByText("Slot: hand")).toBeInTheDocument()
     expect(screen.getByText("Original holder: the captain")).toBeInTheDocument()
