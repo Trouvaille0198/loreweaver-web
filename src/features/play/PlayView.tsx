@@ -102,8 +102,11 @@ function screenFromInitialLoad(): PlayScreen {
 
 /** The keeper-only management screens — a player landing on one of these
  * (including a legacy keeper hash) falls back to the table because the server
- * refuses every admin frame they would send. */
-const KEEPER_SCREENS: readonly PlayScreen[] = ["keeperSettings", "moduleDetail"]
+ * refuses every admin frame they would send. The module detail page is NOT
+ * here on purpose: the share link hands it to players read-only (the server
+ * answers its `module_detail` read for any member; the page hides the keeper
+ * actions itself). */
+const KEEPER_SCREENS: readonly PlayScreen[] = ["keeperSettings"]
 
 function isKeeperScreen(screen: PlayScreen): boolean {
   return KEEPER_SCREENS.includes(screen)
@@ -277,7 +280,7 @@ function OnlineView() {
     case "moduleDetail": {
       const moduleName = moduleNameFromHash()
       return moduleName ? (
-        <ModuleDetailScreen moduleName={moduleName} onBack={() => navigate("keeperSettings")} />
+        <ModuleDetailScreen moduleName={moduleName} onBack={() => navigate("keeperSettings")} variant="modern" />
       ) : (
         <KeeperSettingsScreen onBack={back} />
       )

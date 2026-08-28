@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { Button } from "../../../components/ui"
+import { Button, Surface } from "../../../components/ui"
 import { useSessionStore } from "../../../store/session"
 import ScreenShell from "./ScreenShell"
 
@@ -21,15 +21,17 @@ export default function ModuleShareScreen({
   const name = share?.name ?? moduleName
   return (
     <ScreenShell title={t("play.moduleShare.title")} onBack={onBack}>
-      <div className="module-share-card">
+      <Surface className="module-share-card" tone="accent" labelledBy="module-share-title">
         <p className="ui-eyebrow">{t("play.moduleShare.eyebrow")}</p>
-        <h2 className="module-share-title">{name}</h2>
+        <h2 className="module-share-title" id="module-share-title">{name}</h2>
         {share?.description ? <p className="module-share-description">{share.description}</p> : null}
         <p className="module-share-hint">{t("play.moduleShare.hint")}</p>
-        <Button type="button" variant="quiet" onClick={onBack}>
-          {t("play.back")}
-        </Button>
-      </div>
+        <div className="module-share-actions">
+          <Button type="button" variant="quiet" onClick={onBack}>
+            {t("play.back")}
+          </Button>
+        </div>
+      </Surface>
     </ScreenShell>
   )
 }

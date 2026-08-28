@@ -114,9 +114,9 @@ export interface ModuleDetail {
     maximum?: number
     options?: string[]
   }[]
-  /** A pack's claimable pregen cast. `avatar` (when present) is the pack asset filename of the
-   * investigator's generated portrait. */
-  pregens?: { name: string; concept?: string; avatar?: string }[]
+  /** A pack's claimable pregen cast. The card/index pair remains stable while a keeper edits
+   * the display name; `avatar` is the pack asset filename of the generated portrait. */
+  pregens?: ModulePregen[]
   /** A pack's bundled rule systems. */
   rulepacks?: { name: string; title: string; content: string }[]
   /** A pack's bundled KP skills. */
@@ -146,6 +146,25 @@ export interface ModuleDetail {
   /** A fresh-shot plan's localized failure reason (shot_list_failed / no_shots / …),
    * persisted in the pack's jobs sidecar — shown on the detail page. */
   mediaPlanError?: string
+}
+
+export interface ModulePregen {
+  id: string
+  cardPath: string
+  index: number
+  name: string
+  concept?: string
+  background?: string
+  appearance?: string
+  occupation?: string
+  /** The system's canonical class/race ids (e.g. "cleric" / "human") the module
+   * authored — shown localized on the detail page's claimable-cast list. */
+  characterClass?: string
+  race?: string
+  aliases?: string[]
+  skills?: Record<string, number>
+  avatar?: string
+  extra?: Record<string, unknown>
 }
 export interface WorldbookSource {
   name: string
@@ -189,6 +208,8 @@ export interface ModuleOperation {
   kind:
     | "module_upload"
     | "module_update"
+    | "module_pregen_update"
+    | "module_pack_export"
     | "module_bundle_upload"
     | "module_import"
     | "module_delete"
@@ -205,6 +226,10 @@ export interface ModuleOperation {
   planning?: boolean
   /** Exact module references offered when an installed pack contains several world cards. */
   choices?: string[]
+  /** Pack operation result; downloads use a one-time browser URL, overwrites do not. */
+  downloadUrl?: string
+  fileName?: string
+  overwritten?: boolean
 }
 
 function parseModuleDetail(frame: AdminGeneratedFrame): Record<string, unknown> {
@@ -383,20 +408,35 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
       : undefined,
     pregens: Array.isArray(value.pregens)
       ? value.pregens
-          .filter(
-            (item): item is { name: string; concept?: string } => typeof item === "object" && item !== null,
-          )
-          .map((item) => ({
-            name: String((item as { name?: unknown }).name ?? ""),
-            concept:
-              typeof (item as { concept?: unknown }).concept === "string"
-                ? String((item as { concept?: unknown }).concept)
+          .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+          .map((item, index) => ({
+            id: typeof item.id === "string" ? item.id : `${String(item.card_path ?? "")}#${index}`,
+            cardPath: typeof item.card_path === "string" ? item.card_path : "",
+            index: typeof item.index === "number" ? item.index : index,
+            name: String(item.name ?? ""),
+            concept: typeof item.concept === "string" ? item.concept : undefined,
+            background: typeof item.background === "string" ? item.background : undefined,
+            appearance: typeof item.appearance === "string" ? item.appearance : undefined,
+            occupation: typeof item.occupation === "string" ? item.occupation : undefined,
+            characterClass: typeof item.character_class === "string" ? item.character_class : undefined,
+            race: typeof item.race === "string" ? item.race : undefined,
+            aliases: Array.isArray(item.aliases) ? item.aliases.map(String).filter(Boolean) : undefined,
+            skills:
+              typeof item.skills === "object" && item.skills !== null && !Array.isArray(item.skills)
+                ? Object.fromEntries(
+                    Object.entries(item.skills).flatMap(([key, value]) => {
+                      const number = typeof value === "number" ? value : Number(value)
+                      return Number.isFinite(number) ? [[key, number]] : []
+                    }),
+                  )
                 : undefined,
-            avatar:
-              typeof (item as { avatar?: unknown }).avatar === "string"
-                ? String((item as { avatar?: unknown }).avatar)
+            avatar: typeof item.avatar === "string" ? item.avatar : undefined,
+            extra:
+              typeof item.extra === "object" && item.extra !== null && !Array.isArray(item.extra)
+                ? Object.fromEntries(Object.entries(item.extra))
                 : undefined,
           }))
+          .filter((item) => item.name.length > 0)
       : undefined,
     rulepacks: Array.isArray(value.rulepacks)
       ? value.rulepacks.filter(
@@ -716,6 +756,9 @@ interface AdminState {
   getModuleDetail: (name: string) => void
   uploadModule: (name: string, content: string) => void
   updateModule: (name: string, content: string) => void
+  updateModulePregen: (name: string, pregen: ModulePregen) => void
+  overwriteModulePack: (name: string) => void
+  exportModulePack: (name: string) => void
   uploadModuleBundle: (name: string, archive: string) => void
   /** Delete an installed module source ("pack" deletes the installed content pack by id;
    * "text" deletes the flat Markdown source file). Keeper-gated server-side. */
@@ -972,6 +1015,9 @@ export const useAdminStore = create<AdminState>((set) => ({
                       (choice): choice is string => typeof choice === "string" && !!choice,
                     )
                   : undefined,
+                downloadUrl: typeof detail.download_url === "string" ? detail.download_url : undefined,
+                fileName: typeof detail.filename === "string" ? detail.filename : undefined,
+                overwritten: typeof detail.overwritten === "boolean" ? detail.overwritten : undefined,
               },
               ...(kind === "module_import" ? { moduleImporting: null } : {}),
               busy: false,
@@ -1232,6 +1278,35 @@ export const useAdminStore = create<AdminState>((set) => ({
   getModuleDetail: (name) => moduleAction("module_detail", { name }, set),
   uploadModule: (name, content) => moduleAction("module_upload", { name, content }, set),
   updateModule: (name, content) => moduleAction("module_update", { name, content }, set),
+  updateModulePregen: (name, pregen) =>
+    moduleAction(
+      "module_pregen_update",
+      {
+        name,
+        card_path: pregen.cardPath,
+        index: pregen.index,
+        pregen: {
+          name: pregen.name,
+          background: pregen.background ?? pregen.concept ?? "",
+          appearance: pregen.appearance ?? "",
+          occupation: pregen.occupation ?? "",
+          ...(pregen.characterClass !== undefined ? { character_class: pregen.characterClass } : {}),
+          ...(pregen.race !== undefined ? { race: pregen.race } : {}),
+          aliases: pregen.aliases ?? [],
+          skills: pregen.skills ?? {},
+          ...(pregen.extra ? { extra: pregen.extra } : {}),
+        },
+      },
+      set,
+    ),
+  overwriteModulePack: (name) => {
+    set({ moduleOperation: null })
+    moduleAction("module_pack_export", { name, overwrite: true }, set)
+  },
+  exportModulePack: (name) => {
+    set({ moduleOperation: null })
+    moduleAction("module_pack_export", { name, overwrite: false }, set)
+  },
   uploadModuleBundle: (name, archive) => moduleAction("module_bundle_upload", { name, archive }, set),
   deleteModule: (name, sourceKind) => moduleAction("module_delete", { name, source_kind: sourceKind }, set),
   importModule: (name) => {
