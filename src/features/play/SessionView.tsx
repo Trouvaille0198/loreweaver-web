@@ -23,22 +23,20 @@ import TurnStatus from "./TurnStatus"
 import Meter from "./Meter"
 import type { PlayScreen } from "./PlayView"
 
-/** "Where am I, what time is it" — the one context line a player always wants.
- * Mobile-only: on wide screens the scene card already lives in the desk. */
+/** "Where am I, what time is it" — the scene bar under the session header.
+ * Visible on every screen: it is the story column's own context line, so the
+ * scene never lives only behind a hover or inside the desk. */
 function SceneLine() {
   const { t } = useTranslation()
   const game = useSessionStore((s) => s.game)
   if (!game?.scene && !game?.clock) return null
-  const parts: string[] = []
-  if (game.scene) {
-    parts.push(stripControlChars(game.scene.name))
-    if (game.scene.focus) parts.push(stripControlChars(game.scene.focus))
-  }
+  const meta: string[] = []
+  if (game.scene?.focus) meta.push(stripControlChars(game.scene.focus))
   if (game.clock) {
-    parts.push(stripControlChars(game.clock.time))
-    if (typeof game.clock.round === "number") parts.push(t("session.round", { n: game.clock.round }))
+    meta.push(stripControlChars(game.clock.time))
+    if (typeof game.clock.round === "number") meta.push(t("session.round", { n: game.clock.round }))
   }
-  if (parts.length === 0) return null
+  if (!game.scene && meta.length === 0) return null
   const art = sceneImage(game.scene)
   return (
     <p className="scene-strip">
@@ -49,7 +47,8 @@ function SceneLine() {
           ◎
         </span>
       )}
-      <span className="scene-strip-text">{parts.join(" · ")}</span>
+      {game.scene ? <strong className="scene-strip-name">{stripControlChars(game.scene.name)}</strong> : null}
+      {meta.length > 0 ? <span className="scene-strip-meta">{meta.join(" · ")}</span> : null}
     </p>
   )
 }
@@ -143,9 +142,6 @@ function OnboardingBanner({ onNavigate }: { onNavigate: (screen: PlayScreen) => 
 export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayScreen) => void }) {
   const { t } = useTranslation()
   const welcome = useConnectionStore((s) => s.welcome)
-  const game = useSessionStore((s) => s.game)
-  const scene = game?.scene
-  const art = sceneImage(scene)
 
   // On narrow screens the desk (panels + state) is a bottom drawer. The toggle
   // lives in the INPUT dock — the thumb's home on a phone — not the top header;
@@ -197,32 +193,14 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
       <div className="chronicle-pane">
         <header className="session-head">
           <AppMenu onNavigate={onNavigate} />
-          <span className="session-room">{welcome ? `${welcome.room} · ${welcome.you.name}` : "…"}</span>
-          {scene ? (
-            <div
-              className="session-scene"
-              tabIndex={0}
-              title={stripControlChars(scene.name)}
-              aria-label={stripControlChars(scene.name)}
-            >
-              <span className="session-scene-label">{stripControlChars(scene.name)}</span>
-              <div className="session-scene-popover">
-                {art !== null ? <SceneArt image={art} sceneName={stripControlChars(scene.name)} /> : null}
-                <div className="session-scene-details">
-                  <strong>{stripControlChars(scene.name)}</strong>
-                  {scene.focus ? <span>{stripControlChars(scene.focus)}</span> : null}
-                  {game?.clock ? (
-                    <span>
-                      {stripControlChars(game.clock.time)}
-                      {typeof game.clock.round === "number"
-                        ? ` · ${t("session.round", { n: game.clock.round })}`
-                        : ""}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          ) : null}
+          {welcome ? (
+            <span className="session-room">
+              <strong className="session-room-name">{welcome.room}</strong>
+              <span className="session-seat">{welcome.you.name}</span>
+            </span>
+          ) : (
+            <span className="session-room">…</span>
+          )}
           <StatusPill />
           <MessageNotifier />
           {/* The campaign chronicle (summary + every record) — catch-up reading
