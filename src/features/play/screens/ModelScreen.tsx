@@ -697,11 +697,15 @@ export default function ModelScreen({
                     disabled={profileAction !== null || selectedProfile !== undefined}
                     onChange={(event) => {
                       const kind = event.target.value as ModelKind
+                      const previousDefaultBaseUrl = defaultBaseUrlFor(selectedProviderMetadata, modelKind)
+                      const currentBaseUrl = baseUrl.trim()
                       setModelKind(kind)
                       setProfileEmbeddingDim("")
-                      // Image profiles must not inherit the chat endpoint — prefill the
-                      // repo-defined image base_url when switching to the image kind.
-                      setBaseUrl(defaultBaseUrlFor(selectedProviderMetadata, kind))
+                      // Switching capability may change the provider's default endpoint, but
+                      // must never overwrite a URL the operator entered explicitly.
+                      if (!currentBaseUrl || currentBaseUrl === previousDefaultBaseUrl) {
+                        setBaseUrl(defaultBaseUrlFor(selectedProviderMetadata, kind))
+                      }
                     }}
                   >
                     {availableKinds.map((kind) => (

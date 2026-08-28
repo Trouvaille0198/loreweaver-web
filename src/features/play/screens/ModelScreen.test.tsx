@@ -89,6 +89,21 @@ describe("ModelScreen provider defaults", () => {
     expect(baseUrl).toHaveValue("https://api.minimaxi.com/v1")
   })
 
+  it("preserves a custom Base URL when changing the model capability", async () => {
+    const user = userEvent.setup()
+    render(<ModelScreen embedded onBack={() => {}} />)
+    const provider = screen.getByLabelText("Provider")
+    const baseUrl = screen.getByLabelText("Base URL (optional)")
+    const modelKind = screen.getByLabelText("Model capability")
+
+    await user.selectOptions(provider, "openai")
+    await user.clear(baseUrl)
+    await user.type(baseUrl, "https://image.kuaipao.pro/v1")
+    await user.selectOptions(modelKind, "image")
+
+    expect(baseUrl).toHaveValue("https://image.kuaipao.pro/v1")
+  })
+
   it("selects only saved Embedding profiles and enables save for a valid dimension change", async () => {
     const user = userEvent.setup()
     useAdminStore.setState((state) => ({

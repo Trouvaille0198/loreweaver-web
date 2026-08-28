@@ -57,6 +57,7 @@ function SceneLine() {
 /** The player's vitals, kept in sight above the story. Mobile-only: the full
  * character card (with all resources and status effects) lives in the drawer. */
 function VitalsStrip() {
+  const { t } = useTranslation()
   const game = useSessionStore((s) => s.game)
   const character = game?.character
   if (!character) return null
@@ -65,7 +66,7 @@ function VitalsStrip() {
   )
   if (resources.length === 0) return null
   return (
-    <div className="vitals-strip" role="group" aria-label="vitals">
+    <div className="vitals-strip" role="group" aria-label={t("session.resources")}>
       {resources.map((resource) => (
         <Meter
           key={resource.id}

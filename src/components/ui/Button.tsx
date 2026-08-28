@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react"
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react"
 
 export type ButtonVariant = "primary" | "secondary" | "quiet" | "danger" | "success"
 export type ButtonSize = "sm" | "md" | "lg" | "icon"
@@ -16,20 +16,24 @@ function joinClasses(...classes: Array<string | false | null | undefined>): stri
 }
 
 /** Canonical interactive control for actions across the application. */
-export function Button({
-  variant = "secondary",
-  size = "md",
-  leadingIcon,
-  trailingIcon,
-  loading = false,
-  disabled,
-  className,
-  children,
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = "secondary",
+    size = "md",
+    leadingIcon,
+    trailingIcon,
+    loading = false,
+    disabled,
+    className,
+    children,
+    ...props
+  },
+  ref,
+) {
   return (
     <button
       {...props}
+      ref={ref}
       className={joinClasses("ui-button", `ui-button--${variant}`, `ui-button--${size}`, className)}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
@@ -39,7 +43,7 @@ export function Button({
       {trailingIcon}
     </button>
   )
-}
+})
 
 export function ArrowLeftIcon() {
   return (

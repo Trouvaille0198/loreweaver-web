@@ -147,9 +147,9 @@ export default function SkillsScreen({
                 ) : null}
                 <pre className="module-source-preview">{detail.body || t("play.skills.noBody")}</pre>
                 <footer className="panel-modal-footer">
-                  <button ref={closeRef} type="button" className="ui-button ui-button--secondary" onClick={() => setDetail(null)}>
+                  <Button ref={closeRef} type="button" variant="secondary" onClick={() => setDetail(null)}>
                     {t("play.skills.close")}
-                  </button>
+                  </Button>
                 </footer>
               </section>
             </div>,

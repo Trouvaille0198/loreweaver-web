@@ -637,6 +637,10 @@ function CharacterDetailsView({
       // The class id ("wizard"/"bard"/...) displays as its localized name.
       return [key, t(`play.character.class.${value}`, { defaultValue: value })]
     }
+    if (key === "race" && typeof value === "string" && value) {
+      // The race id ("human"/"half-elf"/...) displays as its localized name.
+      return [key, t(`play.character.race.${value}`, { defaultValue: value })]
+    }
     return [key, value]
   })
   const secondaryEntries = Object.entries(details.secondary_attributes ?? {})
