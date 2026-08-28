@@ -17,6 +17,10 @@ export interface CommandEntry {
   word: string
   /** An example argument to show after the word in the hint. */
   example?: string
+  /** Keeper-only: offered to a keeper seat only, never to a player — mirrors
+   * the engine's `.help` split (`keeper_help`/`required_level` specs) plus
+   * the frontend's keeper-marked quick-command surface. */
+  keeper?: boolean
 }
 
 // The word list mirrors the engine's dispatch surface (gateway/commands/
@@ -40,12 +44,12 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "cast" },
   { word: "combat" },
   { word: "resource" },
-  { word: "rest" },
-  { word: "statblock" },
-  { word: "encounter" },
-  { word: "advance" },
-  { word: "level" },
-  { word: "xp" },
+  { word: "rest", keeper: true },
+  { word: "statblock", keeper: true },
+  { word: "encounter", keeper: true },
+  { word: "advance", keeper: true },
+  { word: "level", keeper: true },
+  { word: "xp", keeper: true },
   { word: "st", example: "力量=70" }, // i18n-exempt: a CJK example argument, data not UI
   { word: "en" },
   // Characters
@@ -61,9 +65,9 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "rename" },
   { word: "nn" },
   { word: "avatar" },
-  { word: "image", example: "scene" },
-  { word: "bind" },
-  { word: "unbind" },
+  { word: "image", example: "scene", keeper: true },
+  { word: "bind", keeper: true },
+  { word: "unbind", keeper: true },
   // The table & the story
   { word: "party" },
   { word: "jrrp" },
@@ -74,52 +78,61 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "initiative" },
   { word: "recap" },
   { word: "report" },
-  { word: "summary" },
-  { word: "chronicle" },
+  { word: "summary", keeper: true },
+  { word: "chronicle", keeper: true },
   { word: "mem" },
-  { word: "settle" },
+  { word: "settle", keeper: true },
   { word: "phase" },
   { word: "hint" },
   { word: "help" },
   { word: "h" },
-  { word: "language" },
+  { word: "language", keeper: true },
   // Keeper & operator surface
-  { word: "var" },
-  { word: "vars" },
-  { word: "module" },
-  { word: "forge", example: "skill|rule <描述>" }, // i18n-exempt: data
-  { word: "import" },
-  { word: "pack" },
-  { word: "skill" },
-  { word: "npc" },
-  { word: "companion" },
-  { word: "lore" },
-  { word: "rule" },
-  { word: "room" },
+  { word: "var", keeper: true },
+  { word: "vars", keeper: true },
+  { word: "module", keeper: true },
+  { word: "forge", example: "skill|rule <描述>", keeper: true }, // i18n-exempt: data
+  { word: "import", keeper: true },
+  { word: "pack", keeper: true },
+  { word: "skill", keeper: true },
+  { word: "npc", keeper: true },
+  { word: "companion", keeper: true },
+  { word: "lore", keeper: true },
+  { word: "rule", keeper: true },
+  { word: "room", keeper: true },
   { word: "panel" },
-  { word: "panels" },
-  { word: "audio" },
-  { word: "bgm" },
-  { word: "ambience" },
-  { word: "amb" },
-  { word: "sfx" },
-  { word: "save" },
-  { word: "undo" },
-  { word: "bot" },
-  { word: "botlist" },
-  { word: "model" },
-  { word: "reset" },
-  { word: "preset" },
-  { word: "dev" },
-  { word: "habits" },
-  { word: "trace" },
+  { word: "panels", keeper: true },
+  { word: "audio", keeper: true },
+  { word: "bgm", keeper: true },
+  { word: "ambience", keeper: true },
+  { word: "amb", keeper: true },
+  { word: "sfx", keeper: true },
+  { word: "save", keeper: true },
+  { word: "undo", keeper: true },
+  { word: "bot", keeper: true },
+  { word: "botlist", keeper: true },
+  { word: "model", keeper: true },
+  { word: "reset", keeper: true },
+  { word: "preset", keeper: true },
+  { word: "dev", keeper: true },
+  { word: "habits", keeper: true },
+  { word: "trace", keeper: true },
 ]
 
+/** Keeper-only words — a player seat never sees these in the word dropdown or
+ * in argument completions (mirrors the engine's `.help` split). */
+const KEEPER_WORDS = COMMANDS.reduce<Record<string, true>>((acc, entry) => {
+  if (entry.keeper) acc[entry.word] = true
+  return acc
+}, {})
+
 /** Does this word match the typed prefix (after the dot)? Case-insensitive. */
-export function matchCommands(prefix: string): CommandEntry[] {
+export function matchCommands(prefix: string, keeper = false): CommandEntry[] {
   const p = prefix.trim().toLowerCase()
   if (p.length === 0) return COMMANDS.slice(0, 8)
-  return COMMANDS.filter((entry) => entry.word.startsWith(p)).slice(0, 8)
+  return COMMANDS.filter(
+    (entry) => entry.word.startsWith(p) && (keeper || !KEEPER_WORDS[entry.word]),
+  ).slice(0, 8)
 }
 
 /**
@@ -315,13 +328,13 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   check: { tokens: COMMON_SKILLS },
   attack: { tokens: ["attack"] },
   cast: { tokens: ["spell"] },
-  combat: { tokens: ["status", "start", "join", "remove", "next", "end"] },
+  combat: { tokens: ["status", "next"], keeperTokens: ["start", "join", "remove", "end"] },
   resource: { tokens: ["show", "spend", "set", "recover"] },
-  rest: { tokens: ["status", "short", "long"] },
-  statblock: { tokens: ["list", "show", "bind"] },
-  encounter: { tokens: ["list", "show", "budget", "start"] },
-  advance: { tokens: ["status", "grant", "choose", "apply", "cancel", "xp"] },
-  level: { tokens: ["status", "apply"] },
+  rest: { tokens: ["status"], keeperTokens: ["short", "long"] },
+  statblock: { tokens: ["list", "show"], keeperTokens: ["bind"] },
+  encounter: { tokens: ["list", "show"], keeperTokens: ["budget", "start"] },
+  advance: { tokens: ["status", "choose", "cancel"], keeperTokens: ["grant", "apply", "xp"] },
+  level: { tokens: ["status"], keeperTokens: ["apply"] },
   xp: { tokens: ["status"] },
   sanity: { sanity: true },
   sc: { sanity: true },
@@ -351,7 +364,7 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   },
   characters: { tokens: ["list", "switch"] },
   chars: { tokens: ["list", "switch"] },
-  party: { tokens: ["add", "new", "recruit", "act", "go", "auto", "remove", "list"] },
+  party: { tokens: ["list"], keeperTokens: ["add", "new", "recruit", "act", "go", "auto", "remove"] },
   npc: { tokens: ["list", "show", "delete"] },
   companion: { tokens: ["list", "delete"] },
   avatar: { tokens: ["gen", "generate", "clear"] },
@@ -373,7 +386,7 @@ export const ARG_SPECS: Record<string, ArgSpec> = {
   report: { tokens: ["detailed", "full", "log"] },
   settle: { tokens: ["apply", "cancel"] },
   // Rules & skills (rules.py's word sets)
-  skill: { tokens: ["list", "status", "enable", "on", "disable", "off"] },
+  skill: { tokens: ["list", "status"], keeperTokens: ["enable", "on", "disable", "off"] },
   forge: { tokens: ["skill", "rule", "media"] },
   pack: { tokens: ["install", "add"] },
   import: { tokens: ["list"] },
@@ -512,15 +525,27 @@ export function sanitySuggestions(token: string): ArgSuggestion[] {
   return []
 }
 
-/** Inline completions for the token being typed after `.word `. */
+/** Inline completions for the token being typed after `.word `. `firstArg` is
+ * false once the first argument is finished — static token lists then stop
+ * completing (`.reset confirm ` must not re-offer confirm). */
 export function suggestArgs(
   word: string,
   token: string,
   dynamic?: { npcs?: string[]; clues?: string[] },
   keeper?: boolean,
+  firstArg = true,
 ): ArgSuggestion[] {
   const spec = ARG_SPECS[word]
   if (!spec) return []
+  // The word itself is keeper-only: a player seat gets no argument
+  // completions at all (`.image `, `.module `, `.var ` are keeper territory).
+  if (!keeper && KEEPER_WORDS[word]) return []
+  const p = token.trim().toLowerCase()
+  // A static token list only ever completes the FIRST argument — once the
+  // subcommand is fully typed (`firstArg` false), re-offering the same list
+  // is noise. The exception is `.image`: its dynamic nouns complete the
+  // second argument (`.image portrait <NPC名>`).
+  if (!firstArg && !(word === "image" && dynamic && p.length > 0)) return []
   const annotate = (suggestions: ArgSuggestion[]) =>
     suggestions.map((suggestion) => ({
       ...suggestion,
@@ -528,23 +553,24 @@ export function suggestArgs(
     }))
   if (spec.dice) return annotate(diceSuggestions(token))
   if (spec.sanity) return annotate(sanitySuggestions(token))
-  const p = token.trim().toLowerCase()
-  const filter = (list: readonly string[]) =>
-    list.filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p)).slice(0, 8)
   // `.image portrait <NPC名>` / `.image clue <线索名>` — the room's dynamic
   // knowledge-pool nouns complete the argument alongside the static kind words.
   if (word === "image" && dynamic && p) {
     const candidates: string[] = []
     const staticTokens = spec.tokens ?? []
-    candidates.push(...staticTokens.filter((c) => c.toLowerCase().startsWith(p)))
-    const nouns = filter([...(dynamic.npcs ?? []), ...(dynamic.clues ?? [])])
-    candidates.push(...nouns.map((n) => n))
+    candidates.push(...staticTokens.filter((c) => c.toLowerCase().startsWith(p) && c.length > p.length))
+    const nouns = [...(dynamic.npcs ?? []), ...(dynamic.clues ?? [])]
+      .filter((c) => c.toLowerCase().startsWith(p) && c.length > p.length)
+      .slice(0, 8)
+    candidates.push(...nouns)
     return annotate(candidates.slice(0, 8).map((text) => ({ text, mode: "replace" as const })))
   }
   const candidates = [...(spec.tokens ?? []), ...(keeper ? (spec.keeperTokens ?? []) : [])]
   return annotate(
     candidates
-      .filter((candidate) => p.length === 0 || candidate.toLowerCase().startsWith(p))
+      // An exact match is already the candidate — offering it back (`.reset
+      // confirm` → confirm) completes nothing, so only longer prefixes qualify.
+      .filter((c) => p.length === 0 || (c.toLowerCase().startsWith(p) && c.length > p.length))
       .slice(0, 8)
       .map((text) => ({ text, mode: "replace" as const, hintKey: spec.hints?.[text] })),
   )

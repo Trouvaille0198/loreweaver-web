@@ -60,7 +60,7 @@ export default function InputBox() {
       // Stage 1: the word itself.
       const prefix = body.toLowerCase()
       if (prefix.length === 0) return []
-      return matchCommands(prefix).map((entry) => {
+      return matchCommands(prefix, isKeeper).map((entry) => {
         const annotation = commandAnnotation(entry.word)
         const baseHint = entry.example
           ? `${t(`play.commands.${entry.word}`)} · ${entry.example}`
@@ -80,7 +80,7 @@ export default function InputBox() {
     const tokenStart = typed.lastIndexOf(" ") + 1
     const token = typed.slice(tokenStart)
     const before = text.slice(0, text.length - token.length)
-    return suggestArgs(word, token, imageNames, isKeeper).map((arg: ArgSuggestion, index) => {
+    return suggestArgs(word, token, imageNames, isKeeper, tokenStart === 0).map((arg: ArgSuggestion, index) => {
       const baseHint = arg.hintKey ? t(arg.hintKey) : t(`play.commands.${word}`)
       return {
         key: `a-${word}-${arg.text}-${index}`,
