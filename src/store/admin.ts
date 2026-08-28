@@ -99,7 +99,7 @@ export interface ModuleDetail {
   /** `"text"` for a Markdown source, `"pack"` for an installed .lwpack content pack. */
   sourceKind?: "text" | "pack"
   /** A pack's worldbook entries (its lore). */
-  worldbookEntries?: { title: string; content: string; secret: boolean }[]
+  worldbookEntries?: { title: string; content: string; secret: boolean; image?: string }[]
   /** Recommended character level range ("1-3") for level-based systems. */
   levels?: string
   /** Difficulty tier (easy/standard/hard/deadly) the module was authored for. */
@@ -143,6 +143,9 @@ export interface ModuleDetail {
   /** The async illustration lane's live jobs: pending/generating/failed plates shown on
    * the detail page, with the persisted prompt for a one-click retry. */
   mediaJobs?: ModuleMediaJob[]
+  /** A fresh-shot plan's localized failure reason (shot_list_failed / no_shots / …),
+   * persisted in the pack's jobs sidecar — shown on the detail page. */
+  mediaPlanError?: string
 }
 export interface WorldbookSource {
   name: string
@@ -253,6 +256,9 @@ function parseModuleSources(value: unknown): ModuleSource[] {
               generating: true,
               stage: typeof item.stage === "string" ? item.stage : "",
               detail: typeof item.detail === "string" ? item.detail : "",
+              ...(item.generation_kind === "module" || item.generation_kind === "pack"
+                ? { generationKind: item.generation_kind as "module" | "pack" }
+                : {}),
             }
           : {}),
       },
@@ -265,11 +271,17 @@ function updateGeneratingSource(
   kind: "module" | "pack",
   stage: string,
   detail: string,
+  id?: string,
 ): ModuleSource[] {
-  let found = false
+  // An id addresses ONE in-flight generation (its placeholder row is `__generating__:<id>`),
+  // so parallel forges each keep their own live row; without one (legacy frames) every
+  // placeholder is refreshed, matching the pre-multi-generation behaviour.
+  const targetName = id ? `__generating__:${id}` : ""
+  let touched = false
   const updated = sources.map((source) => {
     if (!source.generating && source.sourceKind !== "generating") return source
-    found = true
+    if (targetName && source.name !== targetName) return source
+    touched = true
     return {
       ...source,
       sourceKind: "generating" as const,
@@ -279,10 +291,10 @@ function updateGeneratingSource(
       detail,
     }
   })
-  if (found) return updated
+  if (touched) return updated
   return [
     {
-      name: "__generating__",
+      name: targetName || "__generating__",
       title: "",
       size: 0,
       modified: 0,
@@ -341,6 +353,10 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
             typeof item === "object" && item !== null && "title" in item && "content" in item,
         )
       : undefined,
+    mediaPlanError:
+      typeof value.media_plan_error === "string" && value.media_plan_error
+        ? value.media_plan_error
+        : undefined,
     variables: Array.isArray(value.variables)
       ? value.variables
           .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
@@ -885,7 +901,7 @@ export const useAdminStore = create<AdminState>((set) => ({
           generationStage: null,
           generationDetail: "",
           generationKind: frame.kind,
-          moduleSources: updateGeneratingSource(state.moduleSources, frame.kind, "", ""),
+          moduleSources: updateGeneratingSource(state.moduleSources, frame.kind, "", "", frame.id),
           lastError: null,
         }))
         return true
@@ -894,7 +910,7 @@ export const useAdminStore = create<AdminState>((set) => ({
           generationStage: frame.stage,
           generationDetail: frame.detail,
           generationKind: frame.kind,
-          moduleSources: updateGeneratingSource(state.moduleSources, frame.kind, frame.stage, frame.detail),
+          moduleSources: updateGeneratingSource(state.moduleSources, frame.kind, frame.stage, frame.detail, frame.id),
           busy: true,
         }))
         return true

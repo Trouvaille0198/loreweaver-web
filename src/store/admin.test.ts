@@ -415,6 +415,7 @@ describe("admin model requests", () => {
         current: true,
         status: "ready",
         pool: { keeper: { summary: "A foggy pier" } },
+        media_plan_error: "no usable shot list",
       }),
     } as never)
     expect(useAdminStore.getState().moduleDetail).toMatchObject({
@@ -422,6 +423,7 @@ describe("admin model requests", () => {
       content: "# Scene",
       current: true,
       pool: { keeper: { summary: "A foggy pier" } },
+      mediaPlanError: "no usable shot list",
     })
   })
 
@@ -437,13 +439,14 @@ describe("admin model requests", () => {
       detail: JSON.stringify({
         modules: [
           {
-            name: "__generating__",
+            name: "__generating__:abc",
             title: "",
             size: 0,
             modified: 0,
             current: false,
             source_kind: "generating",
             generating: true,
+            generation_kind: "module",
             stage: "authoring",
             detail: "writing source",
           },
@@ -451,9 +454,10 @@ describe("admin model requests", () => {
       }),
     } as never)
     expect(useAdminStore.getState().moduleSources[0]).toMatchObject({
-      name: "__generating__",
+      name: "__generating__:abc",
       sourceKind: "generating",
       generating: true,
+      generationKind: "module",
       stage: "authoring",
       detail: "writing source",
     })
@@ -463,12 +467,74 @@ describe("admin model requests", () => {
       kind: "module",
       stage: "media",
       detail: "rendering cover",
+      id: "abc",
     } as never)
     expect(useAdminStore.getState().moduleSources[0]).toMatchObject({
       sourceKind: "generating",
       generating: true,
       stage: "media",
       detail: "rendering cover",
+    })
+  })
+
+  it("keeps two in-flight module generations as separate placeholder rows", () => {
+    const ingest = useAdminStore.getState().ingest
+    ingest({
+      type: "admin_generated",
+      kind: "module_list",
+      ok: true,
+      id: "",
+      name: "",
+      error: "",
+      detail: JSON.stringify({
+        modules: [
+          {
+            name: "__generating__:aaa",
+            title: "",
+            size: 0,
+            modified: 0,
+            current: false,
+            source_kind: "generating",
+            generating: true,
+            generation_kind: "pack",
+            stage: "media",
+            detail: "rendering cover",
+          },
+          {
+            name: "__generating__:bbb",
+            title: "",
+            size: 0,
+            modified: 0,
+            current: false,
+            source_kind: "generating",
+            generating: true,
+            generation_kind: "module",
+            stage: "authoring",
+            detail: "writing source",
+          },
+        ],
+      }),
+    } as never)
+    expect(useAdminStore.getState().moduleSources.map((s) => s.name)).toEqual([
+      "__generating__:aaa",
+      "__generating__:bbb",
+    ])
+
+    // A progress frame for the SECOND generation only touches its own row.
+    ingest({
+      type: "admin_generate_progress",
+      kind: "module",
+      stage: "analyzing",
+      detail: "reading source",
+      id: "bbb",
+    } as never)
+    const sources = useAdminStore.getState().moduleSources
+    expect(sources[0]).toMatchObject({ name: "__generating__:aaa", stage: "media", generationKind: "pack" })
+    expect(sources[1]).toMatchObject({
+      name: "__generating__:bbb",
+      stage: "analyzing",
+      detail: "reading source",
+      generationKind: "module",
     })
   })
 

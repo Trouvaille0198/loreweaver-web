@@ -20,10 +20,14 @@ import { KnowledgePool } from "./ModuleScreen"
 function ModuleMediaImage({
   record,
   fallbackLabel,
+  titleOverride,
   onRegenerate,
 }: {
   record: ModuleMediaRecord
   fallbackLabel?: string
+  /** Overrides the display name — used for clue plates, whose shot subject
+   * ("海格") is not the clue's name ("海格说漏了嘴"). */
+  titleOverride?: string
   /** Present when this finished illustration belongs to a job — right-clicking the plate
    * opens a menu whose "regenerate" entry re-queues that job with the SAME prompt,
    * swapping the plate for a fresh render. */
@@ -31,7 +35,7 @@ function ModuleMediaImage({
 }) {
   const { t } = useTranslation()
   const subject = record.subject?.trim() || ""
-  const displayName = subject || fallbackLabel || record.name
+  const displayName = titleOverride?.trim() || subject || fallbackLabel || record.name
   const [src, setSrc] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
@@ -468,10 +472,18 @@ function PackDetailView({
                 <ul className={`module-media-grid module-media-grid--${kind}`}>
                   {records.map((record, index) => {
                     const regen = jobFor(record)
+                    const clueTitles =
+                      kind === "clue" && detail.worldbookEntries
+                        ? detail.worldbookEntries
+                            .filter((entry) => entry.image === record.name)
+                            .map((entry) => entry.title)
+                            .filter((title) => title)
+                        : []
                     return (
                       <li key={record.hash}>
                         <ModuleMediaImage
                           record={record}
+                          titleOverride={clueTitles.length ? clueTitles.join(" · ") : undefined}
                           fallbackLabel={t("play.module.mediaFallback", {
                             kind: label,
                             index: index + 1,

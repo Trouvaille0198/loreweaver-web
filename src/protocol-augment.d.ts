@@ -382,6 +382,8 @@ declare module "@loreweaver/protocol" {
   interface AdminGenerateStartedFrame {
     type: "admin_generate_started"
     kind: "module" | "pack"
+    /** Stable id of this generation — parallel forges each own their placeholder row. */
+    id?: string
   }
 
   interface AdminGenerateProgressFrame {
@@ -389,6 +391,8 @@ declare module "@loreweaver/protocol" {
     kind: "module" | "pack"
     stage: string
     detail: string
+    /** Stable id of this generation, matching the `admin_generate_started` frame. */
+    id?: string
   }
 
   // --- v2.5 wire: portable LLM-config export/import (admin_export_llm /
