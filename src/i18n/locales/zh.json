@@ -266,7 +266,16 @@
       "cancel": "取消",
       "delete": "删除",
       "actions": "操作",
-      "empty": "还没有密钥——在上方签发一个邀请。"
+      "empty": "还没有密钥——在上方签发一个邀请。",
+      "heroEyebrow": "房间邀请",
+      "heroNoRoom": "未连接房间",
+      "heroCount": "{{count}} 把邀请密钥",
+      "heroPlayers": "{{count}} 位玩家",
+      "heroKeepers": "{{count}} 位守秘人",
+      "heroNoneHint": "还没有邀请密钥——铸造一把发给想加入的玩家。",
+      "directoryTitle": "密钥目录",
+      "mintTitle": "铸造新密钥",
+      "toolsLabel": "密钥工具"
     },
     "model": {
       "provider": "服务商",
@@ -452,6 +461,17 @@
         "library": "模组库",
         "forge": "AI 创作"
       },
+      "forge": {
+        "describeTitle": "模组描述",
+        "rulesTitle": "模组形态与规则",
+        "optionsTitle": "可选生成内容",
+        "settingsLabel": "生成设置"
+      },
+      "heroEyebrow": "当前房间模组",
+      "heroNone": "尚未导入模组",
+      "heroNoneHint": "从模组库导入一个模组，或用 AI 创作生成新的。",
+      "asideLabel": "模组工具",
+      "installGroup": "从服务器安装",
       "kindText": "文本",
       "kindPack": "完整包",
       "libraryHint": "模组源文件位于服务器上。可在此上传、查看内容，或导入到当前房间。",
@@ -822,7 +842,10 @@
       "selfUpdateConfirm": "运行服务器自带的更新命令并重启它？",
       "selfUpdateRun": "更新并重启",
       "updateRestarting": "服务器正在重启进入更新后的代码。连接会断开并自动恢复。",
-      "updateFailed": "更新命令失败：{{output}}"
+      "updateFailed": "更新命令失败：{{output}}",
+      "maintenanceTitle": "房间维护",
+      "dangerTitle": "危险操作",
+      "dangerHint": "以下操作影响整个房间，需输入房间名确认后才会执行。"
     },
     "roomInfo": {
       "roomSection": "房间",

@@ -361,6 +361,8 @@ export default function ModuleScreen({
   const generateModulePrompt = useAdminStore((s) => s.generateModulePrompt)
   const clearGeneratedPrompt = useAdminStore((s) => s.clearGeneratedPrompt)
   const sources = useAdminStore((s) => s.moduleSources)
+  const worldbookSources = useAdminStore((s) => s.worldbookSources)
+  const listWorldbooks = useAdminStore((s) => s.listWorldbooks)
   const detail = useAdminStore((s) => s.moduleDetail)
   const operation = useAdminStore((s) => s.moduleOperation)
   const listModules = useAdminStore((s) => s.listModules)
@@ -425,6 +427,12 @@ export default function ModuleScreen({
   useEffect(() => {
     listModules()
   }, [listModules])
+
+  useEffect(() => {
+    listWorldbooks()
+  }, [listWorldbooks])
+
+  const currentModule = worldbookSources.find((source) => source.current)
 
   useEffect(() => {
     if (selectedName && !sources.some((source) => source.name === selectedName)) setSelectedName("")
@@ -525,159 +533,207 @@ export default function ModuleScreen({
 
   return (
     <ScreenShell title={t("play.menu.module")} onBack={onBack} showAdminError embedded={embedded}>
+      <Surface tone="accent" className="keeper-hero" labelledBy="keeper-hero-title">
+        <p className="ui-eyebrow">{t("play.module.heroEyebrow")}</p>
+        <div className="keeper-hero-row">
+          <h3 id="keeper-hero-title" className="keeper-hero-title">
+            {currentModule ? currentModule.name : t("play.module.heroNone")}
+          </h3>
+          {currentModule && onOpenDetail ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="quiet"
+              onClick={() => onOpenDetail(currentModule.name)}
+            >
+              {t("play.module.inspect")}
+            </Button>
+          ) : null}
+        </div>
+        <p className="keeper-hero-meta">
+          {currentModule ? (
+            <>
+              <span className="chip chip-on">{t("play.worldbook.current")}</span>
+              {currentModule.entryCount ? (
+                <span>
+                  {currentModule.entryCount} {t("play.module.entries")}
+                </span>
+              ) : null}
+            </>
+          ) : (
+            t("play.module.heroNoneHint")
+          )}
+        </p>
+      </Surface>
+
       <div className="module-tabs" role="tablist" aria-label={t("play.module.tabsLabel")}>
         <Button
           type="button"
           role="tab"
+          id="module-tab-library"
           aria-selected={view === "library"}
           className={`module-tab${view === "library" ? " is-active" : ""}`}
           variant="quiet"
           onClick={() => setView("library")}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowRight") return
+            event.preventDefault()
+            setView("forge")
+            requestAnimationFrame(() => document.getElementById("module-tab-forge")?.focus())
+          }}
         >
           {t("play.module.tabs.library")}
         </Button>
         <Button
           type="button"
           role="tab"
+          id="module-tab-forge"
           aria-selected={view === "forge"}
           className={`module-tab${view === "forge" ? " is-active" : ""}`}
           variant="quiet"
           onClick={() => setView("forge")}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowLeft") return
+            event.preventDefault()
+            setView("library")
+            requestAnimationFrame(() => document.getElementById("module-tab-library")?.focus())
+          }}
         >
           {t("play.module.tabs.forge")}
         </Button>
       </div>
 
       {view === "library" ? (
-        <>
-          <Surface className="module-surface" labelledBy="module-library-title">
-            <SectionHeader
-              titleId="module-library-title"
-              title={t("play.module.library")}
-              description={t("play.module.libraryHint")}
-              actions={
-                <div className="module-toolbar">
-                  <Button type="button" variant="primary" onClick={() => fileInputRef.current?.click()}>
-                    {t("play.module.addSource")}
-                  </Button>
-                  <Button type="button" variant="quiet" onClick={() => bundleInputRef.current?.click()}>
-                    {t("play.module.addBundle")}
-                  </Button>
-                </div>
-              }
-            />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".md,.markdown,.txt,text/markdown,text/plain"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                event.target.value = ""
-                if (file) void chooseFile(file)
-              }}
-            />
-            <input
-              ref={bundleInputRef}
-              type="file"
-              accept=".zip,application/zip"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                event.target.value = ""
-                if (file) void chooseBundle(file)
-              }}
-            />
-            {sources.length === 0 ? <EmptyState title={t("play.module.noSources")} /> : null}
-            <ul className="play-list module-source-list">
-              {sources.map((source: ModuleSource) => (
-                <li
-                  className={`module-source-row${source.name === selectedName ? " is-selected" : ""}`}
-                  key={source.name}
-                >
-                  <Button
-                    type="button"
-                    variant="quiet"
-                    className="module-source-select"
-                    aria-pressed={source.name === selectedName}
-                    disabled={source.generating}
-                    onClick={() => {
-                      // Both text .md and installed .lwpack pack sources open their detail view —
-                      // the backend serves a complete detail for each kind. A generating
-                      // placeholder has no detail yet, so it is inert.
-                      if (source.generating) return
-                      if (onOpenDetail) {
-                        onOpenDetail(source.name)
-                        return
-                      }
-                      setSelectedName(source.name)
-                    }}
+        <div className="keeper-workspace">
+          <div className="keeper-workspace-main">
+            <Surface className="module-surface module-catalog" labelledBy="module-library-title">
+              <SectionHeader
+                titleId="module-library-title"
+                title={t("play.module.library")}
+                description={t("play.module.libraryHint")}
+                actions={
+                  <div className="module-toolbar">
+                    <Button type="button" variant="primary" onClick={() => fileInputRef.current?.click()}>
+                      {t("play.module.addSource")}
+                    </Button>
+                    <Button type="button" variant="quiet" onClick={() => bundleInputRef.current?.click()}>
+                      {t("play.module.addBundle")}
+                    </Button>
+                  </div>
+                }
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".md,.markdown,.txt,text/markdown,text/plain"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  event.target.value = ""
+                  if (file) void chooseFile(file)
+                }}
+              />
+              <input
+                ref={bundleInputRef}
+                type="file"
+                accept=".zip,application/zip"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  event.target.value = ""
+                  if (file) void chooseBundle(file)
+                }}
+              />
+              {sources.length === 0 ? <EmptyState title={t("play.module.noSources")} /> : null}
+              <ul className="play-list module-source-list">
+                {sources.map((source: ModuleSource) => (
+                  <li
+                    className={`module-source-row${source.name === selectedName ? " is-selected" : ""}`}
+                    key={source.name}
                   >
-                    <span className="module-source-copy">
-                      <span className="module-source-heading">
-                        <strong>
-                          {source.generating ? t("play.module.generating") : (source.title ?? source.name)}
-                        </strong>
-                        <span
-                          className={`chip ${
-                            (source.generating
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      className="module-source-select"
+                      aria-pressed={source.name === selectedName}
+                      disabled={source.generating}
+                      onClick={() => {
+                        // Both text .md and installed .lwpack pack sources open their detail view —
+                        // the backend serves a complete detail for each kind. A generating
+                        // placeholder has no detail yet, so it is inert.
+                        if (source.generating) return
+                        if (onOpenDetail) {
+                          onOpenDetail(source.name)
+                          return
+                        }
+                        setSelectedName(source.name)
+                      }}
+                    >
+                      <span className="module-source-copy">
+                        <span className="module-source-heading">
+                          <strong>
+                            {source.generating ? t("play.module.generating") : (source.title ?? source.name)}
+                          </strong>
+                          <span
+                            className={`chip ${
+                              (source.generating
+                                ? (source.generationKind ?? generationKind)
+                                : source.sourceKind) === "pack"
+                                ? "chip-warn"
+                                : ""
+                            }`}
+                          >
+                            {(source.generating
                               ? (source.generationKind ?? generationKind)
                               : source.sourceKind) === "pack"
-                              ? "chip-warn"
-                              : ""
-                          }`}
-                        >
-                          {(source.generating
-                            ? (source.generationKind ?? generationKind)
-                            : source.sourceKind) === "pack"
-                            ? t("play.module.kindPack")
-                            : t("play.module.kindText")}
+                              ? t("play.module.kindPack")
+                              : t("play.module.kindText")}
+                          </span>
+                          {source.current && !source.importing ? (
+                            <span className="chip chip-on">{t("play.module.current")}</span>
+                          ) : null}
+                          {source.importing || moduleImporting === source.name ? (
+                            <span className="chip chip-warn">{t("play.module.importing")}</span>
+                          ) : null}
                         </span>
-                        {source.current && !source.importing ? (
-                          <span className="chip chip-on">{t("play.module.current")}</span>
-                        ) : null}
-                        {source.importing || moduleImporting === source.name ? (
-                          <span className="chip chip-warn">{t("play.module.importing")}</span>
-                        ) : null}
+                        {source.generating ? (
+                          <span className="module-source-meta">
+                            {t(`play.module.stages.${source.stage ?? ""}`, {
+                              defaultValue: source.stage || "",
+                            })}
+                            {source.detail ? ` — ${source.detail}` : ""}
+                          </span>
+                        ) : (
+                          <span className="module-source-meta">
+                            {source.size} {t("play.module.bytes")}
+                            {source.sourceKind === "pack" && source.entryCount !== undefined
+                              ? ` · ${source.entryCount} ${t("play.module.entries")}`
+                              : ""}
+                            {source.sourceKind === "pack" && source.pregenCount !== undefined
+                              ? ` · ${source.pregenCount} ${t("play.module.packPregens")}`
+                              : ""}
+                          </span>
+                        )}
                       </span>
-                      {source.generating ? (
-                        <span className="studio-hint">
-                          {t(`play.module.stages.${source.stage ?? ""}`, {
-                            defaultValue: source.stage || "",
-                          })}
-                          {source.detail ? ` — ${source.detail}` : ""}
-                        </span>
-                      ) : (
-                        <span className="studio-hint">
-                          {source.size} {t("play.module.bytes")}
-                          {source.sourceKind === "pack" && source.entryCount !== undefined
-                            ? ` · ${source.entryCount} ${t("play.module.entries")}`
-                            : ""}
-                          {source.sourceKind === "pack" && source.pregenCount !== undefined
-                            ? ` · ${source.pregenCount} ${t("play.module.packPregens")}`
-                            : ""}
-                        </span>
-                      )}
-                    </span>
-                  </Button>
-                  <div className="module-source-actions">
-                    {!source.generating ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="quiet"
-                        onClick={() => importModule(source.name)}
-                        disabled={busy || source.importing || moduleImporting === source.name}
-                      >
-                        {t("play.module.importRoom")}
-                      </Button>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <OperationNotice operation={operation} t={t} onImport={importModule} />
-          </Surface>
+                    </Button>
+                    <div className="module-source-actions">
+                      {!source.generating ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="quiet"
+                          onClick={() => importModule(source.name)}
+                          disabled={busy || source.importing || moduleImporting === source.name}
+                        >
+                          {t("play.module.importRoom")}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <OperationNotice operation={operation} t={t} onImport={importModule} />
+            </Surface>
 
           {detail ? (
             <ModuleDetailPanel
@@ -695,308 +751,398 @@ export default function ModuleScreen({
               onDelete={removeSelected}
             />
           ) : null}
-
-          <Surface className="module-surface" labelledBy="module-install-title">
-            <SectionHeader titleId="module-install-title" title={t("play.module.install")} />
-            <Field label={t("play.module.path")} hint={t("play.module.pathPlaceholder")}>
-              {({ id, describedBy }) => (
-                <input
-                  id={id}
-                  value={path}
-                  onChange={(e) => setPath(e.target.value)}
-                  placeholder={t("play.module.pathPlaceholder")}
-                  aria-describedby={describedBy}
-                  spellCheck={false}
-                />
-              )}
-            </Field>
-            <div className="module-action-row">
-              <Button type="button" variant="primary" disabled={!path.trim()} onClick={install}>
-                {t("play.module.install")}
-              </Button>
-            </div>
-            {pathStatus === "sent" ? <p className="studio-hint">{t("play.module.sent")}</p> : null}
-            {pathStatus === "failed" ? (
-              <Notice tone="danger" role="alert">
-                {t("play.sendFailed")}
-              </Notice>
-            ) : null}
-          </Surface>
-        </>
-      ) : null}
-
-      {view === "library" && isKeeper ? (
-        <Surface className="module-surface" labelledBy="module-pack-title">
-          <SectionHeader
-            titleId="module-pack-title"
-            title={t("play.pack.title")}
-            description={t("play.pack.hint")}
-          />
-          <Field label={t("play.pack.ref")} hint={t("play.pack.refPlaceholder")}>
-            {({ id, describedBy }) => (
-              <input
-                id={id}
-                value={packRef}
-                onChange={(e) => setPackRef(e.target.value)}
-                placeholder={t("play.pack.refPlaceholder")}
-                aria-describedby={describedBy}
-                spellCheck={false}
-              />
-            )}
-          </Field>
-          <div className="module-action-row">
-            <Button type="button" variant="primary" disabled={!packRef.trim()} onClick={installPack}>
-              {t("play.pack.install")}
-            </Button>
-            <Button type="button" variant="quiet" disabled={!packRef.trim()} onClick={fetchPack}>
-              {t("play.pack.fetch")}
-            </Button>
           </div>
-          {packStatus === "sent" ? <p className="studio-hint">{t("play.pack.sent")}</p> : null}
-          {packStatus === "failed" ? (
-            <Notice tone="danger" role="alert">
-              {t("play.sendFailed")}
-            </Notice>
-          ) : null}
-          {packFetchStatus === "sent" ? <p className="studio-hint">{t("play.pack.fetchSent")}</p> : null}
-          {packFetchStatus === "failed" ? (
-            <Notice tone="danger" role="alert">
-              {t("play.sendFailed")}
-            </Notice>
-          ) : null}
-        </Surface>
+
+          {/* Helper rail: the two server-path installs are compact, sticky tools beside the
+              catalog instead of full-width cards pushing the core list around. */}
+          <aside className="keeper-workspace-aside" aria-label={t("play.module.asideLabel")}>
+            <Surface tone="subtle" labelledBy="module-install-group-title">
+              <SectionHeader
+                titleId="module-install-group-title"
+                title={t("play.module.installGroup")}
+              />
+              <Field label={t("play.module.path")} hint={t("play.module.pathPlaceholder")}>
+                {({ id, describedBy }) => (
+                  <input
+                    id={id}
+                    value={path}
+                    onChange={(e) => setPath(e.target.value)}
+                    placeholder={t("play.module.pathPlaceholder")}
+                    aria-describedby={describedBy}
+                    spellCheck={false}
+                  />
+                )}
+              </Field>
+              <div className="module-rail-actions">
+                <Button type="button" variant="secondary" disabled={!path.trim()} onClick={install}>
+                  {t("play.module.install")}
+                </Button>
+              </div>
+              {pathStatus === "sent" ? <p className="studio-hint">{t("play.module.sent")}</p> : null}
+              {pathStatus === "failed" ? (
+                <Notice tone="danger" role="alert">
+                  {t("play.sendFailed")}
+                </Notice>
+              ) : null}
+
+              {isKeeper ? (
+                <div className="module-rail-group">
+                  <Field label={t("play.pack.ref")} hint={t("play.pack.refPlaceholder")}>
+                    {({ id, describedBy }) => (
+                      <input
+                        id={id}
+                        value={packRef}
+                        onChange={(e) => setPackRef(e.target.value)}
+                        placeholder={t("play.pack.refPlaceholder")}
+                        aria-describedby={describedBy}
+                        spellCheck={false}
+                      />
+                    )}
+                  </Field>
+                  <div className="module-rail-actions">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={!packRef.trim()}
+                      onClick={installPack}
+                    >
+                      {t("play.pack.install")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      disabled={!packRef.trim()}
+                      onClick={fetchPack}
+                    >
+                      {t("play.pack.fetch")}
+                    </Button>
+                  </div>
+                  {packStatus === "sent" ? (
+                    <p className="studio-hint">{t("play.pack.sent")}</p>
+                  ) : null}
+                  {packStatus === "failed" ? (
+                    <Notice tone="danger" role="alert">
+                      {t("play.sendFailed")}
+                    </Notice>
+                  ) : null}
+                  {packFetchStatus === "sent" ? (
+                    <p className="studio-hint">{t("play.pack.fetchSent")}</p>
+                  ) : null}
+                  {packFetchStatus === "failed" ? (
+                    <Notice tone="danger" role="alert">
+                      {t("play.sendFailed")}
+                    </Notice>
+                  ) : null}
+                </div>
+              ) : null}
+            </Surface>
+          </aside>
+        </div>
       ) : null}
 
+      {/* The forge is a workbench: seed text and option tiles in the main column;
+          format, rules and the single primary action live in a sticky rail. */}
       {view === "forge" ? (
-        <Surface className="module-surface module-forge-surface" labelledBy="module-forge-title">
-          <SectionHeader
-            titleId="module-forge-title"
-            title={t("play.module.tabs.forge")}
-            description={t("play.module.options.costHint")}
-          />
-          <Field label={t("play.module.describe")} hint={t("play.module.describePlaceholder")}>
-            {({ id, describedBy }) => (
-              <textarea
-                id={id}
-                rows={4}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={t("play.module.describePlaceholder")}
-                aria-describedby={describedBy}
+        <div className="keeper-workspace">
+          <div className="keeper-workspace-main">
+            <Surface className="module-surface" labelledBy="module-forge-describe-title">
+              <SectionHeader
+                titleId="module-forge-describe-title"
+                title={t("play.module.forge.describeTitle")}
               />
-            )}
-          </Field>
-          <div className="module-action-row">
-            <Button
-              type="button"
-              variant="secondary"
-              loading={modulePromptBusy}
-              disabled={modulePromptBusy}
-              onClick={() => generateModulePrompt(description, { ruleStrategy, roomSystem: roomSystemId })}
-            >
-              {modulePromptBusy ? t("play.module.promptBusy") : t("play.module.promptAssist")}
-            </Button>
-          </div>
-          {modulePromptError ? (
-            <Notice tone="danger" role="alert">
-              {modulePromptError}
-            </Notice>
-          ) : null}
-          <div className="module-generate-mode" role="group" aria-label={t("play.module.mode")}>
-            <label className="play-skill-row">
-              <input
-                type="radio"
-                name="module-generate-mode"
-                checked={!packMode}
-                onChange={() => selectGenerateMode(false)}
-              />
-              <span className="play-skill-name">{t("play.module.modeText")}</span>
-              <span className="play-skill-desc">{t("play.module.modeTextHint")}</span>
-            </label>
-            <label className="play-skill-row">
-              <input
-                type="radio"
-                name="module-generate-mode"
-                checked={packMode}
-                onChange={() => selectGenerateMode(true)}
-              />
-              <span className="play-skill-name">{t("play.module.modePack")}</span>
-              <span className="play-skill-desc">{t("play.module.modePackHint")}</span>
-            </label>
-          </div>
-          <h4 className="module-subsection-title">{t("play.module.options.mediaTitle")}</h4>
-          <ul className="play-list">
-            {MEDIA_OPTIONS.map((id) => (
-              <li key={id}>
-                <label className="play-skill-row">
-                  <input
-                    type="checkbox"
-                    checked={mediaOptions.includes(id)}
-                    onChange={(e) => toggleOption(mediaOptions, setMediaOptions, id, e.target.checked)}
+              <Field label={t("play.module.describe")} hint={t("play.module.describePlaceholder")}>
+                {({ id, describedBy }) => (
+                  <textarea
+                    id={id}
+                    rows={6}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={t("play.module.describePlaceholder")}
+                    aria-describedby={describedBy}
                   />
-                  <span className="play-skill-name">{t(`play.module.options.media.${id}`)}</span>
-                  <span className="chip">{t(`play.module.options.mediaCaps.${id}`)}</span>
-                  <span className="play-skill-desc">{t(`play.module.options.mediaHints.${id}`)}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-          <h4 className="module-subsection-title">{t("play.module.options.companionTitle")}</h4>
-          <ul className="play-list">
-            {COMPANION_OPTIONS.map((id) => (
-              <li key={id}>
-                <label className="play-skill-row">
+                )}
+              </Field>
+              <div className="module-toolbar">
+                <Button
+                  type="button"
+                  variant="quiet"
+                  loading={modulePromptBusy}
+                  disabled={modulePromptBusy}
+                  onClick={() =>
+                    generateModulePrompt(description, { ruleStrategy, roomSystem: roomSystemId })
+                  }
+                >
+                  {modulePromptBusy ? t("play.module.promptBusy") : t("play.module.promptAssist")}
+                </Button>
+              </div>
+              {modulePromptError ? (
+                <Notice tone="danger" role="alert">
+                  {modulePromptError}
+                </Notice>
+              ) : null}
+            </Surface>
+
+            <Surface className="module-surface" labelledBy="module-forge-options-title">
+              <SectionHeader
+                titleId="module-forge-options-title"
+                title={t("play.module.forge.optionsTitle")}
+                description={t("play.module.options.costHint")}
+              />
+              <div className="module-forge-columns">
+                <div className="module-forge-column">
+                  <h4 className="module-subsection-title">{t("play.module.options.mediaTitle")}</h4>
+                  <ul className="module-option-list">
+                    {MEDIA_OPTIONS.map((id) => (
+                      <li key={id}>
+                        <label className="module-option">
+                          <input
+                            type="checkbox"
+                            checked={mediaOptions.includes(id)}
+                            onChange={(e) =>
+                              toggleOption(mediaOptions, setMediaOptions, id, e.target.checked)
+                            }
+                          />
+                          <span className="module-option-body">
+                            <span className="module-option-head">
+                              <span className="module-option-name">
+                                {t(`play.module.options.media.${id}`)}
+                              </span>
+                              <span className="chip">{t(`play.module.options.mediaCaps.${id}`)}</span>
+                            </span>
+                            <span className="module-option-desc">
+                              {t(`play.module.options.mediaHints.${id}`)}
+                            </span>
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="module-forge-column">
+                  <h4 className="module-subsection-title">
+                    {t("play.module.options.companionTitle")}
+                  </h4>
+                  <ul className="module-option-list">
+                    {COMPANION_OPTIONS.map((id) => (
+                      <li key={id}>
+                        <label className="module-option">
+                          <input
+                            type="checkbox"
+                            checked={companionOptions.includes(id)}
+                            onChange={(e) =>
+                              toggleOption(companionOptions, setCompanionOptions, id, e.target.checked)
+                            }
+                          />
+                          <span className="module-option-body">
+                            <span className="module-option-head">
+                              <span className="module-option-name">
+                                {t(`play.module.options.companion.${id}`)}
+                              </span>
+                            </span>
+                            <span className="module-option-desc">
+                              {t(`play.module.options.companionHints.${id}`)}
+                            </span>
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                    {COMPANION_SOON_OPTIONS.map((id) => (
+                      <li key={id}>
+                        <label className="module-option">
+                          <input type="checkbox" disabled />
+                          <span className="module-option-body">
+                            <span className="module-option-head">
+                              <span className="module-option-name">
+                                {t(`play.module.options.companion.${id}`)}
+                              </span>
+                              <span className="chip chip-warn">
+                                {t("play.module.options.comingSoon")}
+                              </span>
+                            </span>
+                            <span className="module-option-desc">
+                              {t(`play.module.options.companionHints.${id}`)}
+                            </span>
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </Surface>
+          </div>
+
+          <aside className="keeper-workspace-aside" aria-label={t("play.module.forge.settingsLabel")}>
+            <Surface tone="subtle" labelledBy="module-forge-rules-title">
+              <SectionHeader
+                titleId="module-forge-rules-title"
+                title={t("play.module.forge.rulesTitle")}
+              />
+              <div className="module-mode-list" role="group" aria-label={t("play.module.mode")}>
+                <label className="module-option">
                   <input
-                    type="checkbox"
-                    checked={companionOptions.includes(id)}
-                    onChange={(e) =>
-                      toggleOption(companionOptions, setCompanionOptions, id, e.target.checked)
-                    }
+                    type="radio"
+                    name="module-generate-mode"
+                    checked={!packMode}
+                    onChange={() => selectGenerateMode(false)}
                   />
-                  <span className="play-skill-name">{t(`play.module.options.companion.${id}`)}</span>
-                  <span className="play-skill-desc">{t(`play.module.options.companionHints.${id}`)}</span>
+                  <span className="module-option-body">
+                    <span className="module-option-name">{t("play.module.modeText")}</span>
+                    <span className="module-option-desc">{t("play.module.modeTextHint")}</span>
+                  </span>
                 </label>
-              </li>
-            ))}
-            {COMPANION_SOON_OPTIONS.map((id) => (
-              <li key={id}>
-                <label className="play-skill-row">
-                  <input type="checkbox" disabled />
-                  <span className="play-skill-name">{t(`play.module.options.companion.${id}`)}</span>
-                  <span className="chip chip-warn">{t("play.module.options.comingSoon")}</span>
-                  <span className="play-skill-desc">{t(`play.module.options.companionHints.${id}`)}</span>
+                <label className="module-option">
+                  <input
+                    type="radio"
+                    name="module-generate-mode"
+                    checked={packMode}
+                    onChange={() => selectGenerateMode(true)}
+                  />
+                  <span className="module-option-body">
+                    <span className="module-option-name">{t("play.module.modePack")}</span>
+                    <span className="module-option-desc">{t("play.module.modePackHint")}</span>
+                  </span>
                 </label>
-              </li>
-            ))}
-          </ul>
-          <Field label={t("play.module.options.extendsTitle")} hint={t("play.module.options.extendsHint")}>
-            {({ id, describedBy }) => (
-              <select
-                id={id}
-                className="module-extends-select"
-                value={ruleStrategy}
-                onChange={(e) => setRuleStrategy(e.target.value as RuleStrategy)}
-                aria-describedby={describedBy}
-              >
-                <option value="">{t("play.module.options.extendsNone", { system: roomSystemLabel })}</option>
-                <option value="standalone">{t("play.module.options.standalone")}</option>
-                {packMode ? (
-                  <>
-                    <optgroup label={t("play.module.options.useGroup")}>
-                      {BASE_SYSTEMS.map((id) => (
-                        <option key={`use-${id}`} value={`use:${id}`}>
-                          {t(`play.module.options.use.${id}`)}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label={t("play.module.options.patchGroup")}>
-                      {BASE_SYSTEMS.map((id) => (
-                        <option key={`patch-${id}`} value={`patch:${id}`}>
-                          {t(`play.module.options.patch.${id}`)}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </>
-                ) : null}
-              </select>
-            )}
-          </Field>
-          {(packMode
-            ? ruleStrategy === "use:dnd5e" || ruleStrategy === "patch:dnd5e"
-            : roomSystemId === "dnd5e") ? (
-            <div className="module-generate-difficulty">
+              </div>
               <Field
-                label={t("play.module.options.difficultyLabel")}
-                hint={t("play.module.options.difficultyHint")}
+                label={t("play.module.options.extendsTitle")}
+                hint={t("play.module.options.extendsHint")}
               >
                 {({ id, describedBy }) => (
                   <select
                     id={id}
                     className="module-extends-select"
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value)}
+                    value={ruleStrategy}
+                    onChange={(e) => setRuleStrategy(e.target.value as RuleStrategy)}
                     aria-describedby={describedBy}
                   >
-                    <option value="">{t("play.module.options.difficultyDefault")}</option>
-                    {(["easy", "standard", "hard", "deadly"] as const).map((tier) => (
-                      <option key={tier} value={tier}>
-                        {t(`play.module.options.difficulty.${tier}`, { defaultValue: tier })}
-                      </option>
-                    ))}
+                    <option value="">
+                      {t("play.module.options.extendsNone", { system: roomSystemLabel })}
+                    </option>
+                    <option value="standalone">{t("play.module.options.standalone")}</option>
+                    {packMode ? (
+                      <>
+                        <optgroup label={t("play.module.options.useGroup")}>
+                          {BASE_SYSTEMS.map((id) => (
+                            <option key={`use-${id}`} value={`use:${id}`}>
+                              {t(`play.module.options.use.${id}`)}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label={t("play.module.options.patchGroup")}>
+                          {BASE_SYSTEMS.map((id) => (
+                            <option key={`patch-${id}`} value={`patch:${id}`}>
+                              {t(`play.module.options.patch.${id}`)}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </>
+                    ) : null}
                   </select>
                 )}
               </Field>
-              <Field
-                label={t("play.module.options.levelsLabel")}
-                hint={t("play.module.options.levelsHint")}
+              {(packMode
+                ? ruleStrategy === "use:dnd5e" || ruleStrategy === "patch:dnd5e"
+                : roomSystemId === "dnd5e") ? (
+                <div className="module-generate-difficulty">
+                  <Field
+                    label={t("play.module.options.difficultyLabel")}
+                    hint={t("play.module.options.difficultyHint")}
+                  >
+                    {({ id, describedBy }) => (
+                      <select
+                        id={id}
+                        className="module-extends-select"
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(e.target.value)}
+                        aria-describedby={describedBy}
+                      >
+                        <option value="">{t("play.module.options.difficultyDefault")}</option>
+                        {(["easy", "standard", "hard", "deadly"] as const).map((tier) => (
+                          <option key={tier} value={tier}>
+                            {t(`play.module.options.difficulty.${tier}`, { defaultValue: tier })}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </Field>
+                  <Field
+                    label={t("play.module.options.levelsLabel")}
+                    hint={t("play.module.options.levelsHint")}
+                  >
+                    {({ id, describedBy }) => (
+                      <input
+                        id={id}
+                        type="text"
+                        className="play-input"
+                        value={levels}
+                        onChange={(e) => setLevels(e.target.value)}
+                        placeholder={t("play.module.options.levelsPlaceholder")}
+                        aria-describedby={describedBy}
+                      />
+                    )}
+                  </Field>
+                </div>
+              ) : null}
+            </Surface>
+
+            <div className="module-forge-actions">
+              <Button
+                type="button"
+                variant="primary"
+                loading={busy}
+                disabled={!description.trim()}
+                onClick={() => {
+                  const generatesRulepack =
+                    ruleStrategy === "standalone" || ruleStrategy.startsWith("patch:")
+                  const selectedCompanion = generatesRulepack
+                    ? [...companionOptions, "rulepacks"]
+                    : companionOptions
+                  if (!packMode) {
+                    generateModule(description.trim(), {
+                      media: mediaOptions,
+                      companion: selectedCompanion,
+                      difficulty,
+                      levels,
+                    })
+                    return
+                  }
+                  // Split the raw rule-system choice into the engine's two exclusive knobs.
+                  const raw = ruleStrategy
+                  let extendsValue = ""
+                  let systemValue = ""
+                  if (raw.startsWith("patch:")) extendsValue = raw.slice("patch:".length)
+                  else if (raw.startsWith("use:")) systemValue = raw.slice("use:".length)
+                  generatePackModule(
+                    description.trim(),
+                    mediaOptions,
+                    selectedCompanion,
+                    extendsValue,
+                    systemValue,
+                    difficulty,
+                    levels,
+                  )
+                }}
               >
-                {({ id, describedBy }) => (
-                  <input
-                    id={id}
-                    type="text"
-                    className="play-input"
-                    value={levels}
-                    onChange={(e) => setLevels(e.target.value)}
-                    placeholder={t("play.module.options.levelsPlaceholder")}
-                    aria-describedby={describedBy}
-                  />
-                )}
-              </Field>
+                {packMode ? t("play.module.generatePack") : t("play.module.generate")}
+              </Button>
+              {busy && generationStage ? (
+                <Notice tone="warning" role="status">
+                  {t(`play.module.stages.${generationStage}`, { defaultValue: generationStage })}
+                  {generationDetail ? ` — ${generationDetail}` : ""}
+                </Notice>
+              ) : null}
+              {generated !== null &&
+              (String(generated.kind) === "module" || String(generated.kind) === "pack") ? (
+                <Notice tone={generated.ok ? "success" : "danger"} role={generated.ok ? "status" : "alert"}>
+                  {generated.ok
+                    ? t("play.module.generateOk", { name: generated.name, detail: generated.detail })
+                    : t("play.module.generateError", { error: generated.error })}
+                </Notice>
+              ) : null}
             </div>
-          ) : null}
-          <Button
-            type="button"
-            variant="primary"
-            loading={busy}
-            disabled={!description.trim()}
-            onClick={() => {
-              const generatesRulepack = ruleStrategy === "standalone" || ruleStrategy.startsWith("patch:")
-              const selectedCompanion = generatesRulepack
-                ? [...companionOptions, "rulepacks"]
-                : companionOptions
-              if (!packMode) {
-                generateModule(description.trim(), {
-                  media: mediaOptions,
-                  companion: selectedCompanion,
-                  difficulty,
-                  levels,
-                })
-                return
-              }
-              // Split the raw rule-system choice into the engine's two exclusive knobs.
-              const raw = ruleStrategy
-              let extendsValue = ""
-              let systemValue = ""
-              if (raw.startsWith("patch:")) extendsValue = raw.slice("patch:".length)
-              else if (raw.startsWith("use:")) systemValue = raw.slice("use:".length)
-              generatePackModule(
-                description.trim(),
-                mediaOptions,
-                selectedCompanion,
-                extendsValue,
-                systemValue,
-                difficulty,
-                levels,
-              )
-            }}
-          >
-            {packMode ? t("play.module.generatePack") : t("play.module.generate")}
-          </Button>
-          {busy && generationStage ? (
-            <Notice tone="warning" role="status">
-              {t(`play.module.stages.${generationStage}`, { defaultValue: generationStage })}
-              {generationDetail ? ` — ${generationDetail}` : ""}
-            </Notice>
-          ) : null}
-          {generated !== null &&
-          (String(generated.kind) === "module" || String(generated.kind) === "pack") ? (
-            <Notice tone={generated.ok ? "success" : "danger"} role={generated.ok ? "status" : "alert"}>
-              {generated.ok
-                ? t("play.module.generateOk", { name: generated.name, detail: generated.detail })
-                : t("play.module.generateError", { error: generated.error })}
-            </Notice>
-          ) : null}
-        </Surface>
+          </aside>
+        </div>
       ) : null}
     </ScreenShell>
   )

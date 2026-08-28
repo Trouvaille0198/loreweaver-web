@@ -266,7 +266,16 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "actions": "Actions",
-      "empty": "No keys yet — mint an invite above."
+      "empty": "No keys yet — mint an invite above.",
+      "heroEyebrow": "Room invites",
+      "heroNoRoom": "No room connected",
+      "heroCount": "{{count}} invite keys",
+      "heroPlayers": "{{count}} players",
+      "heroKeepers": "{{count}} keepers",
+      "heroNoneHint": "No invite keys yet — mint one and hand it to a player.",
+      "directoryTitle": "Key directory",
+      "mintTitle": "Mint a new key",
+      "toolsLabel": "Key tools"
     },
     "model": {
       "provider": "Provider",
@@ -452,6 +461,17 @@
         "library": "Module library",
         "forge": "AI creation"
       },
+      "forge": {
+        "describeTitle": "Module description",
+        "rulesTitle": "Module format & rules",
+        "optionsTitle": "Optional generated content",
+        "settingsLabel": "Generation settings"
+      },
+      "heroEyebrow": "Current room module",
+      "heroNone": "No module imported",
+      "heroNoneHint": "Import one from the library, or forge a new one with AI.",
+      "asideLabel": "Module tools",
+      "installGroup": "Install from server",
       "kindText": "Text",
       "kindPack": "Pack",
       "libraryHint": "Sources live on this server. Upload one here, inspect its text, or import it into this room.",
@@ -822,7 +842,10 @@
       "selfUpdateConfirm": "Run the server's own update command and restart it?",
       "selfUpdateRun": "Update and restart",
       "updateRestarting": "The server is restarting into the updated code. The connection will drop and come back.",
-      "updateFailed": "The update command failed: {{output}}"
+      "updateFailed": "The update command failed: {{output}}",
+      "maintenanceTitle": "Room maintenance",
+      "dangerTitle": "Dangerous operations",
+      "dangerHint": "These act on the whole room and only run after the room's name is typed."
     },
     "roomInfo": {
       "roomSection": "Room",

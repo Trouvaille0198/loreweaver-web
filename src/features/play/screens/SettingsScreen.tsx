@@ -141,7 +141,7 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
             actions={<output className="narrative-width-value">{narrativeWidth}ch</output>}
           />
           <label className="narrative-width-field">
-            <span className="sr-only">{t("play.settings.narrativeWidth")}</span>
+            <span className="visually-hidden">{t("play.settings.narrativeWidth")}</span>
             <input
               id="narrative-width"
               name="narrative-width"
@@ -234,7 +234,7 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
       {isKeeper ? (
         <Surface className="settings-section-card" labelledBy="settings-invites-title">
           <SectionHeader title={t("play.settings.invitesSection")} titleId="settings-invites-title" />
-          <InviteKeysPanel />
+          <InviteKeysPanel titled={false} />
         </Surface>
       ) : null}
     </div>

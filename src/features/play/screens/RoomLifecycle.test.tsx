@@ -19,8 +19,10 @@ function connected(features: string[] = []) {
   useConnectionStore.setState({ status: "online", welcome: { ...WELCOME, features } })
 }
 
-/** The four destructive actions, in DOM order — each owns one confirm field. */
-const DANGER = { restore: 0, reset: 1, deleteData: 2, deleteKeys: 3 } as const
+/** The four typed-name confirm fields, in DOM order — reset leads the
+ * maintenance column, the other three live in the danger zone. Each owns one
+ * confirm field. */
+const DANGER = { reset: 0, restore: 1, deleteData: 2, deleteKeys: 3 } as const
 
 async function confirmAction(which: keyof typeof DANGER, label: string) {
   await userEvent.type(screen.getAllByLabelText("Type “table” to confirm")[DANGER[which]], "table")

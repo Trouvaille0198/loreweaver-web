@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Button, EmptyState, SectionHeader, Surface } from "../../../components/ui"
+import { Button, EmptyState, Field, SectionHeader, Surface } from "../../../components/ui"
 import { useAdminStore } from "../../../store/admin"
 import ScreenShell from "./ScreenShell"
 
@@ -171,27 +171,31 @@ export default function PresetsScreen({
 
       <Surface labelledBy="presets-new-title">
         <SectionHeader titleId="presets-new-title" title={t("play.presets.newTitle")} />
-        <div className="field">
-          <label htmlFor="preset-id-input">{t("play.presets.idLabel")}</label>
-          <input
-            id="preset-id-input"
-            type="text"
-            value={presetId}
-            onChange={(e) => setPresetId(e.target.value)}
-            placeholder={t("play.presets.idHint")}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="preset-text-input">{t("play.presets.textLabel")}</label>
-          <textarea
-            id="preset-text-input"
-            rows={10}
-            value={presetText}
-            onChange={(e) => setPresetText(e.target.value)}
-            placeholder={t("play.presets.textPlaceholder")}
-            className="play-presets-textarea"
-          />
-        </div>
+        <Field label={t("play.presets.idLabel")} hint={t("play.presets.idHint")}>
+          {({ id, describedBy }) => (
+            <input
+              id={id}
+              type="text"
+              value={presetId}
+              onChange={(e) => setPresetId(e.target.value)}
+              placeholder={t("play.presets.idHint")}
+              aria-describedby={describedBy}
+            />
+          )}
+        </Field>
+        <Field label={t("play.presets.textLabel")} hint={t("play.presets.textPlaceholder")}>
+          {({ id, describedBy }) => (
+            <textarea
+              id={id}
+              rows={10}
+              value={presetText}
+              onChange={(e) => setPresetText(e.target.value)}
+              placeholder={t("play.presets.textPlaceholder")}
+              className="play-presets-textarea"
+              aria-describedby={describedBy}
+            />
+          )}
+        </Field>
         <Button type="button" variant="primary" onClick={handleSave} disabled={!presetText.trim()}>
           {t("play.presets.save")}
         </Button>
