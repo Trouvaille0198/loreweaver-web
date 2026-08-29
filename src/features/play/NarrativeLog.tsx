@@ -156,11 +156,21 @@ function NarrativeEntry({
   onOpenDraft: (text: string) => void
 }) {
   const { t, i18n } = useTranslation()
+  const bodyRef = useRef<HTMLDivElement | null>(null)
+  const wasDraft = useRef(Boolean(draft))
   // Strip any `[[ ]]` mark the server's annotator failed to consume (its own
   // strip/fallback normally removes them; this is the last-resort display guard).
   const text = stripControlChars(frame.text).replace(/\[\[|\]\]/g, "")
   const isEmptyDraft = draft && text.trim().length === 0
   const hasDiscardedDraft = Boolean(discardedDraft)
+  // A streamed draft can make the entry body scrollable. The closing narrative
+  // replaces that same DOM node; reset its inner scroll position so the final
+  // reply starts at its beginning instead of retaining the draft's bottom
+  // offset and hiding the opening sentence.
+  useLayoutEffect(() => {
+    if (wasDraft.current && !draft && bodyRef.current) bodyRef.current.scrollTop = 0
+    wasDraft.current = Boolean(draft)
+  }, [draft, frame.text])
   return (
     <article
       className={`log-entry speaker-${frame.speaker}${hasDiscardedDraft ? " has-draft" : ""}${isEmptyDraft ? " is-empty-draft" : ""}${isJumpTarget ? " log-jump-target" : ""}`}
@@ -184,7 +194,7 @@ function NarrativeEntry({
           </button>
         ) : null}
       </header>
-      <div className="entry-body">
+      <div className="entry-body" ref={bodyRef}>
         {isEmptyDraft ? (
           <span className="narrative-streaming" role="status">
             <span className="spinner spinner-inline" aria-hidden="true" />

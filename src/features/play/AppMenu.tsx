@@ -6,6 +6,7 @@
 // bottom sheet (thumb-friendly, same pattern as the ⋯ tools popup).
 
 import { useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
 import { Button } from "../../components/ui"
 import { transportSend } from "../../lib/transport"
@@ -27,12 +28,17 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
   const hasDemo = isKeeper && (welcome?.features ?? []).includes("demo")
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const popRef = useRef<HTMLDivElement | null>(null)
 
-  // Close on outside tap / Escape, like every other popover in the app.
+  // Close on outside tap / Escape, like every other popover in the app. The
+  // narrow-screen pop is portaled to <body>, so check the pop itself as well
+  // as the toggle wrapper.
   useEffect(() => {
     if (!open) return
     const onPointer = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Node
+      if (rootRef.current?.contains(target) || popRef.current?.contains(target)) return
+      setOpen(false)
     }
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false)
@@ -45,6 +51,19 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
     }
   }, [open])
 
+  // The mobile bottom sheet must escape the app header's backdrop-filter
+  // containing block — it would anchor the position: fixed sheet to the
+  // header box, off-screen above. The desktop dropdown stays in place.
+  const [isNarrow, setIsNarrow] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches,
+  )
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return
+    const mq = window.matchMedia("(max-width: 760px)")
+    const onChange = (event: MediaQueryListEvent) => setIsNarrow(event.matches)
+    mq.addEventListener("change", onChange)
+    return () => mq.removeEventListener("change", onChange)
+  }, [])
   const startDemo = () => {
     // The server's demo responder treats this exact localized, human-readable
     // action as one guided transaction (same string the TUI sends).
@@ -68,6 +87,35 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
     rows.push({ key: "keeperSettings", screen: "keeperSettings" })
   }
 
+  const pop = (
+    <div ref={popRef} className="app-menu-pop" role="menu" aria-label={t("play.menu.label")}>
+      {rows.map((row) => (
+        <div key={row.key}>
+          <Button
+            type="button"
+            role="menuitem"
+            variant="quiet"
+            className="app-menu-row"
+            onClick={() => (row.action ? row.action() : row.screen ? go(row.screen) : null)}
+          >
+            {t(`play.menu.${row.key}`)}
+          </Button>
+        </div>
+      ))}
+      <div className="app-menu-quit">
+        <Button
+          type="button"
+          role="menuitem"
+          variant="quiet"
+          className="app-menu-row"
+          onClick={() => void quitTable()}
+        >
+          {t("connect.disconnect")}
+        </Button>
+      </div>
+    </div>
+  )
+
   return (
     <div className="app-menu" ref={rootRef}>
       <Button
@@ -83,34 +131,7 @@ export default function AppMenu({ onNavigate }: { onNavigate: (screen: PlayScree
       >
         ≡
       </Button>
-      {open ? (
-        <div className="app-menu-pop" role="menu" aria-label={t("play.menu.label")}>
-          {rows.map((row) => (
-            <div key={row.key}>
-              <Button
-                type="button"
-                role="menuitem"
-                variant="quiet"
-                className="app-menu-row"
-                onClick={() => (row.action ? row.action() : row.screen ? go(row.screen) : null)}
-              >
-                {t(`play.menu.${row.key}`)}
-              </Button>
-            </div>
-          ))}
-          <div className="app-menu-quit">
-            <Button
-              type="button"
-              role="menuitem"
-              variant="quiet"
-              className="app-menu-row"
-              onClick={() => void quitTable()}
-            >
-              {t("connect.disconnect")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      {open ? (isNarrow ? createPortal(pop, document.body) : pop) : null}
     </div>
   )
 }

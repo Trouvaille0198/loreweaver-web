@@ -5656,6 +5656,18 @@ code {
     max-height: 55vh;
   }
 
+  /* The palette hugs the input row's own width — anchored to the ⚡ toggle
+     its right edge would run past the screen edge. */
+  .input-dock .quick-menu {
+    position: static;
+  }
+
+  .input-dock .quick-menu-pop {
+    left: 0;
+    right: 0;
+    width: auto;
+  }
+
   .input-dock .desk-toggle {
     flex: 0 0 44px;
     width: 44px;
@@ -5684,7 +5696,9 @@ code {
     left: 12px;
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom));
-    z-index: 40;
+    /* Above the app header (z-index 50): the sheet is portaled to <body>,
+       so the header must never paint over its top edge. */
+    z-index: 60;
     max-height: 75vh;
     max-height: 75dvh;
     width: auto;

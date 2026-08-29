@@ -671,7 +671,9 @@ function PackDetailViewModern({
       selector: ".module-v2-resource-workspace",
     })
   }
-  if (galleryCount > 0 || mediaJobs.length > 0) {
+  // The keeper always gets the illustration lane — it is also where a module
+  // with no assets at all gets its first images generated.
+  if (isKeeper || galleryCount > 0 || mediaJobs.length > 0) {
     sectionJumps.push({ label: t("play.module.packMedia"), selector: ".module-v2-media" })
   }
   if (loreEntries.length > 0) {
@@ -852,7 +854,7 @@ function PackDetailViewModern({
         </Surface>
       ) : null}
 
-      {galleryCount > 0 || (isKeeper && mediaJobs.length > 0) ? (
+      {isKeeper || galleryCount > 0 || mediaJobs.length > 0 ? (
         <Surface className="module-v2-section module-v2-media" labelledBy="module-v2-media-title">
           <SectionHeader
             titleId="module-v2-media-title"
@@ -905,6 +907,7 @@ function PackDetailViewModern({
               ))}
             </ul>
           ) : null}
+          {galleryCount === 0 ? <p className="studio-hint">{t("play.module.mediaEmpty")}</p> : null}
           <div className="module-v2-media-groups">
             {groupIds.map((kind) => {
               const records = mediaGroups.get(kind) ?? []
@@ -1303,7 +1306,9 @@ function PackDetailView({
   }
   const startGenerate = () => {
     if (pickerKinds.length === 0) return
-    moduleMediaRequest(detail.name, { kinds: pickerKinds })
+    // A deliberate click means "make a fresh plate", even when this kind already has
+    // finished images. The server keeps retry/requeue semantics separate from this action.
+    moduleMediaRequest(detail.name, { kinds: pickerKinds, force: true })
     setPickerOpen(false)
     setGenerateNotice(true)
     setPendingPlan(true)

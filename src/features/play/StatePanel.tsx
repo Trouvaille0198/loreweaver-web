@@ -988,17 +988,18 @@ export function PartyCard({ game }: { game: StateFrame }) {
         />
       ) : null}
       {menu && actions ? (
-        <div
-          ref={menuRef}
-          className="pregen-menu-pop"
-          role={confirming ? "group" : "menu"}
-          aria-label={t("session.pregenMenu", { name: menu.name })}
-          style={{
-            left: Math.max(8, Math.min(menu.x, window.innerWidth - 240)),
-            top: Math.max(8, Math.min(menu.y, window.innerHeight - 160)),
-          }}
-        >
-          {confirming ? (
+        createPortal(
+          <div
+            ref={menuRef}
+            className="pregen-menu-pop"
+            role={confirming ? "group" : "menu"}
+            aria-label={t("session.pregenMenu", { name: menu.name })}
+            style={{
+              left: Math.max(8, Math.min(menu.x, window.innerWidth - 240)),
+              top: Math.max(8, Math.min(menu.y, window.innerHeight - 160)),
+            }}
+          >
+            {confirming ? (
             // Releasing deletes the claimer's sheet copy (progress included)
             // while the pristine card returns to the roster — destructive, so
             // it sits behind an in-menu confirmation instead of one tap.
@@ -1087,8 +1088,10 @@ export function PartyCard({ game }: { game: StateFrame }) {
                   {item.label}
                 </Button>
               ))
-          )}
-        </div>
+            )}
+          </div>,
+          document.body,
+        )
       ) : null}
     </>
   )
@@ -1291,17 +1294,18 @@ export function PregenCard({ game }: { game: StateFrame }) {
         })}
       </ul>
       {menu && actions ? (
-        <div
-          ref={menuRef}
-          className="pregen-menu-pop"
-          role={confirming ? "group" : "menu"}
-          aria-label={t("session.pregenMenu", { name: menu.name })}
-          style={{
-            left: Math.max(8, Math.min(menu.x, window.innerWidth - 240)),
-            top: Math.max(8, Math.min(menu.y, window.innerHeight - 160)),
-          }}
-        >
-          {confirming ? (
+        createPortal(
+          <div
+            ref={menuRef}
+            className="pregen-menu-pop"
+            role={confirming ? "group" : "menu"}
+            aria-label={t("session.pregenMenu", { name: menu.name })}
+            style={{
+              left: Math.max(8, Math.min(menu.x, window.innerWidth - 240)),
+              top: Math.max(8, Math.min(menu.y, window.innerHeight - 160)),
+            }}
+          >
+            {confirming ? (
             // Releasing deletes the claimer's sheet copy (progress included)
             // while the pristine card returns to the roster — destructive, so
             // it sits behind an in-menu confirmation instead of one tap.
@@ -1390,8 +1394,10 @@ export function PregenCard({ game }: { game: StateFrame }) {
                   {item.label}
                 </Button>
               ))
-          )}
-        </div>
+            )}
+          </div>,
+          document.body,
+        )
       ) : null}
       {viewInfo ? (
         <PartyCharacterModal

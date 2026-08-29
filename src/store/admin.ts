@@ -790,7 +790,7 @@ interface AdminState {
 
   /** Queue fresh illustration jobs (`kinds`) or re-queue failed ones (`retry` ids) for an
    * installed pack — the async media lane renders them in the background. */
-  moduleMediaRequest: (name: string, options?: { kinds?: string[]; retry?: string[] }) => void
+  moduleMediaRequest: (name: string, options?: { kinds?: string[]; retry?: string[]; force?: boolean }) => void
   /** Queue ONE roster character's portrait through the same async illustration lane the
    * module detail page uses (module-imported and `.pc gen`-born characters alike). */
   pregenAvatarRequest: (name: string) => void
@@ -1357,6 +1357,7 @@ export const useAdminStore = create<AdminState>((set) => ({
     const retry = options?.retry?.filter((id) => id.length > 0)
     if (kinds?.length) payload.kinds = kinds
     if (retry?.length) payload.retry = retry
+    if (options?.force === true && kinds?.length) payload.force = true
     moduleAction("module_media_generate", payload, set)
   },
   pregenAvatarRequest: (name) => {
