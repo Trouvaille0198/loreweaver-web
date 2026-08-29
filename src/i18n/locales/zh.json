@@ -200,8 +200,13 @@
     "player": "玩家",
     "media": "图片",
     "mediaFailed": "图片加载失败。",
-    "mediaPrompt": "悬停图片可查看生成提示词",
+    "mediaLoading": "图片加载中…",
+    "mediaRetry": "重新加载",
+    "mediaPrompt": "打开图片可查看生成提示词",
     "mediaPromptTitle": "提示词：{{prompt}}",
+    "mediaOpen": "放大查看{{name}}",
+    "mediaPreview": "{{name}}的图片预览",
+    "mediaClose": "关闭图片预览",
     "draftTitle": "被替换的叙述草稿",
     "draftClose": "关闭",
     "draftHint": "这条回复带有掷骰前被替换的叙述草稿，点击可查看。",
@@ -555,6 +560,23 @@
       "itemOrigin": "来源",
       "itemHolder": "原主",
       "itemSlot": "槽位",
+      "itemBonus": "检定加成",
+      "itemPlotRole": {
+        "equipment": "装备",
+        "quest": "任务",
+        "evidence": "证据",
+        "prop": "道具"
+      },
+      "loreFilter": "按类型筛选设定",
+      "loreFilterAll": "全部",
+      "loreCategories": {
+        "lore": "设定",
+        "npc": "人物",
+        "clue": "线索",
+        "secret": "秘密",
+        "truth": "真相"
+      },
+      "loreKeys": "触发关键词",
       "packMedia": "配图",
       "packMediaCount": "共 {{count}} 张",
       "packMediaGroups": {
@@ -759,6 +781,11 @@
       "sourceHint": "这个角色来自一个生成的剧本",
       "memory": "记忆",
       "relationships": "关系",
+      "spells": "已学会的法术",
+      "spellsHint": "战斗中用 `.cast <法术名>` 施放；法术位见上方资源条。",
+      "raceInfo": "种族",
+      "raceSpeed": "速度 {{speed}} 尺",
+      "raceDarkvision": "黑视 {{darkvision}} 尺",
       "track.affection": "好感",
       "track.desire": "情欲",
       "recentEntries": "剧本回忆",
@@ -1102,6 +1129,11 @@
     "moduleShare.hint": "这是守秘人分享的内容，加入牌桌即可游玩。",
     "mentionCard": {
       "close": "关闭信息卡",
+      "kind": {
+        "npc": "人物档案",
+        "item": "物品资料",
+        "clue": "线索记录"
+      },
       "memories": "公开记忆",
       "effect": "效果",
       "foundTurn": "发现于第 {{turn}} 回合",

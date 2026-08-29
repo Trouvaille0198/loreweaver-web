@@ -447,6 +447,20 @@ select {
   backdrop-filter: blur(18px) saturate(120%);
 }
 
+.app-session-header {
+  display: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.app[data-online="true"] .app-session-header {
+  display: flex;
+}
+
+.app[data-online="true"] .header-spacer {
+  display: none;
+}
+
 .app-brand {
   display: flex;
   align-items: center;
@@ -716,6 +730,22 @@ select {
   }
   .app-title {
     font-size: 18px;
+  }
+  .app[data-online="true"] .app-header {
+    min-height: 56px;
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
+  }
+  .app[data-online="true"] .app-brand {
+    gap: 0;
+  }
+  .app[data-online="true"] .app-brand-copy {
+    display: none;
+  }
+  .app[data-online="true"] .app-mark,
+  .app[data-online="true"] .app-mark svg {
+    width: 28px;
+    height: 28px;
   }
   .lang-select {
     width: 76px;
@@ -3885,6 +3915,55 @@ select {
   white-space: pre-wrap;
 }
 
+.module-v2-lore-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.module-v2-lore-filter .ui-button.is-active {
+  color: var(--text-accent);
+  background: var(--surface-hover);
+  box-shadow: inset 0 0 0 1px var(--line-default);
+}
+
+.module-v2-lore-filter-count {
+  margin-left: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+}
+
+.module-v2-entry-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.module-v2-entry-media {
+  max-width: min(420px, 100%);
+  margin-top: var(--space-4);
+}
+
+.module-v2-entry-media .module-media-trigger {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.module-v2-entry-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-5);
+}
+
+.module-v2-entry-keys-label {
+  margin-right: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+}
+
 .module-v2-cast-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3921,6 +4000,12 @@ select {
   display: none;
 }
 
+/* The card copy already states the character's name; the plate caption would
+ * repeat it under the portrait. */
+.module-v2-cast-portrait .module-media-caption {
+  display: none;
+}
+
 .module-v2-cast-copy {
   display: grid;
   align-content: start;
@@ -3942,6 +4027,28 @@ select {
   line-height: 1.6;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
+}
+
+.module-v2-cast-appearance {
+  margin-top: calc(-1 * var(--space-1));
+}
+
+.module-v2-cast-aliases,
+.module-v2-cast-skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.module-v2-cast-skills {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.module-v2-cast-skills-label,
+.module-v2-cast-appearance-label {
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
 }
 
 .module-v2-cast-tags {

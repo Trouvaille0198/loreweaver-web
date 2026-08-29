@@ -200,8 +200,13 @@
     "player": "Player",
     "media": "Image",
     "mediaFailed": "Image could not be loaded.",
-    "mediaPrompt": "Hover the image to see the prompt",
+    "mediaLoading": "Loading image…",
+    "mediaRetry": "Try again",
+    "mediaPrompt": "Open the image to read its prompt",
     "mediaPromptTitle": "Prompt: {{prompt}}",
+    "mediaOpen": "Enlarge {{name}}",
+    "mediaPreview": "Image preview for {{name}}",
+    "mediaClose": "Close image preview",
     "draftTitle": "Discarded narration draft",
     "draftClose": "Close",
     "draftHint": "This reply has a discarded pre-tool draft — click to review it.",
@@ -555,6 +560,23 @@
       "itemOrigin": "Origin",
       "itemHolder": "Original holder",
       "itemSlot": "Slot",
+      "itemBonus": "Check bonus",
+      "itemPlotRole": {
+        "equipment": "Equipment",
+        "quest": "Quest",
+        "evidence": "Evidence",
+        "prop": "Prop"
+      },
+      "loreFilter": "Filter entries by category",
+      "loreFilterAll": "All",
+      "loreCategories": {
+        "lore": "Lore",
+        "npc": "Characters",
+        "clue": "Clues",
+        "secret": "Secrets",
+        "truth": "Truths"
+      },
+      "loreKeys": "Trigger keys",
       "packMedia": "Illustrations",
       "packMediaCount": "{{count}} images",
       "packMediaGroups": {
@@ -759,6 +781,11 @@
       "sourceHint": "This character came from a generated module",
       "memory": "Memory",
       "relationships": "Relationships",
+      "spells": "Known spells",
+      "spellsHint": "Cast with `.cast <spell>` in combat; slots show in the meters above.",
+      "raceInfo": "Race",
+      "raceSpeed": "Speed {{speed}} ft",
+      "raceDarkvision": "Darkvision {{darkvision}} ft",
       "track.affection": "Affection",
       "track.desire": "Desire",
       "recentEntries": "Playthrough memories",
@@ -1102,6 +1129,11 @@
     "moduleShare.hint": "This is what the Keeper shared. Join the table to play.",
     "mentionCard": {
       "close": "Close info card",
+      "kind": {
+        "npc": "Character profile",
+        "item": "Item record",
+        "clue": "Clue record"
+      },
       "memories": "Public memory",
       "effect": "Effect",
       "foundTurn": "Found on turn {{turn}}",

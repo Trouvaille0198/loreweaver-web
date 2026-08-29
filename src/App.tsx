@@ -47,6 +47,7 @@ export default function App() {
             <h1 className="app-title">{t("app.title")}</h1>
           </div>
         </div>
+        <div id="app-session-header" className="app-session-header" />
         <div className="header-spacer" />
         {!online ? (
           <label className="app-language">

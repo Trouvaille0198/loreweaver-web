@@ -171,16 +171,6 @@ body {
   cursor: pointer;
 }
 
-/* On a phone an online session folds the brand row away. The row's only
-   live control — the language picker — shows when offline only, so while
-   playing it is pure chrome; the session bar (menu, room, status) already
-   holds everything a player at the table needs. */
-@media (max-width: 760px) {
-  .app[data-online="true"] .app-header {
-    display: none;
-  }
-}
-
 .app-main {
   flex: 1;
   display: flex;
@@ -417,47 +407,104 @@ body {
 
 .session {
   flex: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 25vw, 400px);
+  gap: var(--space-4);
   min-height: 0;
+  padding: var(--space-4);
+  overflow: hidden;
+  background: var(--surface-canvas);
 }
 
 .chronicle-pane {
-  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  /* The nested-scroll rule: as a column flex child (the phone layout) this
-     pane must be allowed to shrink below its content height, or the whole
-     page scrolls instead of just the narrative log. */
   min-height: 0;
-  border-right: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--surface-1);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .session-head {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border-soft);
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: 76px;
+  padding: var(--space-4) var(--space-6);
+  background: color-mix(in srgb, var(--surface-1) 94%, var(--lw-accent) 6%);
+  border-bottom: 1px solid var(--line-subtle);
   flex-shrink: 0;
 }
 
-/* Room identity: the room name leads, the seat name trails at half weight. */
+/* The live room controls occupy App's header slot instead of forming a
+   second toolbar above the chronicle. */
+.app-session-header .session-head {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  gap: var(--space-3);
+  background: transparent;
+  border: 0;
+}
+
+.app-session-header .session-eyebrow {
+  display: none;
+}
+
+.app-session-header .session-room {
+  font-size: 16px;
+}
+
+.session-overview-main,
+.session-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.session-overview-main {
+  flex: 1;
+  gap: var(--space-3);
+}
+
+.session-actions {
+  flex: 0 0 auto;
+  gap: var(--space-1);
+}
+
+.session-identity {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.session-eyebrow,
+.desk-rail-eyebrow {
+  color: var(--text-tertiary);
+  font: 650 10px/1.3 var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .session-room {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  flex: 1;
   min-width: 0;
-  font: 650 13px/1.2 var(--font-ui);
-  color: var(--ink);
+  color: var(--text-primary);
+  font: 650 clamp(18px, 1.7vw, 22px) / 1.15 var(--font-story);
+  letter-spacing: -0.015em;
 }
 
 .session-room-name {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .session-seat {
@@ -465,14 +512,15 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ink-dim);
+  color: var(--text-secondary);
+  font: 550 12px/1.3 var(--font-ui);
   font-weight: 500;
 }
 
 .session-seat::before {
   content: "·";
   margin-right: var(--space-2);
-  color: var(--ink-faint);
+  color: var(--text-tertiary);
 }
 
 
@@ -544,8 +592,8 @@ body {
 /* ---- First-time keeper onboarding banner (in the chronicle pane) ---- */
 
 .onboarding-banner {
-  margin: 10px auto 0;
-  width: 100%;
+  margin: var(--space-4) auto 0;
+  width: calc(100% - var(--space-12));
   max-width: var(--narrative-max);
 }
 
@@ -565,14 +613,36 @@ body {
 }
 
 .desk-pane {
-  /* Scale with the window instead of a fixed 300px — on a wide table the
-     trackers deserve the room (mirrors the TUI's proportional sidebar).
-     The pane sits on the canvas: cards float on it (surface-1 + shadow),
-     the same surface hierarchy as the keeper workspaces. */
-  width: clamp(280px, 26vw, 400px);
-  flex-shrink: 0;
+  min-width: 0;
   overflow-y: auto;
-  padding: var(--space-4);
+  padding: 0 var(--space-4) var(--space-4);
+  background: color-mix(in srgb, var(--surface-1) 94%, var(--surface-inset) 6%);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  scrollbar-gutter: stable;
+}
+
+.desk-rail-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-inline: calc(var(--space-4) * -1);
+  margin-bottom: var(--space-4);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  border-bottom: 1px solid var(--line-subtle);
+  backdrop-filter: blur(14px);
+}
+
+.desk-rail-title {
+  margin: 0;
+  color: var(--text-primary);
+  font: 650 19px/1.2 var(--font-story);
+  letter-spacing: -0.01em;
 }
 
 /* The desk drawer chrome is a NARROW-SCREEN affordance: on wide screens the
@@ -591,25 +661,38 @@ body {
   display: none;
 }
 
-/* The scene bar: the story column's always-visible context line. */
+.story-context {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6) 0;
+  flex-shrink: 0;
+}
+
+.story-context:empty {
+  display: none;
+}
+
 .scene-strip {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin: 0;
-  padding: 8px 20px;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--border-soft);
-  font: 500 13px/1.4 var(--font-ui);
-  color: var(--ink-dim);
-  flex-shrink: 0;
   min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-pill);
+  font: 500 13px/1.4 var(--font-ui);
+  color: var(--text-secondary);
+  flex: 1;
 }
 
 .scene-strip-name {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--ink);
+  color: var(--text-primary);
   font-weight: 650;
   font-size: 14px;
 }
@@ -622,7 +705,7 @@ body {
 }
 
 .scene-strip-glyph {
-  color: var(--accent);
+  color: var(--text-accent);
   flex-shrink: 0;
 }
 
@@ -646,18 +729,21 @@ body {
 
 .scene-strip .scene-art-thumb {
   display: block;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   object-fit: cover;
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-sm);
 }
 
 /* The input dock wraps the drawer toggle + the input row. On wide screens it
    is just the input row (the toggle is hidden); on phones it becomes the
    bottom thumb dock. */
 .input-dock {
-  display: contents;
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-6) var(--space-4);
+  background: color-mix(in srgb, var(--surface-1) 96%, transparent);
+  border-top: 1px solid var(--line-subtle);
 }
 
 /* ---- Narrative log ---- */
@@ -665,21 +751,30 @@ body {
 .narrative-log {
   flex: 1;
   overflow-y: auto;
-  /* Streaming entries make the scrollbar appear and disappear; a stable
-     gutter keeps the text column from shifting sideways mid-stream. */
   scrollbar-gutter: stable;
-  padding: 20px 24px;
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
-  /* The windowed log adds this gap to every line height in JS (NarrativeLog
-     reads `--log-gap`), so the spacer math and the layout can never drift. */
-  --log-gap: 22px;
+  background: color-mix(in srgb, var(--surface-canvas) 70%, var(--surface-1) 30%);
+  --log-gap: var(--space-3);
+}
+
+/* Children live in a scrolling column: shrink must never bite. A flex item
+   with overflow != visible has an automatic min-size of 0, so without this
+   the media cards (overflow: hidden) collapse to a sliver and their image
+   is clipped away entirely. */
+.narrative-log > * {
+  flex-shrink: 0;
 }
 
 .log-empty {
   margin: auto;
-  color: var(--ink-faint);
+  max-width: 42ch;
+  padding: var(--space-6);
+  color: var(--text-tertiary);
   font-style: italic;
+  line-height: 1.65;
+  text-align: center;
 }
 
 .log-entry,
@@ -689,19 +784,35 @@ body {
   width: 100%;
   max-width: var(--narrative-max);
   margin-inline: auto;
-  /* Row spacing lives on the line (not a parent gap) so the windowed log's
-     height model can count it per line. */
   margin-bottom: var(--log-gap, 14px);
 }
 
-/* Narrative entries are prose, not bubbles: the speaker line and spacing
-   separate turns, so the story reads as a column instead of a card fall. */
-.log-entry {
-  padding: 0;
-  background: none;
+.log-entry:not(.log-media) {
+  display: grid;
+  grid-template-columns: minmax(64px, 80px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+  padding: var(--space-4) 0 var(--space-5);
+  background: transparent;
   border: 0;
+  border-bottom: 1px solid var(--line-subtle);
   border-radius: 0;
-  box-shadow: none;
+  transition: background-color var(--motion-fast) var(--ease-out);
+}
+
+.log-entry:not(.log-media):hover {
+  background: color-mix(in srgb, var(--surface-1) 34%, transparent);
+}
+
+.log-entry.speaker-player:not(.log-media) {
+  background: transparent;
+}
+
+.log-entry.speaker-player:not(.log-media) .entry-body {
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--lw-player) 8%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--lw-player) 20%, var(--line-subtle));
+  border-radius: var(--radius-md);
 }
 
 .speaker-kp {
@@ -722,16 +833,18 @@ body {
 
 .log-entry .entry-speaker {
   display: flex;
-  align-items: center;
-  gap: 7px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .entry-speaker {
   font: 650 11px/1.2 var(--font-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-dim);
-  margin-bottom: 6px;
+  color: var(--text-secondary);
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .speaker-player .entry-speaker {
@@ -740,11 +853,11 @@ body {
 
 /* The send time of a chronicle line — smaller, non-uppercase, pushed right. */
 .log-entry .entry-time {
-  margin-left: auto;
+  margin: 0;
   font: 400 10px/1 var(--font-ui);
   letter-spacing: 0.02em;
   text-transform: none;
-  color: var(--ink-faint, var(--ink-dim));
+  color: var(--text-tertiary);
   white-space: nowrap;
 }
 
@@ -796,39 +909,85 @@ body {
   vertical-align: middle;
 }
 
+.log-media {
+  flex: 0 0 auto;
+  min-height: 190px;
+  padding: var(--space-3);
+  overflow: hidden;
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.log-media>.entry-speaker {
+  padding: var(--space-1) var(--space-1) var(--space-2);
+}
+
+.log-media-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-canvas);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+  cursor: zoom-in;
+  line-height: 0;
+}
+
+.log-media-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .log-media-img {
   display: block;
-  max-width: 100%;
-  max-height: 420px;
-  border-radius: 10px;
-  border: 1px solid var(--line-subtle);
-  margin-top: 6px;
+  width: 100%;
+  min-height: 220px;
+  max-height: min(56vh, 520px);
+  object-fit: contain;
+  background: var(--surface-canvas);
 }
 
 .log-media-empty {
-  display: block;
   width: 100%;
-  height: 120px;
-  border-radius: 10px;
+  min-height: 220px;
+  border-radius: var(--radius-md);
   border: 1px dashed var(--line-default);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--ink-dim);
-  margin-top: 6px;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: color-mix(in srgb, var(--surface-canvas) 72%, var(--surface-1));
+  color: var(--text-secondary);
+  font: 12px/1.5 var(--font-ui);
+}
+
+.log-media-empty.is-failed {
+  border-color: color-mix(in srgb, var(--danger) 44%, var(--line-default));
+}
+
+.log-media-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1) var(--space-1);
 }
 
 .log-media-name {
-  font: 500 12px/1.4 var(--font-ui);
-  color: var(--ink-dim);
-  margin-top: 6px;
+  min-width: 0;
+  color: var(--text-primary);
+  font: 650 13px/1.4 var(--font-ui);
+  overflow-wrap: anywhere;
 }
 
 .log-media-prompt {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
   font: 400 11px/1.4 var(--font-ui);
-  color: var(--ink-dim);
-  opacity: 0.7;
-  margin-top: 2px;
 }
 
 /* ---- Chronicle table of contents ---- */
@@ -987,11 +1146,25 @@ body {
 }
 
 .entry-body {
+  min-width: 0;
   font: 15px/1.65 var(--font-story);
   /* A very long message (a huge Keeper reply) caps its height and scrolls
      inside, instead of stretching the whole chronicle past the viewport. */
   max-height: 65vh;
   overflow-y: auto;
+}
+
+.narrative-streaming {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 24px;
+  color: var(--text-tertiary);
+  font: 12px/1.4 var(--font-ui);
+}
+
+.log-entry.is-empty-draft {
+  padding-block: var(--space-2);
 }
 
 .entry-body> :first-child,
@@ -1288,35 +1461,33 @@ body {
 
 .input-box {
   display: flex;
-  gap: 8px;
-  padding: 12px 24px;
-  border-top: 1px solid var(--border);
+  gap: var(--space-2);
+  width: min(100%, calc(var(--narrative-max) + var(--space-12)));
+  margin-inline: auto;
+  padding: var(--space-2);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .input-box input {
   flex: 1;
   min-width: 0;
-  background: var(--bg-inset);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 9px 12px;
+  background: transparent;
+  color: var(--text-primary);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
   font: 14px/1.4 var(--font-ui);
 }
 
 .input-box input:focus {
   outline: none;
-  border-color: var(--accent);
 }
 
 .input-box>button {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border: none;
-  border-radius: 6px;
-  padding: 0 18px;
-  font: 600 13px/1 var(--font-ui);
-  cursor: pointer;
+  flex: 0 0 auto;
 }
 
 /* ---- Quick-command palette (⚡ beside the input) ---- */
@@ -1336,10 +1507,10 @@ body {
   align-items: center;
   justify-content: center;
   min-width: 40px;
-  background: var(--bg-inset);
-  color: var(--accent-strong);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  background: transparent;
+  color: var(--text-accent);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   font: inherit;
   cursor: pointer;
   transition:
@@ -1699,9 +1870,7 @@ body {
 
 .desk-slot.is-dragging .desk-card {
   border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
-  box-shadow:
-    var(--shadow-md),
-    inset 3px 0 0 color-mix(in srgb, var(--accent) 75%, transparent);
+  box-shadow: var(--shadow-md);
 }
 
 .desk-order-reset {
@@ -1710,10 +1879,10 @@ body {
 }
 
 .desk-card {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 4px 14px rgb(0 0 0 / 0.07);
+  background: var(--surface-1);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
@@ -1740,10 +1909,9 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  font: 600 13px/1.35 var(--font-ui);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
+  font: 650 13px/1.35 var(--font-ui);
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
 }
 
 .desk-tag {
@@ -3021,6 +3189,230 @@ body {
 .npc-card-relationship {
   margin-left: 8px;
   color: var(--ink-dim);
+}
+
+/* Highlight detail is a real document-level dialog, not a card squeezed into
+   the virtualized chronicle. The header stays put while long public records
+   scroll in one predictable reading column. */
+.npc-card-overlay {
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: clamp(var(--space-4), 5vw, var(--space-10));
+  background: color-mix(in srgb, var(--surface-canvas) 18%, black 82%);
+  backdrop-filter: blur(3px);
+}
+
+.npc-card {
+  width: min(640px, 100%);
+  max-height: min(86dvh, 820px);
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+  background: var(--surface-1);
+  border-radius: var(--radius-xl);
+}
+
+.npc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-6);
+  background: color-mix(in srgb, var(--surface-2) 92%, var(--lw-accent) 8%);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.npc-card-kind {
+  color: var(--text-accent);
+  font: 650 11px/1.2 var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.npc-card-close {
+  position: static;
+  flex: 0 0 auto;
+}
+
+.npc-card-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.npc-card-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.npc-card-item .npc-card-hero,
+.npc-card-clue .npc-card-hero {
+  grid-template-columns: 56px minmax(0, 1fr);
+}
+
+.npc-card-avatar,
+.npc-card-symbol {
+  width: 88px;
+  height: 88px;
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-inset);
+}
+
+.npc-card-avatar-empty,
+.npc-card-symbol {
+  display: grid;
+  place-items: center;
+  color: var(--text-accent);
+  font: 650 28px/1 var(--font-story);
+}
+
+.npc-card-symbol {
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+}
+
+.npc-card-identity {
+  min-width: 0;
+}
+
+.npc-card-name {
+  color: var(--text-primary);
+  font: 650 clamp(24px, 4vw, 34px)/1.15 var(--font-story);
+  overflow-wrap: anywhere;
+}
+
+.npc-card-status,
+.npc-card-meta {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+  font: 12px/1.45 var(--font-ui);
+}
+
+.npc-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+
+.npc-card-description,
+.npc-card-content {
+  color: var(--text-primary);
+  font: 16px/1.75 var(--font-story);
+}
+
+.npc-card-section,
+.npc-card-memories,
+.npc-card-relationships {
+  margin: 0;
+  padding: var(--space-5);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.npc-card-section h4,
+.npc-card-memories h4,
+.npc-card-relationships h4 {
+  margin: 0 0 var(--space-3);
+  color: var(--text-secondary);
+  font: 650 11px/1.3 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.npc-card-effect p {
+  margin: 0;
+  color: var(--text-primary);
+  font: 14px/1.65 var(--font-ui);
+}
+
+.npc-card-memories ul {
+  gap: var(--space-2);
+  padding-left: var(--space-5);
+  color: var(--text-primary);
+  line-height: 1.65;
+}
+
+.npc-card-relationships ul {
+  gap: var(--space-3);
+}
+
+.npc-card-relationships li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.npc-card-relationship-tracks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.npc-card-relationship {
+  margin: 0;
+  padding: 3px 8px;
+  color: var(--text-secondary);
+  background: var(--surface-2);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-pill);
+  font: 11px/1.3 var(--font-ui);
+}
+
+@media (max-width: 600px) {
+  .npc-card-overlay {
+    place-items: end center;
+    padding: 0;
+  }
+
+  .npc-card {
+    width: 100%;
+    max-height: 92dvh;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .npc-card-header {
+    padding-left: var(--space-4);
+  }
+
+  .npc-card-hero,
+  .npc-card-body {
+    padding: var(--space-4);
+  }
+
+  .npc-card-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .npc-card-name {
+    font-size: 24px;
+  }
+
+  .npc-card-relationships li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .npc-card-relationship-tracks {
+    justify-content: flex-start;
+  }
 }
 
 .panel-modal-header {
@@ -5060,43 +5452,43 @@ code {
 }
 
 .menu-onboarding {
-  /* margin-block only: .onboarding-banner (same element) owns the horizontal
-     auto-centering — a full `margin` shorthand here would clobber it. */
-  margin-block: 10px 14px;
-  padding: 14px 16px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
+  margin-block: var(--space-4) var(--space-2);
+  padding: var(--space-5);
+  background: color-mix(in srgb, var(--surface-1) 91%, var(--lw-accent) 9%);
+  border: 1px solid color-mix(in srgb, var(--lw-accent) 38%, var(--line-default));
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-sm);
 }
 
 .menu-onboarding-title {
   margin: 0;
-  font: 600 13px/1.4 var(--font-ui);
-  color: var(--accent-strong);
+  color: var(--text-primary);
+  font: 650 18px/1.3 var(--font-story);
 }
 
 .menu-onboarding-hint {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--ink-dim);
+  max-width: 62ch;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .menu-onboarding-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 2px;
+  gap: var(--space-2);
 }
 
 /* Tablet: two columns survive but the desk stops hogging width. */
 @media (max-width: 1024px) {
-  .desk-pane {
-    width: clamp(240px, 30vw, 320px);
-    padding: 12px;
+  .session {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 32vw);
+    gap: var(--space-3);
+    padding: var(--space-3);
   }
 }
 
@@ -5131,7 +5523,9 @@ code {
   }
 
   .session {
-    flex-direction: column;
+    display: block;
+    padding: 0;
+    overflow: hidden;
   }
 
   .module-detail-hero {
@@ -5148,26 +5542,31 @@ code {
   }
 
   .chronicle-pane {
-    border-right: none;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   /* --- session desk → bottom drawer --- */
   .session .desk-pane {
-    background: var(--bg-raised);
+    background: var(--surface-2);
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 35;
     width: auto;
-    max-height: 70vh;
-    max-height: 70dvh;
-    padding: 6px 16px calc(14px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -8px 32px rgb(0 0 0 / 0.45);
+    max-height: 82vh;
+    max-height: 82dvh;
+    padding: var(--space-2) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+    border: 1px solid var(--line-default);
+    border-bottom: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow-lg);
     transform: translateY(105%);
-    transition: transform 220ms ease;
+    transition: transform var(--motion-base) var(--ease-out);
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
@@ -5187,7 +5586,8 @@ code {
     position: fixed;
     inset: 0;
     z-index: 34;
-    background: rgb(0 0 0 / 0.55);
+    background: color-mix(in srgb, var(--surface-canvas) 72%, transparent);
+    backdrop-filter: blur(2px);
   }
 
   .ui-button.desk-toggle,
@@ -5199,7 +5599,11 @@ code {
 
   .desk-drawer-head {
     display: block;
-    margin-bottom: 10px;
+    margin-bottom: var(--space-3);
+  }
+
+  .desk-rail-head {
+    display: none;
   }
 
   /* The grab handle: the universal "this sheet pulls up/down" affordance. */
@@ -5208,8 +5612,8 @@ code {
     width: 40px;
     height: 4px;
     margin: 0 auto 10px;
-    border-radius: 999px;
-    background: var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--line-default);
   }
 
   .desk-drawer-title-row {
@@ -5220,19 +5624,18 @@ code {
   }
 
   .desk-drawer-title {
-    font: 600 11px/1.3 var(--font-ui);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-dim);
+    color: var(--text-primary);
+    font: 650 17px/1.3 var(--font-story);
   }
 
   /* --- input dock: toggle beside the send row, inside the thumb zone --- */
   .input-dock {
     display: flex;
     align-items: stretch;
-    gap: 8px;
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--surface-1);
+    border-top: 1px solid var(--line-subtle);
     flex-shrink: 0;
   }
 
@@ -5243,8 +5646,10 @@ code {
 
   .input-dock .input-box {
     padding: 0;
-    border-top: none;
+    background: var(--surface-inset);
+    border: 1px solid var(--line-default);
     gap: 6px;
+    box-shadow: none;
   }
 
   .quick-menu-pop {
@@ -5292,21 +5697,53 @@ code {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* --- header: chat-style on a phone — one row of menu, room, status,
-         panels --- */
   .session-head {
-    gap: 8px;
-    padding: 4px 12px;
+    min-height: 58px;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .app-session-header .session-head {
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .session-overview-main {
+    gap: var(--space-2);
+  }
+
+  .session-identity {
+    gap: 2px;
+  }
+
+  .session-eyebrow {
+    display: none;
+  }
+
+  .session-actions {
+    gap: 0;
   }
 
   .session-room {
-    font-size: 11px;
+    font-size: 15px;
   }
 
-  /* --- scene + vitals strips: the always-visible context lines --- */
+  .session-seat {
+    font-size: 10px;
+  }
+
+  .story-context {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) 0;
+  }
+
   .scene-strip {
     gap: var(--space-2);
-    padding: 6px 12px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
     font-size: 12px;
     white-space: nowrap;
     overflow: hidden;
@@ -5330,8 +5767,10 @@ code {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: center;
     gap: 6px 10px;
-    padding: 6px 12px;
-    border-bottom: 1px solid var(--border-soft);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-inset);
+    border: 1px solid var(--line-subtle);
+    border-radius: var(--radius-md);
     flex-shrink: 0;
   }
 
@@ -5351,12 +5790,6 @@ code {
     font-size: 10px;
   }
 
-  /* --- input row: iOS-safe font size (16px stops the focus zoom) + home bar --- */
-  .input-box {
-    padding: 8px 12px;
-    border-top: none;
-  }
-
   .input-box input {
     font-size: 16px;
   }
@@ -5365,10 +5798,9 @@ code {
     padding: 0 14px;
   }
 
-  /* --- narrative: chat-style on a phone --- */
   .narrative-log {
-    padding: 10px 10px;
-    --log-gap: 8px;
+    padding: var(--space-3);
+    --log-gap: var(--space-2);
   }
 
   /* Thumb-sized touch targets for the contents toggle and its rows. */
@@ -5388,50 +5820,58 @@ code {
     max-width: 100%;
   }
 
-  /* Chat bubbles: the speaker label floats above its own bubble, the story
-     text gets the room instead of the desktop left rail. */
-  .log-entry {
-    padding: 12px 14px;
-  }
-
-  /* On a phone, the story bubble is the only surface needed. */
   .log-entry:not(.log-media) {
-    padding: 0;
-    border: none;
+    display: block;
+    padding: var(--space-3) 0 var(--space-4);
     background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--line-subtle);
+    border-radius: 0;
     box-shadow: none;
   }
 
-  .entry-speaker {
+  .log-entry .entry-speaker {
+    align-items: center;
+    flex-direction: row;
+    gap: var(--space-2);
     font-size: 11px;
-    margin-bottom: 3px;
-    padding: 0 4px;
+    margin-bottom: var(--space-2);
+    padding: 0;
+  }
+
+  .log-entry .entry-time {
+    margin-left: auto;
   }
 
   .entry-body {
     font-size: 16px;
     line-height: 1.6;
-    background: var(--bg-raised);
-    border: 1px solid var(--border-soft);
-    border-radius: 10px;
-    padding: 10px 12px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
   }
 
-  /* The player's own bubble sits on the right, like a sent message. */
-  .speaker-player .entry-body {
-    background: color-mix(in srgb, var(--lw-player) 12%, var(--bg-raised));
+  .log-entry.speaker-player:not(.log-media) {
+    width: 92%;
     margin-left: auto;
-    max-width: 85%;
+    background: transparent;
   }
 
-  /* Pending echoes and dice lines stay flat lines, not bubbles. */
-  .log-entry.pending .entry-body,
+  .log-entry.pending,
   .dice-line,
   .system-line {
-    background: none;
-    border: none;
-    padding: 0;
-    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .log-media {
+    padding: var(--space-2);
+  }
+
+  .log-media-caption {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
   }
 
   .turn-status {
@@ -5908,89 +6348,81 @@ code {
   z-index: 1000;
   display: grid;
   place-items: center;
-  padding: var(--space-5);
+  padding: var(--space-4);
   background: color-mix(in srgb, var(--surface-canvas) 74%, var(--surface-inset) 26%);
   backdrop-filter: blur(3px);
 }
 
 .character-modal {
-  width: min(960px, calc(100vw - var(--space-8)));
-  max-height: min(86dvh, 760px);
+  width: min(1120px, calc(100vw - var(--space-8)));
+  max-height: min(90dvh, 860px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  padding: var(--space-6);
+  gap: 0;
+  padding: 0;
   color: var(--text-primary);
   background: var(--surface-2);
   border: 1px solid var(--line-default);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
+}
+
+.character-modal-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: var(--space-6);
 }
 
 .character-modal-body {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.85fr);
-  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.85fr);
+  gap: var(--space-8);
   align-items: start;
-  flex: 1;
   min-height: 0;
-  overflow: hidden;
+}
+
+.character-modal-body.is-single-column {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .character-modal-col {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-8);
   min-width: 0;
-  min-height: 0;
-  max-height: 100%;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  scrollbar-color: transparent transparent;
 }
 
-/* Hidden until hover: the split columns' scrollbars only appear while the
-   pointer is over them, so the gear rail never fights the prose column. */
-.character-modal-col:hover {
-  scrollbar-color: var(--border) transparent;
+.character-modal-col-gear {
+  gap: var(--space-5);
+  padding: var(--space-5);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-lg);
 }
 
-.character-modal-col::-webkit-scrollbar-thumb {
-  background: transparent;
-}
-
-.character-modal-col:hover::-webkit-scrollbar-thumb {
-  background: var(--border);
-}
-
-.character-modal-col::-webkit-scrollbar-thumb:hover {
-  background: var(--ink-faint);
-}
-
-/* Narrow screens: one scroll context. The modal itself scrolls; the columns and
-   the full-width section flow at natural height instead of competing for the
-   leftover flex space (a fixed-height section starves the flexible body). */
+/* Narrow screens use a full-height reading surface with one scroll context. */
 @media (max-width: 760px) {
   .character-modal {
-    overflow-y: auto;
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
   }
 
   .character-modal-body {
     grid-template-columns: 1fr;
-    flex: none;
-    overflow: visible;
   }
 
-  .character-modal-col {
-    max-height: none;
-    overflow: visible;
+  .character-modal-scroll {
+    padding: var(--space-4);
   }
 
-  /* The stacked header is tall; the close control belongs beside the name
-     line, not centered against the whole block. */
-  .character-modal-close {
-    align-self: flex-start;
+  .character-modal-col-gear {
+    padding: var(--space-4);
   }
 }
 
@@ -5998,40 +6430,39 @@ code {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-5);
-  padding-bottom: var(--space-4);
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  background: color-mix(in srgb, var(--surface-2) 92%, var(--lw-accent) 8%);
   border-bottom: 1px solid var(--line-subtle);
 }
 
 /* Keep the header as one information group: identity on the left, live
    resources on the right, with the modal border owned by the header only. */
-.character-modal-summary {
+.character-modal-hero {
+  display: grid;
   flex: 1;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
-  gap: var(--space-6);
-  padding-bottom: 0;
-  border-bottom: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
+  align-items: center;
+  gap: var(--space-8);
 }
 
-.character-modal-summary .character-profile-identity {
+.character-modal-hero .character-profile-identity {
   align-items: flex-start;
 }
 
-.character-modal-summary .character-profile-identity .member-avatar {
-  width: 88px;
-  height: 88px;
+.character-modal-hero .character-profile-identity .member-avatar {
+  width: 80px;
+  height: 80px;
   border-width: 2px;
 }
 
-.character-modal-summary .character-profile-copy {
+.character-modal-hero .character-profile-copy {
   padding-top: var(--space-1);
 }
 
-.character-modal-summary .character-profile-resources {
-  padding: 0;
-  background: none;
-  border: 0;
+.character-modal-hero .character-profile-resources {
+  padding: var(--space-3) var(--space-4);
 }
 
 /* Match the character card's bounded and unbounded resource rows. */
@@ -6129,6 +6560,14 @@ code {
   gap: var(--space-3);
 }
 
+.character-modal-effects {
+  margin-bottom: var(--space-5);
+}
+
+.character-modal-notes {
+  margin-top: var(--space-8);
+}
+
 .character-modal-section h3 {
   margin: 0;
   padding-bottom: var(--space-2);
@@ -6143,9 +6582,10 @@ code {
 .character-modal-actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: var(--space-3);
-  padding-top: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  background: var(--surface-2);
   border-top: 1px solid var(--line-subtle);
 }
 
@@ -6154,6 +6594,7 @@ code {
   margin: 0;
   color: var(--text-secondary);
   font: 12px/1.5 var(--font-ui);
+  text-align: right;
 }
 
 .character-modal-action-buttons {
@@ -6273,19 +6714,54 @@ code {
   border-radius: var(--radius-md);
 }
 
+.character-modal .play-character-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.character-modal .play-character-item {
+  padding: var(--space-4) 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-subtle);
+  border-radius: 0;
+}
+
+.character-modal .play-character-item:first-child {
+  padding-top: 0;
+}
+
+.character-modal .play-character-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
 @media (max-width: 560px) {
-  .character-profile-summary {
+  .character-modal-hero {
     grid-template-columns: 1fr;
-    gap: var(--space-4);
+    gap: var(--space-3);
   }
 
   .character-modal-backdrop {
-    padding: var(--space-2);
+    padding: 0;
   }
 
-  .character-modal {
-    max-height: 92dvh;
-    padding: var(--space-4);
+  .character-modal-head {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .character-modal-hero .character-profile-identity .member-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .character-modal-hero .character-profile-resources {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .character-modal-actions {
+    padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
   }
   .character-modal-detail-grid--attributes {
     grid-template-columns: repeat(2, minmax(0, 1fr));

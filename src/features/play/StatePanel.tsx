@@ -503,6 +503,7 @@ function PartyCharacterModal({
   // neither render here nor contribute stat bonuses.
   const items = allItems.filter((item) => !item.archived)
   const archivedItems = allItems.filter((item) => item.archived)
+  const hasGear = equipment.length > 0 || items.length > 0 || archivedItems.length > 0
   const bonuses = equippedItemBonuses(items)
   const hintFor = (key: string): string | undefined => {
     const list = bonuses[key]
@@ -530,7 +531,7 @@ function PartyCharacterModal({
         onClick={(event) => event.stopPropagation()}
       >
         <header className="character-modal-head">
-          <div className="character-profile-summary character-modal-summary">
+          <div className="character-modal-hero">
             <div className="character-profile-identity">
               <Avatar ref={info.avatar} name={info.name} />
               <div className="character-profile-copy">
@@ -565,16 +566,17 @@ function PartyCharacterModal({
             ×
           </Button>
         </header>
-        {info.status_effects && info.status_effects.length > 0 ? (
-          <div className="chip-row">
-            {info.status_effects.map((effect) => (
-              <span key={effect} className="chip chip-effect">
-                {stripControlChars(effect)}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <div className="character-modal-body">
+        <div className="character-modal-scroll">
+          {info.status_effects && info.status_effects.length > 0 ? (
+            <div className="chip-row character-modal-effects">
+              {info.status_effects.map((effect) => (
+                <span key={effect} className="chip chip-effect">
+                  {stripControlChars(effect)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <div className={`character-modal-body${hasGear ? "" : " is-single-column"}`}>
           <div className="character-modal-col character-modal-col-main">
             {info.background ? (
               <section className="character-modal-section">
@@ -635,7 +637,8 @@ function PartyCharacterModal({
               </section>
             ) : null}
           </div>
-          <div className="character-modal-col character-modal-col-gear">
+          {hasGear ? (
+            <div className="character-modal-col character-modal-col-gear">
             {equipment.length > 0 && items.length === 0 ? (
               <section className="character-modal-section">
                 <h3>{t("play.character.equipment")}</h3>
@@ -731,17 +734,19 @@ function PartyCharacterModal({
                 {t("play.character.archivedItems")} ({archivedItems.length}) · {t("play.character.archivedHint")}
               </p>
             ) : null}
+            </div>
+          ) : null}
           </div>
+          {ownCharacter && info.notes ? (
+            <section className="character-modal-section character-modal-notes">
+              <h3>{t("play.character.notes")}</h3>
+              <p className="play-character-prose">{stripControlChars(info.notes)}</p>
+            </section>
+          ) : null}
+          {!hasExtra && !info.background && !(ownCharacter && info.notes) ? (
+            <p className="studio-hint">{t("play.character.noDetails")}</p>
+          ) : null}
         </div>
-        {ownCharacter && info.notes ? (
-          <section className="character-modal-section">
-            <h3>{t("play.character.notes")}</h3>
-            <p className="play-character-prose">{stripControlChars(info.notes)}</p>
-          </section>
-        ) : null}
-        {!hasExtra && !info.background && !(ownCharacter && info.notes) ? (
-          <p className="studio-hint">{t("play.character.noDetails")}</p>
-        ) : null}
         {onSwitch || onRelease ? (
           <footer className="character-modal-actions">
             {confirmingRelease ? (
@@ -1112,6 +1117,11 @@ export function PregenCard({ game }: { game: StateFrame }) {
   const [confirming, setConfirming] = useState(false)
   const [viewName, setViewName] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const pregenTriggerRef = useRef<HTMLLIElement | null>(null)
+  const closePregen = useCallback(() => {
+    setViewName(null)
+    window.setTimeout(() => pregenTriggerRef.current?.focus(), 0)
+  }, [])
 
   // Close on outside tap / Escape, like every other popover in the app.
   useEffect(() => {
@@ -1133,11 +1143,11 @@ export function PregenCard({ game }: { game: StateFrame }) {
   useEffect(() => {
     if (!viewName) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setViewName(null)
+      if (event.key === "Escape") closePregen()
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [viewName])
+  }, [closePregen, viewName])
 
   if (pregens.length === 0) return null
   const activeName = game.character?.name ?? ""
@@ -1181,6 +1191,7 @@ export function PregenCard({ game }: { game: StateFrame }) {
     )
       return
     event.preventDefault()
+    pregenTriggerRef.current = event.currentTarget
     // A keyboard-triggered context menu (Shift+F10 on the focused row)
     // reports no pointer coordinates; anchor to the row itself then.
     const rect = event.currentTarget.getBoundingClientRect()
@@ -1225,8 +1236,20 @@ export function PregenCard({ game }: { game: StateFrame }) {
             <li
               key={pregen.name}
               className={`party-row pregen-row${claimedBy ? " is-offline" : ""}${active ? " is-active" : ""}`}
-              onDoubleClick={() => setViewName(pregen.name)}
+              tabIndex={0}
+              title={t("session.partyMemberHint")}
+              onDoubleClick={(event) => {
+                pregenTriggerRef.current = event.currentTarget
+                setViewName(pregen.name)
+              }}
               onContextMenu={(event) => openMenu(event, pregen.name)}
+              onKeyDown={(event) => {
+                if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault()
+                  pregenTriggerRef.current = event.currentTarget
+                  setViewName(pregen.name)
+                }
+              }}
             >
               <div className="pregen-copy">
                 <span className="party-name">{stripControlChars(pregen.name)}</span>
@@ -1384,7 +1407,7 @@ export function PregenCard({ game }: { game: StateFrame }) {
               ? () => send(`.pc release ${viewInfo.name}`)
               : undefined
           }
-          onClose={() => setViewName(null)}
+          onClose={closePregen}
         />
       ) : null}
     </section>
@@ -1473,13 +1496,31 @@ function CombatCard({ combat }: { combat: NonNullable<StateFrame["combat"]> }) {
       </p>
       <p className="scene-line">{t("session.combatBudget", { budget: JSON.stringify(combat.budget) })}</p>
       <ol className="initiative-list">
-        {combat.combatants.map((entry) => (
-          <li key={entry.id} className={entry.id === combat.current ? "is-current" : ""}>
-            <span className="initiative-value">{entry.initiative}</span>
-            {stripControlChars(entry.name)}
-            {entry.state && entry.state !== "ready" ? ` · ${stripControlChars(entry.state)}` : ""}
-          </li>
-        ))}
+        {combat.combatants.map((entry) => {
+          // v2.9 presentation: public conditions render as chips, with the server's
+          // human-readable label ("火球术") preferred over the raw condition id —
+          // this is where "who is concentrating on what" shows at the table.
+          const chips = (entry.conditions ?? [])
+            .filter((condition) => (condition.visibility ?? "public") === "public")
+            .map((condition) => stripControlChars(condition.label || condition.id))
+            .filter((text) => text.length > 0)
+          return (
+            <li key={entry.id} className={entry.id === combat.current ? "is-current" : ""}>
+              <span className="initiative-value">{entry.initiative}</span>
+              {stripControlChars(entry.name)}
+              {entry.state && entry.state !== "ready" ? ` · ${stripControlChars(entry.state)}` : ""}
+              {chips.length > 0 ? (
+                <span className="chip-row">
+                  {chips.map((text, index) => (
+                    <span key={`${entry.id}-${index}`} className="chip">
+                      {text}
+                    </span>
+                  ))}
+                </span>
+              ) : null}
+            </li>
+          )
+        })}
       </ol>
     </section>
   )

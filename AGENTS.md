@@ -1,2 +1,4 @@
+- 始终用“大人”来称呼我
 - 禁止跑 test、lint、typecheck（用户明确要求，最高优先级）；构建和部署只跑 `docker compose build` / `docker compose up`（vite 构建本身不做类型检查，够用）
 - 严禁写test文件，严禁跑test文件
+- 发现bug时，千万不要做兜底处理而忽视了bug，而是要把bug完全修复

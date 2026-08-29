@@ -68,7 +68,7 @@ declare module "@loreweaver/protocol" {
     position: number
     state?: string
     budget?: Record<string, number>
-    conditions?: { id: string; visibility?: string; stacks?: number }[]
+        conditions?: { id: string; visibility?: string; stacks?: number; label?: string }[]
     health?: unknown
     health_presentation?: unknown
   }
@@ -150,6 +150,21 @@ declare module "@loreweaver/protocol" {
     /** Relationship tracks this character holds toward each named entity
      * (non-default values only). Absent when none. */
     relationships?: { target: string; tracks: { track: string; value: number }[] }[]
+    /** v2.9 wire: the character's known spells, localized display names.
+     * Absent when the server predates it or the character knows none. */
+    spells?: string[]
+    /** v2.9 wire: the pack-resolved race data behind the sheet's free-text race
+     * field. Absent when the server predates it, the pack declares no races, or
+     * the name is unknown. */
+    race_info?: CharacterRaceInfo
+  }
+
+  interface CharacterRaceInfo {
+    id: string
+    name: string
+    speed: number
+    darkvision: number
+    traits: string
   }
 
   interface PartyMember {

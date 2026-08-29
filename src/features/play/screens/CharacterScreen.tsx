@@ -660,6 +660,10 @@ function CharacterDetailsView({
   const archivedItems = items.filter((item) => item.archived)
   const memory = details.memory
   const relationships = details.relationships ?? []
+  // v2.9 wire: the character's known spells and pack-resolved race data. Both
+  // are server-resolved presentation facts — the sheet stores ids and free text.
+  const spells = character.spells ?? []
+  const raceInfo = character.race_info
   const visibleResources = character.resources.filter(
     (resource) => !(typeof resource.max === "number" && resource.max <= 0),
   )
@@ -671,7 +675,9 @@ function CharacterDetailsView({
     items.length > 0 ||
     Boolean(background || notes) ||
     Boolean(memory && (memory.summary || (memory.entries?.length ?? 0) > 0)) ||
-    relationships.length > 0
+    relationships.length > 0 ||
+    spells.length > 0 ||
+    Boolean(raceInfo)
   return (
     <Surface tone="accent" className="character-detail" labelledBy="character-detail-name">
       <div className="character-profile-summary">
@@ -708,6 +714,32 @@ function CharacterDetailsView({
             </span>
           ))}
         </div>
+      ) : null}
+      {raceInfo ? (
+        <CharacterDetailSection title={t("play.character.raceInfo")}>
+          <div className="chip-row">
+            <span className="chip">{stripControlChars(raceInfo.name)}</span>
+            {raceInfo.speed > 0 ? (
+              <span className="chip">{t("play.character.raceSpeed", { speed: raceInfo.speed })}</span>
+            ) : null}
+            {raceInfo.darkvision > 0 ? (
+              <span className="chip">{t("play.character.raceDarkvision", { darkvision: raceInfo.darkvision })}</span>
+            ) : null}
+          </div>
+          {raceInfo.traits ? <p className="play-character-prose">{stripControlChars(raceInfo.traits)}</p> : null}
+        </CharacterDetailSection>
+      ) : null}
+      {spells.length > 0 ? (
+        <CharacterDetailSection title={`${t("play.character.spells")} (${spells.length})`}>
+          <div className="play-character-skill-grid" role="list">
+            {spells.map((spell) => (
+              <span key={spell} role="listitem" className="play-character-skill">
+                {stripControlChars(spell)}
+              </span>
+            ))}
+          </div>
+          <p className="studio-hint">{t("play.character.spellsHint")}</p>
+        </CharacterDetailSection>
       ) : null}
       {localizedFieldEntries.length > 0 ? (
         <CharacterDetailSection title={t("play.character.fields")}>

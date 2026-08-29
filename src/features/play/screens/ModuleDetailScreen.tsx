@@ -645,12 +645,22 @@ function PackDetailViewModern({
   const { t } = useTranslation()
   const operation = useAdminStore((s) => s.moduleOperation)
   const [selectedLoreIndex, setSelectedLoreIndex] = useState(0)
+  const [loreFilter, setLoreFilter] = useState("")
   const [summaryExpanded, setSummaryExpanded] = useState(false)
   // The shared page renders the same content to players; only the keeper
   // actions (save/export/delete, illustration jobs, pregen edits) hide by role.
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
   const loreEntries = detail.worldbookEntries ?? []
-  const selectedLore = loreEntries[Math.min(selectedLoreIndex, Math.max(0, loreEntries.length - 1))]
+  const loreCategories = Array.from(
+    new Set(loreEntries.map((entry) => entry.category?.trim() || "lore")),
+  )
+  const filteredLore = loreFilter
+    ? loreEntries.filter((entry) => (entry.category?.trim() || "lore") === loreFilter)
+    : loreEntries
+  const selectedLore = filteredLore[Math.min(selectedLoreIndex, Math.max(0, filteredLore.length - 1))]
+  const selectedLoreImage = selectedLore?.image
+    ? detail.media.find((record) => record.name === selectedLore.image)
+    : undefined
   const heroCover = covers[0]
   const resourceCount = (detail.rulepacks?.length ?? 0) + (detail.skills?.length ?? 0)
   const sectionJumps: Array<{ label: string; selector: string }> = []
@@ -946,9 +956,45 @@ function PackDetailViewModern({
                 title={t("play.module.packWorldbook")}
                 description={`${loreEntries.length} ${t("play.module.entries")}`}
               />
+              {loreCategories.length > 1 ? (
+                <div className="module-v2-lore-filter" role="group" aria-label={t("play.module.loreFilter")}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="quiet"
+                    className={loreFilter === "" ? "is-active" : undefined}
+                    aria-pressed={loreFilter === ""}
+                    onClick={() => {
+                      setLoreFilter("")
+                      setSelectedLoreIndex(0)
+                    }}
+                  >
+                    {t("play.module.loreFilterAll")}
+                  </Button>
+                  {loreCategories.map((category) => (
+                    <Button
+                      key={category}
+                      type="button"
+                      size="sm"
+                      variant="quiet"
+                      className={loreFilter === category ? "is-active" : undefined}
+                      aria-pressed={loreFilter === category}
+                      onClick={() => {
+                        setLoreFilter(category)
+                        setSelectedLoreIndex(0)
+                      }}
+                    >
+                      {t(`play.module.loreCategories.${category}`, { defaultValue: category })}
+                      <span className="module-v2-lore-filter-count">
+                        {loreEntries.filter((entry) => (entry.category?.trim() || "lore") === category).length}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
               <div className="module-v2-library">
                 <div className="module-v2-entry-index" aria-label={t("play.module.detailV2LoreIndex")}>
-                  {loreEntries.map((entry, index) => (
+                  {filteredLore.map((entry, index) => (
                     <Button
                       key={`${entry.title}-${index}`}
                       type="button"
@@ -964,9 +1010,36 @@ function PackDetailViewModern({
                 <article className="module-v2-entry-reader" aria-live="polite">
                   <header>
                     <h4>{selectedLore.title}</h4>
-                    {selectedLore.secret ? <span className="chip">{t("play.worldbook.secret")}</span> : null}
+                    <div className="module-v2-entry-chips">
+                      {selectedLore.secret ? <span className="chip">{t("play.worldbook.secret")}</span> : null}
+                      {selectedLore.category ? (
+                        <span className="chip">
+                          {t(`play.module.loreCategories.${selectedLore.category}`, {
+                            defaultValue: selectedLore.category,
+                          })}
+                        </span>
+                      ) : null}
+                    </div>
                   </header>
+                  {selectedLoreImage ? (
+                    <div className="module-v2-entry-media">
+                      <ModuleMediaImage
+                        record={selectedLoreImage}
+                        fallbackLabel={selectedLore.title}
+                      />
+                    </div>
+                  ) : null}
                   <p>{selectedLore.content}</p>
+                  {selectedLore.keys && selectedLore.keys.length > 0 ? (
+                    <div className="module-v2-entry-keys">
+                      <span className="module-v2-entry-keys-label">{t("play.module.loreKeys")}</span>
+                      {selectedLore.keys.map((key) => (
+                        <span className="chip" key={key}>
+                          {key}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </article>
               </div>
             </Surface>
@@ -1018,8 +1091,32 @@ function PackDetailViewModern({
                           ) : null}
                           {pregen.occupation ? <span className="chip">{pregen.occupation}</span> : null}
                         </div>
+                        {pregen.aliases && pregen.aliases.length > 0 ? (
+                          <div className="module-v2-cast-aliases">
+                            {pregen.aliases.map((alias) => (
+                              <span className="chip" key={alias}>
+                                {alias}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                         {pregen.background || pregen.concept ? (
                           <p>{pregen.background || pregen.concept}</p>
+                        ) : null}
+                        {pregen.appearance ? (
+                          <p className="module-v2-cast-appearance">{pregen.appearance}</p>
+                        ) : null}
+                        {pregen.skills && Object.keys(pregen.skills).length > 0 ? (
+                          <div className="module-v2-cast-skills">
+                            <span className="module-v2-cast-skills-label">{t("play.module.pregenSkills")}</span>
+                            <div className="module-v2-cast-skill-chips">
+                              {Object.entries(pregen.skills).map(([skill, value]) => (
+                                <span className="chip" key={skill}>
+                                  {skill} {value}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                         ) : null}
                       </div>
                       {isKeeper ? (
@@ -1092,7 +1189,7 @@ function PackDetailViewModern({
                     <details open className="module-v2-item-card" key={`${item.name}-${index}`}>
                       <summary>
                         <strong>{item.name}</strong>
-                        {item.kind || item.slot || item.scope ? (
+                        {item.kind || item.slot || item.scope || item.plot_role || typeof item.quantity === "number" ? (
                           <span className="chip">
                             {[
                               item.scope === "universal"
@@ -1100,8 +1197,14 @@ function PackDetailViewModern({
                                 : item.scope === "module"
                                   ? t("play.module.itemScopeModule")
                                   : "",
-                              item.kind,
+                              item.plot_role
+                                ? t(`play.module.itemPlotRole.${item.plot_role}`, { defaultValue: item.plot_role })
+                                : "",
+                              item.kind && item.kind !== item.plot_role ? item.kind : "",
                               item.slot ? `${t("play.module.itemSlot")}: ${item.slot}` : "",
+                              typeof item.quantity === "number" && item.quantity !== 1
+                                ? `× ${item.quantity}`
+                                : "",
                             ]
                               .filter(Boolean)
                               .join(" · ")}
@@ -1111,6 +1214,14 @@ function PackDetailViewModern({
                       <div className="module-v2-item-body">
                         {item.effect ? <p>{item.effect}</p> : null}
                         {item.description ? <p className="studio-hint">{item.description}</p> : null}
+                        {item.bonus && Object.keys(item.bonus).length > 0 ? (
+                          <p className="studio-hint">
+                            {t("play.module.itemBonus")}:
+                            {Object.entries(item.bonus)
+                              .map(([key, value]) => ` ${key} ${value >= 0 ? "+" : ""}${value}`)
+                              .join(" ·")}
+                          </p>
+                        ) : null}
                         {item.lore ? <p className="studio-hint">{item.lore}</p> : null}
                         {item.original_holder ? (
                           <p className="studio-hint">{t("play.module.itemHolder")}: {item.original_holder}</p>

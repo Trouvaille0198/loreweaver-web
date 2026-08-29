@@ -15,7 +15,13 @@ export default function SceneArt({ image, sceneName }: { image: SceneImageRef; s
   const { t } = useTranslation()
   const [src, setSrc] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  const close = () => {
+    setOpen(false)
+    requestAnimationFrame(() => triggerRef.current?.focus())
+  }
 
   // Blob URL rather than a base64 data URL — the raw bytes otherwise live in the
   // JS heap third-again inflated for as long as the element references them.
@@ -43,7 +49,7 @@ export default function SceneArt({ image, sceneName }: { image: SceneImageRef; s
   useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false)
+      if (event.key === "Escape") close()
     }
     window.addEventListener("keydown", onKeyDown)
     closeButtonRef.current?.focus()
@@ -54,6 +60,7 @@ export default function SceneArt({ image, sceneName }: { image: SceneImageRef; s
     <>
       {src !== null ? (
         <button
+          ref={triggerRef}
           type="button"
           className="scene-art-trigger"
           aria-label={t("session.sceneArtOpen", { name: sceneName })}
@@ -64,7 +71,7 @@ export default function SceneArt({ image, sceneName }: { image: SceneImageRef; s
       ) : null}
       {open && src !== null
         ? createPortal(
-            <div className="image-lightbox-backdrop" role="presentation" onClick={() => setOpen(false)}>
+            <div className="image-lightbox-backdrop" role="presentation" onClick={close}>
               <section
                 className="image-lightbox"
                 role="dialog"
@@ -77,7 +84,7 @@ export default function SceneArt({ image, sceneName }: { image: SceneImageRef; s
                   type="button"
                   className="image-lightbox-close"
                   aria-label={t("session.sceneArtClose")}
-                  onClick={() => setOpen(false)}
+                  onClick={close}
                 >
                   ×
                 </button>

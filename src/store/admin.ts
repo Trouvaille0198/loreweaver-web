@@ -98,8 +98,16 @@ export interface ModuleDetail {
   importing?: boolean
   /** `"text"` for a Markdown source, `"pack"` for an installed .lwpack content pack. */
   sourceKind?: "text" | "pack"
-  /** A pack's worldbook entries (its lore). */
-  worldbookEntries?: { title: string; content: string; secret: boolean; image?: string }[]
+  /** A pack's worldbook entries (its lore). `category` groups NPCs / clues / lore,
+   * `keys` are the trigger keywords, `image` the bound pack asset filename. */
+  worldbookEntries?: {
+    title: string
+    content: string
+    secret: boolean
+    category?: string
+    keys?: string[]
+    image?: string
+  }[]
   /** Recommended character level range ("1-3") for level-based systems. */
   levels?: string
   /** Difficulty tier (easy/standard/hard/deadly) the module was authored for. */
@@ -132,6 +140,8 @@ export interface ModuleDetail {
     lore?: string
     origin?: string
     original_holder?: string
+    /** The item's narrative role in the module (quest / evidence / prop / equipment). */
+    plot_role?: string
     quantity?: number
     bonus?: Record<string, number>
   }[]
@@ -377,6 +387,19 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
           (item): item is { title: string; content: string; secret: boolean } =>
             typeof item === "object" && item !== null && "title" in item && "content" in item,
         )
+        .map((item) => {
+          const record = item as Record<string, unknown>
+          return {
+            title: record.title as string,
+            content: record.content as string,
+            secret: record.secret === true,
+            category: typeof record.category === "string" && record.category ? record.category : undefined,
+            keys: Array.isArray(record.keys)
+              ? record.keys.filter((key): key is string => typeof key === "string" && key.trim().length > 0)
+              : undefined,
+            image: typeof record.image === "string" && record.image ? record.image : undefined,
+          }
+        })
       : undefined,
     mediaPlanError:
       typeof value.media_plan_error === "string" && value.media_plan_error
@@ -463,6 +486,7 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
             lore: typeof item.lore === "string" ? item.lore : undefined,
             origin: typeof item.origin === "string" ? item.origin : undefined,
             original_holder: typeof item.original_holder === "string" ? item.original_holder : undefined,
+            plot_role: typeof item.plot_role === "string" && item.plot_role ? item.plot_role : undefined,
             quantity: typeof item.quantity === "number" ? item.quantity : undefined,
             bonus:
               typeof item.bonus === "object" && item.bonus !== null && !Array.isArray(item.bonus)

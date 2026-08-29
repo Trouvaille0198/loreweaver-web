@@ -11,6 +11,7 @@ import {
 } from "react"
 import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
+import { createPortal } from "react-dom"
 import type { TFunction } from "i18next"
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -24,6 +25,7 @@ import {
 } from "@loreweaver/protocol"
 import { useConnectionStore } from "../../store/connection"
 import { useSessionStore, type LogEntry, type PendingEcho } from "../../store/session"
+import { Button } from "../../components/ui"
 import DiceLine from "./DiceLine"
 import MentionCard from "./MentionCard"
 import { assetReadBytes } from "./panels/assets"
@@ -46,8 +48,8 @@ const OVERSCAN = 15
 const CHAPTER_GAP_MS = 10 * 60_000
 /** Line-height estimate for an unmounted narrative body (matches `.entry-body`). */
 const EST_LINE_PX = 25
-/** Speaker head + body top padding/border of a bubble. */
-const EST_HEAD_PX = 54
+/** Transcript row padding, divider, and compact speaker metadata. */
+const EST_ROW_CHROME_PX = 40
 /** Internal mention schemes — `npc`/`item`/`clue`, each also the mention kind
  * its links bind to (`[name](<scheme>://<id>)`). */
 const MENTION_SCHEME_RE = /^(npc|item|clue):/
@@ -82,12 +84,12 @@ function estimateHeight(entry: LogEntry): number {
   switch (entry.kind) {
     case "narrative": {
       const lines = Math.max(1, Math.ceil(stripControlChars(entry.frame.text).length / 45))
-      return EST_HEAD_PX + lines * EST_LINE_PX + 30
+      return EST_ROW_CHROME_PX + lines * EST_LINE_PX
     }
     case "dice":
       return 44
     case "media":
-      return 170
+      return 420
     case "system":
       return 12 + Math.max(1, Math.ceil(entry.frame.text.length / 60)) * 20
     case "ui":
@@ -157,10 +159,11 @@ function NarrativeEntry({
   // Strip any `[[ ]]` mark the server's annotator failed to consume (its own
   // strip/fallback normally removes them; this is the last-resort display guard).
   const text = stripControlChars(frame.text).replace(/\[\[|\]\]/g, "")
+  const isEmptyDraft = draft && text.trim().length === 0
   const hasDiscardedDraft = Boolean(discardedDraft)
   return (
     <article
-      className={`log-entry speaker-${frame.speaker}${hasDiscardedDraft ? " has-draft" : ""}${isJumpTarget ? " log-jump-target" : ""}`}
+      className={`log-entry speaker-${frame.speaker}${hasDiscardedDraft ? " has-draft" : ""}${isEmptyDraft ? " is-empty-draft" : ""}${isJumpTarget ? " log-jump-target" : ""}`}
       data-seq={seq}
     >
       <header className="entry-speaker">
@@ -182,7 +185,12 @@ function NarrativeEntry({
         ) : null}
       </header>
       <div className="entry-body">
-        {frame.format === "markdown" ? (
+        {isEmptyDraft ? (
+          <span className="narrative-streaming" role="status">
+            <span className="spinner spinner-inline" aria-hidden="true" />
+            {t("log.busy")}
+          </span>
+        ) : frame.format === "markdown" ? (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             // Mention links (`npc:`/`item:`/`clue:`) carry the record id the
@@ -197,7 +205,7 @@ function NarrativeEntry({
         ) : (
           <p className="entry-plain">{text}</p>
         )}
-        {draft ? <span className="stream-cursor" aria-hidden="true" /> : null}
+        {draft && !isEmptyDraft ? <span className="stream-cursor" aria-hidden="true" /> : null}
       </div>
     </article>
   )
@@ -291,6 +299,15 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
   const { t } = useTranslation()
   const [src, setSrc] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const previewButtonRef = useRef<HTMLButtonElement | null>(null)
+  const previewCloseRef = useRef<HTMLButtonElement | null>(null)
+
+  const closePreview = useCallback(() => {
+    setPreviewOpen(false)
+    requestAnimationFrame(() => previewButtonRef.current?.focus())
+  }, [])
 
   // The bytes become a Blob URL rather than a base64 data URL — a data URL
   // keeps a third-again-inflated copy of the image alive in the JS heap for as
@@ -298,6 +315,8 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
   useEffect(() => {
     let live = true
     let url: string | null = null
+    setSrc(null)
+    setFailed(false)
     assetReadBytes(frame.hash)
       .then((bytes) => {
         if (!live) return
@@ -314,26 +333,86 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
       live = false
       if (url !== null) URL.revokeObjectURL(url)
     }
-  }, [frame.hash, frame.mime])
+  }, [attempt, frame.hash, frame.mime])
+
+  useEffect(() => {
+    if (!previewOpen) return
+    requestAnimationFrame(() => previewCloseRef.current?.focus())
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closePreview()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [closePreview, previewOpen])
 
   return (
-    <article className={`log-entry log-media${isJumpTarget ? " log-jump-target" : ""}`} data-seq={seq}>
-      <header className="entry-speaker">{frame.from || t("log.media")}</header>
-      {src !== null ? (
-        <img
-          className="log-media-img"
-          src={src}
-          alt={frame.name ?? ""}
-          title={frame.prompt ? t("log.mediaPromptTitle", { prompt: frame.prompt }) : (frame.name ?? "")}
-        />
-      ) : (
-        <span className="log-media-empty" aria-hidden="true">
-          {failed ? t("log.mediaFailed") : "…"}
-        </span>
-      )}
-      {frame.name ? <div className="log-media-name">{frame.name}</div> : null}
-      {frame.prompt ? <div className="log-media-prompt">{t("log.mediaPrompt")}</div> : null}
-    </article>
+    <>
+      <article className={`log-entry log-media${isJumpTarget ? " log-jump-target" : ""}`} data-seq={seq}>
+        <header className="entry-speaker">{frame.from || t("log.media")}</header>
+        {src !== null ? (
+          <button
+            ref={previewButtonRef}
+            type="button"
+            className="log-media-trigger"
+            aria-label={t("log.mediaOpen", { name: frame.name || t("log.media") })}
+            onClick={() => setPreviewOpen(true)}
+          >
+            <img
+              className="log-media-img"
+              src={src}
+              alt={frame.name ?? ""}
+              title={frame.prompt ? t("log.mediaPromptTitle", { prompt: frame.prompt }) : (frame.name ?? "")}
+            />
+          </button>
+        ) : (
+          <div className={`log-media-empty${failed ? " is-failed" : ""}`} role={failed ? "alert" : "status"}>
+            <span>{failed ? t("log.mediaFailed") : t("log.mediaLoading")}</span>
+            {failed ? (
+              <Button type="button" size="sm" variant="quiet" onClick={() => setAttempt((value) => value + 1)}>
+                {t("log.mediaRetry")}
+              </Button>
+            ) : null}
+          </div>
+        )}
+        <div className="log-media-caption">
+          {frame.name ? <strong className="log-media-name">{frame.name}</strong> : null}
+          {frame.prompt ? <span className="log-media-prompt">{t("log.mediaPrompt")}</span> : null}
+        </div>
+      </article>
+      {previewOpen && src !== null
+        ? createPortal(
+            <div className="image-lightbox-backdrop" role="presentation" onClick={closePreview}>
+              <section
+                className="image-lightbox"
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("log.mediaPreview", { name: frame.name || t("log.media") })}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Button
+                  ref={previewCloseRef}
+                  type="button"
+                  variant="quiet"
+                  size="icon"
+                  className="image-lightbox-close"
+                  aria-label={t("log.mediaClose")}
+                  onClick={closePreview}
+                >
+                  ×
+                </Button>
+                <img className="image-lightbox-image" src={src} alt={frame.name ?? ""} />
+                {frame.name || frame.prompt ? (
+                  <p className="image-lightbox-caption">
+                    {frame.name ? <strong className="image-lightbox-subject">{frame.name}</strong> : null}
+                    {frame.prompt ? <span>{frame.prompt}</span> : null}
+                  </p>
+                ) : null}
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   )
 }
 
@@ -473,6 +552,8 @@ export default function NarrativeLog() {
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
   const [openDraft, setOpenDraft] = useState<string | null>(null)
   const [openMention, setOpenMention] = useState<Mention | null>(null)
+  const mentionTriggerRef = useRef<HTMLAnchorElement | null>(null)
+  const closeMention = useCallback(() => setOpenMention(null), [])
   const scroller = useRef<HTMLDivElement>(null)
   // Streaming turns one reply into dozens of updates; only follow when the
   // reader is already pinned at the bottom, so scrolling up to reread history
@@ -549,6 +630,7 @@ export default function NarrativeLog() {
       if (!entry || entry.kind !== "narrative") continue
       const hit = entry.frame.mentions?.find(isMatch)
       if (hit) {
+        mentionTriggerRef.current = anchor
         setOpenMention(hit)
         return
       }
@@ -866,7 +948,13 @@ export default function NarrativeLog() {
           </div>
         </div>
       ) : null}
-      {openMention ? <MentionCard mention={openMention} onClose={() => setOpenMention(null)} /> : null}
+      {openMention ? (
+        <MentionCard
+          mention={openMention}
+          returnFocusTo={mentionTriggerRef.current}
+          onClose={closeMention}
+        />
+      ) : null}
     </div>
   )
 }

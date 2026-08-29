@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
 import { stripControlChars } from "@loreweaver/protocol"
 import { Button } from "../../components/ui"
@@ -149,24 +150,37 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
   // swipe. On wide screens the drawer chrome is hidden and the desk sits in its
   // own column.
   const [deskOpen, setDeskOpen] = useState(false)
-  const closeDesk = () => setDeskOpen(false)
+  const deskToggleRef = useRef<HTMLButtonElement | null>(null)
+  const deskCloseRef = useRef<HTMLButtonElement | null>(null)
+  const closeDesk = useCallback(() => {
+    setDeskOpen(false)
+    requestAnimationFrame(() => deskToggleRef.current?.focus())
+  }, [])
   const toggleDesk = () => setDeskOpen((open) => !open)
 
   // The chronicle browser (campaign summary + every record) is an on-demand
   // catch-up overlay, opened from the session header — occasional reading, so
   // a modal rather than a permanent desk card.
   const [chronicleOpen, setChronicleOpen] = useState(false)
+  const [headerHost, setHeaderHost] = useState<HTMLElement | null>(null)
+
+  // The room controls belong to the application bar. A local fallback keeps
+  // SessionView independently renderable in focused component environments.
+  useLayoutEffect(() => {
+    setHeaderHost(document.getElementById("app-session-header"))
+  }, [])
 
   // Escape closes the drawer (the ≡ app menu and the header popovers own
   // their own Esc; there is no global Esc that navigates anywhere).
   useEffect(() => {
     if (!deskOpen) return
+    requestAnimationFrame(() => deskCloseRef.current?.focus())
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeDesk()
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [deskOpen])
+  }, [closeDesk, deskOpen])
 
   // Swipe-down-to-close on the drawer (only from the top, so scrolling the
   // panels inside still works).
@@ -184,15 +198,12 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
     swipeStartY.current = null
   }
 
-  return (
-    <div className={`session${deskOpen ? " desk-active" : ""}`}>
-      <PokeBanner />
-      {/* Headless: the only mount of the audio elements, so playback survives
-          without the mixer card. */}
-      <AudioPlayers />
-      <div className="chronicle-pane">
-        <header className="session-head">
-          <AppMenu onNavigate={onNavigate} />
+  const sessionHeader = (
+    <header className={`session-head${headerHost ? " is-global" : ""}`}>
+      <div className="session-overview-main">
+        <AppMenu onNavigate={onNavigate} />
+        <div className="session-identity">
+          <span className="session-eyebrow">{t("play.title.game")}</span>
           {welcome ? (
             <span className="session-room">
               <strong className="session-room-name">{welcome.room}</strong>
@@ -201,30 +212,46 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
           ) : (
             <span className="session-room">…</span>
           )}
-          <StatusPill />
-          <MessageNotifier />
-          {/* The campaign chronicle (summary + every record) — catch-up reading
-              for anyone who just sat down at the table. */}
-          <Button
-            type="button"
-            variant="quiet"
-            size="icon"
-            aria-label={t("session.chronicle.title")}
-            title={t("session.chronicle.title")}
-            onClick={() => setChronicleOpen(true)}
-          >
-            📜
-          </Button>
-          <PanelMenu />
-        </header>
+        </div>
+        <StatusPill />
+      </div>
+      <div className="session-actions" aria-label={t("session.moreAria")}>
+        <MessageNotifier />
+        <Button
+          type="button"
+          variant="quiet"
+          size="icon"
+          aria-label={t("session.chronicle.title")}
+          title={t("session.chronicle.title")}
+          onClick={() => setChronicleOpen(true)}
+        >
+          📜
+        </Button>
+        <PanelMenu />
+      </div>
+    </header>
+  )
+
+  return (
+    <div className={`session${deskOpen ? " desk-active" : ""}`}>
+      <PokeBanner />
+      {/* Headless: the only mount of the audio elements, so playback survives
+          without the mixer card. */}
+      <AudioPlayers />
+      {headerHost ? createPortal(sessionHeader, headerHost) : null}
+      <div className="chronicle-pane">
+        {headerHost ? null : sessionHeader}
         <OnboardingBanner onNavigate={onNavigate} />
-        <SceneLine />
-        <VitalsStrip />
+        <div className="story-context">
+          <SceneLine />
+          <VitalsStrip />
+        </div>
         <PanelNotice />
         <TurnStatus />
         <NarrativeLog />
         <div className="input-dock">
           <Button
+            ref={deskToggleRef}
             type="button"
             variant="quiet"
             className="desk-toggle"
@@ -244,12 +271,24 @@ export default function SessionView({ onNavigate }: { onNavigate: (screen: PlayS
         className={`desk-pane${deskOpen ? " desk-open" : ""}`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
+        aria-label={t("session.deskTitle")}
       >
+        <header className="desk-rail-head">
+          <span className="desk-rail-eyebrow">{t("play.title.game")}</span>
+          <h2 className="desk-rail-title">{t("session.deskTitle")}</h2>
+        </header>
         <div className="desk-drawer-head">
           <span className="desk-drawer-grip" aria-hidden="true" />
           <div className="desk-drawer-title-row">
             <span className="desk-drawer-title">{t("session.deskTitle")}</span>
-            <Button type="button" size="sm" variant="quiet" className="desk-close" onClick={closeDesk}>
+            <Button
+              ref={deskCloseRef}
+              type="button"
+              size="sm"
+              variant="quiet"
+              className="desk-close"
+              onClick={closeDesk}
+            >
               {t("session.deskClose")}
             </Button>
           </div>
