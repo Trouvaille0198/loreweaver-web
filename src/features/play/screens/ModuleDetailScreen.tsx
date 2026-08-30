@@ -157,11 +157,21 @@ function ModuleMediaImage({
           aria-label={t("play.module.mediaOpen", { name: displayName })}
           title={record.name}
           onClick={() => setPreviewOpen(true)}
+          onContextMenu={(event) => {
+            event.stopPropagation()
+            openMenu(event)
+          }}
         >
           <img src={src} alt={displayName} />
         </button>
       ) : null}
-      <figcaption className="module-media-caption">
+      <figcaption
+        className="module-media-caption"
+        onContextMenu={(event) => {
+          event.stopPropagation()
+          openMenu(event)
+        }}
+      >
         {subject || fallbackLabel ? <strong className="module-media-subject">{displayName}</strong> : null}
         <span className="module-media-filename">{record.name}</span>
       </figcaption>
@@ -230,6 +240,71 @@ function ModuleMediaImage({
           )
         : null}
     </figure>
+  )
+}
+
+/** The pregen cards keep the editable name beside the portrait. Keep that name a
+ * first-class regenerate target too, so the action is available without having
+ * to aim at the image pixels. */
+function ModuleMediaName({
+  name,
+  onRegenerate,
+}: {
+  name: string
+  onRegenerate?: () => void
+}) {
+  const { t } = useTranslation()
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const openMenu = (event: ReactMouseEvent) => {
+    if (!onRegenerate) return
+    event.preventDefault()
+    event.stopPropagation()
+    setMenu({ x: Math.min(event.clientX, window.innerWidth - 170), y: event.clientY })
+  }
+
+  useEffect(() => {
+    if (!menu) return
+    const onDown = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest(".module-media-menu")) return
+      setMenu(null)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenu(null)
+    }
+    window.addEventListener("mousedown", onDown)
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("mousedown", onDown)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [menu])
+
+  return (
+    <>
+      <strong onContextMenu={openMenu}>{name}</strong>
+      {menu && onRegenerate
+        ? createPortal(
+            <div
+              className="module-media-menu"
+              role="menu"
+              style={{ left: menu.x, top: menu.y }}
+              onContextMenu={(event) => event.preventDefault()}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenu(null)
+                  onRegenerate()
+                }}
+              >
+                {t("play.module.mediaJobRegenerate")}
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   )
 }
 
@@ -662,6 +737,8 @@ function PackDetailViewModern({
     ? detail.media.find((record) => record.name === selectedLore.image)
     : undefined
   const heroCover = covers[0]
+  const heroRegen = isKeeper && heroCover ? jobFor(heroCover) : undefined
+  const selectedLoreRegen = isKeeper && selectedLoreImage ? jobFor(selectedLoreImage) : undefined
   const resourceCount = (detail.rulepacks?.length ?? 0) + (detail.skills?.length ?? 0)
   const sectionJumps: Array<{ label: string; selector: string }> = []
 
@@ -699,7 +776,11 @@ function PackDetailViewModern({
       <Surface className="module-v2-hero" tone="accent" labelledBy="module-v2-title">
         <div className="module-v2-hero-media">
           {heroCover ? (
-            <ModuleMediaImage record={heroCover} fallbackLabel={detail.title || detail.name} />
+            <ModuleMediaImage
+              record={heroCover}
+              fallbackLabel={detail.title || detail.name}
+              onRegenerate={heroRegen ? () => retryJob(heroRegen.id) : undefined}
+            />
           ) : (
             <div className="module-v2-cover-empty" aria-label={t("play.module.detailV2NoCover")}>
               <span>{t("play.module.kindPack")}</span>
@@ -1029,6 +1110,7 @@ function PackDetailViewModern({
                       <ModuleMediaImage
                         record={selectedLoreImage}
                         fallbackLabel={selectedLore.title}
+                        onRegenerate={selectedLoreRegen ? () => retryJob(selectedLoreRegen.id) : undefined}
                       />
                     </div>
                   ) : null}
@@ -1080,7 +1162,7 @@ function PackDetailViewModern({
                         </div>
                       ) : null}
                       <div className="module-v2-cast-copy">
-                        <strong>{pregen.name}</strong>
+                        <ModuleMediaName name={pregen.name} onRegenerate={regen ? () => retryJob(regen.id) : undefined} />
                         <div className="module-v2-cast-tags">
                           {pregen.characterClass ? (
                             <span className="chip">
@@ -1292,8 +1374,24 @@ function PackDetailView({
   const failedJobs = mediaJobs.filter((job) => job.status === "failed")
   /** The finished job behind a gallery plate (matched by asset filename), so its
    * "regenerate" button can re-queue that job with the same prompt. */
-  const jobFor = (record: ModuleMediaRecord): ModuleMediaJob | undefined =>
-    mediaJobs.find((job) => job.status === "done" && job.asset === record.name)
+  const jobFor = (record: ModuleMediaRecord): ModuleMediaJob | undefined => {
+    // Asset names are the strongest identity, but older manifests and re-rendered packs can
+    // expose a fresh filename while the persisted job still carries the same subject. Fall
+    // back to kind + subject so the per-image regenerate menu is not lost in that case.
+    for (let index = mediaJobs.length - 1; index >= 0; index -= 1) {
+      const job = mediaJobs[index]
+      if (job.status === "done" && job.asset === record.name) return job
+    }
+    const kind = record.kind?.trim().toLowerCase()
+    const subject = record.subject?.trim().toLowerCase()
+    if (!kind || !subject) return undefined
+    for (let index = mediaJobs.length - 1; index >= 0; index -= 1) {
+      const job = mediaJobs[index]
+      if (job.status !== "done") continue
+      if (job.kind.trim().toLowerCase() === kind && job.subject.trim().toLowerCase() === subject) return job
+    }
+    return undefined
+  }
   const retryJob = (id: string) => moduleMediaRequest(detail.name, { retry: [id] })
   const retryAll = () => {
     const ids = failedJobs.map((job) => job.id)
@@ -1729,7 +1827,7 @@ function PackDetailView({
                       />
                     ) : null}
                     <div className="module-source-copy">
-                      <strong>{pregen.name}</strong>
+                      <ModuleMediaName name={pregen.name} onRegenerate={regen ? () => retryJob(regen.id) : undefined} />
                       {pregen.characterClass ? (
                         <span className="chip">
                           {t(`play.character.class.${pregen.characterClass}`, { defaultValue: pregen.characterClass })}

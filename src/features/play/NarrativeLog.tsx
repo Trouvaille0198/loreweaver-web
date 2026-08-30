@@ -386,7 +386,6 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
         )}
         <div className="log-media-caption">
           {frame.name ? <strong className="log-media-name">{frame.name}</strong> : null}
-          {frame.prompt ? <span className="log-media-prompt">{t("log.mediaPrompt")}</span> : null}
         </div>
       </article>
       {previewOpen && src !== null
@@ -414,7 +413,12 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
                 {frame.name || frame.prompt ? (
                   <p className="image-lightbox-caption">
                     {frame.name ? <strong className="image-lightbox-subject">{frame.name}</strong> : null}
-                    {frame.prompt ? <span>{frame.prompt}</span> : null}
+                    {frame.prompt ? (
+                      <span className="image-lightbox-prompt">
+                        <span className="image-lightbox-prompt-label">{t("log.mediaPromptLabel")}</span>
+                        <span>{frame.prompt}</span>
+                      </span>
+                    ) : null}
                   </p>
                 ) : null}
               </section>

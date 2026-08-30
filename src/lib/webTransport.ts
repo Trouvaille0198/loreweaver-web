@@ -12,6 +12,7 @@ import {
   WsClient,
   isServerFrame,
   type AdminLLMExportFrame,
+  type AdminNpcRecordFrame,
   type AdminPresetExportAllFrame,
   type AdminPresetsFrame,
   type AdminRoomConfigFrame,
@@ -43,6 +44,7 @@ type AdditiveServerFrame =
   | AdminPresetsFrame
   | AdminPresetExportAllFrame
   | AdminRoomSettingsFrame
+  | AdminNpcRecordFrame
   | ChronicleRecordsFrame
   | NarrativeDraftFrame
 
@@ -111,6 +113,16 @@ export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFram
       typeof frame.room === "string" &&
       (frame.ai_length === "normal" || frame.ai_length === "concise" || frame.ai_length === "brief")
     )
+  }
+  if (frame.type === "admin_npc_record") {
+    if (typeof frame.room !== "string" || typeof frame.npc !== "object" || frame.npc === null) {
+      return false
+    }
+    // Identity is the load-bearing part: the record rides as a pass-through bag
+    // (unknown keys are intentional — the keeper UI renders what it knows), so
+    // only the fields the mention-card section reads are validated here.
+    const npc = frame.npc as Record<string, unknown>
+    return typeof npc.id === "string" && typeof npc.name === "string"
   }
   if (frame.type !== "admin_room_config") {
     if (frame.type === "admin_presets") {

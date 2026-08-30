@@ -202,7 +202,7 @@
     "mediaFailed": "Image could not be loaded.",
     "mediaLoading": "Loading image…",
     "mediaRetry": "Try again",
-    "mediaPrompt": "Open the image to read its prompt",
+    "mediaPromptLabel": "Generation prompt",
     "mediaPromptTitle": "Prompt: {{prompt}}",
     "mediaOpen": "Enlarge {{name}}",
     "mediaPreview": "Image preview for {{name}}",
@@ -685,7 +685,12 @@
       "fetch": "Fetch only (.pack fetch)",
       "hint": "The server installs it, enables it for this room, and answers in the game log — read its notice before playing.",
       "sent": "Sent — the result lands as a system line in the game log.",
-      "fetchSent": "Sent — it lands on the server only; load the module in the room that wants it."
+      "fetchSent": "Sent — it lands on the server only; load the module in the room that wants it.",
+      "uploadLabel": "Upload a .lwpack",
+      "uploadHint": "Pick a .lwpack from this computer; it uploads to the server and installs through the same `.pack install` flow.",
+      "upload": "Choose file to install",
+      "uploading": "Uploading…",
+      "uploadSent": "Uploaded and install submitted — the receipt lands in the game log."
     },
     "rules": {
       "builtIn": "built-in",
@@ -1135,9 +1140,24 @@
         "clue": "Clue record"
       },
       "memories": "Public memory",
+      "publicDescription": "Public profile",
+      "aliases": "Also known as",
+      "pronouns": "Pronouns",
+      "location": "Location",
+      "status": "Status",
       "effect": "Effect",
       "foundTurn": "Found on turn {{turn}}",
-      "relationships": "Relationships"
+      "relationships": "Relationships",
+      "keeper": {
+        "badge": "Keeper's eyes only",
+        "hint": "Only you can see this section",
+        "secretAgenda": "Secrets & agenda",
+        "knowledge": "What they know",
+        "persona": "Full persona",
+        "style": "Speech style",
+        "disposition": "Attitude toward the party",
+        "loading": "Fetching the record…"
+      }
     }
   },
   "studio": {

@@ -321,6 +321,48 @@ declare module "@loreweaver/protocol" {
     type: "admin_get_room_settings"
   }
 
+  // --- v2.10 wire: keeper-gated full NPC projection for the mention card's
+  // keeper-only section. The broadcast mention card stays the PLAYER-visible
+  // subset; `admin_npc_detail` is the per-requester channel a keeper's client
+  // reads the rest through (net/admin.py `_npc_detail_frame`).
+
+  /** Client → server: one NPC's full keeper projection, by document id (the
+   * same id the mention link carries). Read from the admin connection's OWN
+   * room; a player-role connection is refused at the keeper gate. */
+  interface AdminNpcDetailFrame {
+    type: "admin_npc_detail"
+    npc: string
+  }
+
+  /** Server → client: the full keeper projection of one NPC record — persona,
+   * speech style, private knowledge ledger, secret agenda, disposition —
+   * field-complete for the known shape; unknown keys pass through. */
+  interface AdminNpcRecordFrame {
+    type: "admin_npc_record"
+    room: string
+    npc: AdminNpcRecordData
+  }
+
+  interface AdminNpcRecordData {
+    id: string
+    name: string
+    persona?: string
+    style?: string
+    public_description?: string
+    secret_agenda?: string
+    knowledge?: string[]
+    public_memory?: string[]
+    disposition?: string
+    location?: string
+    status?: string
+    role?: string
+    major?: boolean
+    aliases?: string[]
+    pronouns?: string
+    avatar?: string
+    [key: string]: unknown
+  }
+
   /** Client → server: write one room setting (only ai_length today). */
   interface AdminSetRoomSettingsFrame {
     type: "admin_set_room_settings"
@@ -537,6 +579,8 @@ declare module "@loreweaver/protocol" {
     status?: string
     avatar?: string // media-blob content hash
     public_memory?: string[]
+    aliases?: string[]
+    pronouns?: string
     kind?: string // item only: category label (武器, tool, …)
     slot?: string
     quantity?: number

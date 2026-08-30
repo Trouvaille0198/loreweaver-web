@@ -14,6 +14,7 @@ import type {
   AdminKeyPurpose,
   AdminLLMConfigDocument,
   AdminLLMExportFrame,
+  AdminNpcRecordFrame,
   AdminPresetExportAllFrame,
   AdminPresetInfo,
   AdminPresetsFrame,
@@ -221,6 +222,7 @@ export interface ModuleOperation {
     | "module_pregen_update"
     | "module_pack_export"
     | "module_bundle_upload"
+    | "module_pack_upload"
     | "module_import"
     | "module_delete"
     | "module_media_generate"
@@ -240,6 +242,9 @@ export interface ModuleOperation {
   downloadUrl?: string
   fileName?: string
   overwritten?: boolean
+  /** module_pack_upload: the server path the archive landed on — the ref the following
+   * `.pack install` consumes. */
+  path?: string
 }
 
 function parseModuleDetail(frame: AdminGeneratedFrame): Record<string, unknown> {
@@ -646,6 +651,11 @@ interface AdminState {
    * `ai_length` is "normal" by default; "concise"/"brief" fold a brevity directive into
    * every AI-KP reply prompt. */
   roomSettings: AdminRoomSettingsFrame | null
+  /** The keeper-only NPC detail behind the mention card's hidden section: the full
+   * record for the id last REQUESTED (`npcId` stays set while a reply is pending so
+   * a stale record never renders; the card also checks `record.id` itself). Cleared
+   * when the card closes. */
+  npcDetail: { npcId: string | null; record: AdminNpcRecordFrame["npc"] | null; error: string | null }
   /** The last LLM-config export document (null until one arrives). Carries
    * PLAINTEXT keys; the Model screen downloads it as a JSON file. */
   llmExport: AdminLLMConfigDocument | null
@@ -784,6 +794,9 @@ interface AdminState {
   overwriteModulePack: (name: string) => void
   exportModulePack: (name: string) => void
   uploadModuleBundle: (name: string, archive: string) => void
+  /** Store an uploaded .lwpack on the server (`data_dir/modules/`); the reply's `path`
+   * feeds a following `.pack install`, which owns verification and room switching. */
+  uploadModulePack: (name: string, archive: string) => void
   /** Delete an installed module source ("pack" deletes the installed content pack by id;
    * "text" deletes the flat Markdown source file). Keeper-gated server-side. */
   deleteModule: (name: string, sourceKind: "pack" | "text") => void
@@ -794,6 +807,11 @@ interface AdminState {
   /** Queue ONE roster character's portrait through the same async illustration lane the
    * module detail page uses (module-imported and `.pc gen`-born characters alike). */
   pregenAvatarRequest: (name: string) => void
+  /** Fetch one NPC's full keeper projection (protocol 2.10) for the mention
+   * card's hidden section. The reply correlates back through `npcDetail.npcId`. */
+  npcDetailRequest: (npcId: string) => void
+  /** Drop the pending/loaded NPC detail — the card that asked for it closed. */
+  npcDetailClear: () => void
   listWorldbooks: () => void
   getWorldbookDetail: (name: string) => void
   uploadWorldbook: (name: string, content: string) => void
@@ -891,6 +909,7 @@ const EMPTY = {
   models: [],
   roomConfig: null,
   roomSettings: null,
+  npcDetail: { npcId: null, record: null, error: null },
   llmExport: null,
   keys: [],
   minted: null,
@@ -942,6 +961,13 @@ export const useAdminStore = create<AdminState>((set) => ({
         return true
       case "admin_room_config":
         set({ roomConfig: frame as AdminRoomConfigFrame, busy: false, lastError: null })
+        return true
+      case "admin_npc_record":
+        set({
+          npcDetail: { npcId: frame.npc.id, record: frame.npc, error: null },
+          busy: false,
+          lastError: null,
+        })
         return true
       case "admin_room_settings":
         set({ roomSettings: frame as AdminRoomSettingsFrame, busy: false, lastError: null })
@@ -1042,6 +1068,7 @@ export const useAdminStore = create<AdminState>((set) => ({
                 downloadUrl: typeof detail.download_url === "string" ? detail.download_url : undefined,
                 fileName: typeof detail.filename === "string" ? detail.filename : undefined,
                 overwritten: typeof detail.overwritten === "boolean" ? detail.overwritten : undefined,
+                path: typeof detail.path === "string" ? detail.path : undefined,
               },
               ...(kind === "module_import" ? { moduleImporting: null } : {}),
               busy: false,
@@ -1095,9 +1122,25 @@ export const useAdminStore = create<AdminState>((set) => ({
       case "admin_update":
         set({ serverUpdate: frame, busy: false })
         return true
-      case "admin_error":
+      case "admin_error": {
+        // An NPC-detail failure echoes the requested id (net/admin.py
+        // `_npc_detail_frame`), so a pending request can fail precisely without
+        // swallowing some OTHER admin op's error. No echo → the generic path.
+        const npcEcho = (frame as Record<string, unknown>).npc
+        if (typeof npcEcho === "string") {
+          const pending = useAdminStore.getState().npcDetail
+          if (pending.npcId === npcEcho && pending.record === null) {
+            set({
+              npcDetail: { ...pending, error: frame.message ?? frame.code },
+              busy: false,
+              lastError: frame.message ?? frame.code,
+            })
+            return true
+          }
+        }
         set({ lastError: frame.message ?? frame.code, busy: false, moduleImporting: null })
         return true
+      }
       default:
         return false
     }
@@ -1332,6 +1375,7 @@ export const useAdminStore = create<AdminState>((set) => ({
     moduleAction("module_pack_export", { name, overwrite: false }, set)
   },
   uploadModuleBundle: (name, archive) => moduleAction("module_bundle_upload", { name, archive }, set),
+  uploadModulePack: (name, archive) => moduleAction("module_pack_upload", { name, archive }, set),
   deleteModule: (name, sourceKind) => moduleAction("module_delete", { name, source_kind: sourceKind }, set),
   importModule: (name) => {
     set({ busy: true, lastError: null, moduleImporting: name })
@@ -1366,6 +1410,13 @@ export const useAdminStore = create<AdminState>((set) => ({
       { name, locale: i18n.resolvedLanguage === "zh" ? "zh" : "en" },
       set,
     )
+  },
+  npcDetailRequest: (npcId) => {
+    set({ npcDetail: { npcId, record: null, error: null } })
+    send({ type: "admin_npc_detail", npc: npcId } as unknown as ClientFrame, set)
+  },
+  npcDetailClear: () => {
+    set({ npcDetail: { npcId: null, record: null, error: null } })
   },
   exportRoom: (room, path) => send({ type: "admin_export_room", room, ...(path ? { path } : {}) }, set),
   importRoom: (path) => send({ type: "admin_import_room", path }, set),

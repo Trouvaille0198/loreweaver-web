@@ -369,6 +369,7 @@ export default function ModuleScreen({
   const getModuleDetail = useAdminStore((s) => s.getModuleDetail)
   const uploadModule = useAdminStore((s) => s.uploadModule)
   const uploadModuleBundle = useAdminStore((s) => s.uploadModuleBundle)
+  const uploadModulePack = useAdminStore((s) => s.uploadModulePack)
   const importModule = useAdminStore((s) => s.importModule)
   const deleteModule = useAdminStore((s) => s.deleteModule)
   const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
@@ -391,8 +392,12 @@ export default function ModuleScreen({
   const [pathStatus, setPathStatus] = useState<SendStatus>("idle")
   const [packStatus, setPackStatus] = useState<SendStatus>("idle")
   const [packFetchStatus, setPackFetchStatus] = useState<SendStatus>("idle")
+  // The upload-then-`.pack install` lane: uploading marks progress, the install marks done.
+  const [packUploadBusy, setPackUploadBusy] = useState(false)
+  const [packUploadStatus, setPackUploadStatus] = useState<SendStatus>("idle")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const bundleInputRef = useRef<HTMLInputElement | null>(null)
+  const packFileInputRef = useRef<HTMLInputElement | null>(null)
   const appliedPromptRequestRef = useRef<string | null>(null)
   // Remember the last AI-creation selections (media / companion / rule strategy / pack mode) so
   // a keeper's forge defaults survive navigation and reloads.
@@ -449,27 +454,6 @@ export default function ModuleScreen({
     if (selectedName) getModuleDetail(selectedName)
   }, [getModuleDetail, selectedName])
 
-  useEffect(() => {
-    if (!operation) return
-    listModules()
-    if (!operation.ok) return
-    if (operation.kind === "module_delete") {
-      setSelectedName("")
-      return
-    }
-    if (operation.name) {
-      setSelectedName(operation.name)
-      getModuleDetail(operation.name)
-      if (operation.kind === "module_bundle_upload") importModule(operation.name)
-    }
-  }, [getModuleDetail, importModule, listModules, operation])
-
-  useEffect(() => {
-    if (!generated) return
-    const kind = String(generated.kind)
-    if (kind === "module" || kind === "pack") listModules()
-  }, [generated, listModules])
-
   const send = async (line: string, mark: (status: SendStatus) => void, clear: () => void): Promise<void> => {
     mark("idle")
     try {
@@ -481,6 +465,38 @@ export default function ModuleScreen({
     mark("sent")
     clear()
   }
+
+  useEffect(() => {
+    if (!operation) return
+    listModules()
+    setPackUploadBusy(false)
+    if (!operation.ok) return
+    if (operation.kind === "module_delete") {
+      setSelectedName("")
+      return
+    }
+    // An uploaded .lwpack is stored server-side, then installed through the SAME
+    // `.pack install <path>` command as the server-path lane — verification, room
+    // switching and the trust card stay one code path. Nothing else to fetch here:
+    // the reply's name is an archive filename, not a module source id.
+    if (operation.kind === "module_pack_upload") {
+      if (operation.path) void send(`.pack install ${operation.path}`, setPackUploadStatus, () => {})
+      return
+    }
+    if (operation.name) {
+      setSelectedName(operation.name)
+      getModuleDetail(operation.name)
+      if (operation.kind === "module_bundle_upload") importModule(operation.name)
+    }
+    // `send` is intentionally absent: it is a fresh function every render, and the
+    // install command must fire once per operation, not once per render.
+  }, [getModuleDetail, importModule, listModules, operation])
+
+  useEffect(() => {
+    if (!generated) return
+    const kind = String(generated.kind)
+    if (kind === "module" || kind === "pack") listModules()
+  }, [generated, listModules])
 
   const install = () => {
     const value = path.trim()
@@ -513,6 +529,19 @@ export default function ModuleScreen({
       binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000))
     }
     uploadModuleBundle(file.name, btoa(binary))
+  }
+
+  // The pack lane mirrors chooseBundle's chunked base64 read, then the store's
+  // module_pack_upload reply chains into `.pack install` (see the operation effect).
+  const choosePackFile = async (file: File) => {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    let binary = ""
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000))
+    }
+    setPackUploadBusy(true)
+    setPackUploadStatus("idle")
+    uploadModulePack(file.name, btoa(binary))
   }
 
   const removeSelected = () => {
@@ -829,6 +858,42 @@ export default function ModuleScreen({
                     <p className="studio-hint">{t("play.pack.fetchSent")}</p>
                   ) : null}
                   {packFetchStatus === "failed" ? (
+                    <Notice tone="danger" role="alert">
+                      {t("play.sendFailed")}
+                    </Notice>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {isKeeper ? (
+                <div className="module-rail-group">
+                  <Field label={t("play.pack.uploadLabel")} hint={t("play.pack.uploadHint")}>
+                    {() => (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        loading={packUploadBusy}
+                        onClick={() => packFileInputRef.current?.click()}
+                      >
+                        {packUploadBusy ? t("play.pack.uploading") : t("play.pack.upload")}
+                      </Button>
+                    )}
+                  </Field>
+                  <input
+                    ref={packFileInputRef}
+                    type="file"
+                    accept=".lwpack,application/zip,application/octet-stream"
+                    hidden
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      event.target.value = ""
+                      if (file) void choosePackFile(file)
+                    }}
+                  />
+                  {packUploadStatus === "sent" ? (
+                    <p className="studio-hint">{t("play.pack.uploadSent")}</p>
+                  ) : null}
+                  {packUploadStatus === "failed" ? (
                     <Notice tone="danger" role="alert">
                       {t("play.sendFailed")}
                     </Notice>

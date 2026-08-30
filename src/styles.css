@@ -984,10 +984,136 @@ body {
   overflow-wrap: anywhere;
 }
 
-.log-media-prompt {
-  flex: 0 0 auto;
+/* Image preview dialog. Keep the image and its generation prompt inside one
+   bounded surface; the prompt gets its own scroll boundary instead of growing
+   the viewport or forcing horizontal overflow. */
+.image-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: clamp(var(--space-3), 4vw, var(--space-8));
+  background: color-mix(in srgb, var(--surface-canvas) 18%, black 82%);
+  backdrop-filter: blur(3px);
+}
+
+.image-lightbox {
+  position: relative;
+  display: flex;
+  width: min(1120px, 100%);
+  height: min(82dvh, 820px);
+  max-height: min(92dvh, 960px);
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-1);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.image-lightbox-close {
+  position: absolute;
+  z-index: 1;
+  top: var(--space-3);
+  right: var(--space-3);
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.image-lightbox-image {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  max-height: min(70dvh, 760px);
+  object-fit: contain;
+  background: var(--surface-canvas);
+}
+
+.image-lightbox-caption {
+  display: flex;
+  min-width: 0;
+  max-height: min(24dvh, 240px);
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line-subtle);
+  background: var(--surface-inset);
+  color: var(--text-secondary);
+  font: 13px/1.6 var(--font-ui);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.image-lightbox-subject {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+@media (min-width: 761px) {
+  .image-lightbox {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .image-lightbox-image {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+  }
+
+  .image-lightbox-caption {
+    height: 100%;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--line-subtle);
+    padding: var(--space-6) var(--space-5);
+  }
+}
+
+.image-lightbox-prompt {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.image-lightbox-prompt-label {
   color: var(--text-tertiary);
-  font: 400 11px/1.4 var(--font-ui);
+  font: 650 11px/1.3 var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .image-lightbox-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .image-lightbox {
+    width: 100%;
+    height: auto;
+    max-height: 94dvh;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .image-lightbox-image {
+    max-height: 62dvh;
+  }
+
+  .image-lightbox-caption {
+    max-height: 32dvh;
+    padding: var(--space-4);
+  }
 }
 
 /* ---- Chronicle table of contents ---- */
@@ -3285,6 +3411,47 @@ body {
   min-width: 0;
 }
 
+.npc-card-identity-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.npc-card-aliases,
+.npc-card-fact {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text-secondary);
+  font: 12px/1.45 var(--font-ui);
+}
+
+.npc-card-field-label {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.npc-card-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.npc-card-tag {
+  padding: 2px var(--space-2);
+  color: var(--text-secondary);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+}
+
 .npc-card-name {
   color: var(--text-primary);
   font: 650 clamp(24px, 4vw, 34px)/1.15 var(--font-story);
@@ -3303,6 +3470,13 @@ body {
   flex-direction: column;
   gap: var(--space-5);
   padding: var(--space-6);
+}
+
+.npc-card-aside {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
 .npc-card-description,
@@ -3372,7 +3546,94 @@ body {
   font: 11px/1.3 var(--font-ui);
 }
 
-@media (max-width: 600px) {
+/* Keeper-only section (protocol 2.10): sits below the public body behind a
+   hard visual boundary — this content is for the keeper's eyes, and it must
+   read as a different register at a glance, never blend with the public card. */
+.npc-card-keeper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border: 1px dashed color-mix(in srgb, var(--accent, #8b5cf6) 55%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 7%, transparent);
+}
+
+.npc-card-keeper-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.npc-card-keeper-badge {
+  padding: 3px 10px;
+  color: var(--accent, #8b5cf6);
+  border: 1px solid color-mix(in srgb, var(--accent, #8b5cf6) 55%, transparent);
+  border-radius: var(--radius-pill);
+  font: 700 11px/1.4 var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.npc-card-keeper-hint {
+  color: var(--text-secondary);
+  font: 12px/1.4 var(--font-ui);
+}
+
+.npc-card-keeper-secret {
+  border-color: color-mix(in srgb, #e11d48 40%, transparent);
+  background: color-mix(in srgb, #e11d48 7%, transparent);
+}
+
+.npc-card-keeper-secret h4 {
+  color: #e11d48;
+}
+
+.npc-card-keeper-knowledge ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.npc-card-keeper-knowledge li {
+  position: relative;
+  padding-inline-start: var(--space-4);
+  color: var(--text-primary);
+  font: 14px/1.6 var(--font-ui);
+}
+
+.npc-card-keeper-knowledge li::before {
+  content: "▸";
+  position: absolute;
+  inset-inline-start: 0;
+  color: var(--text-secondary);
+}
+
+.npc-card-keeper-pending {
+  color: var(--text-secondary);
+  font: 12px/1.4 var(--font-ui);
+  text-align: center;
+}
+
+@media (min-width: 761px) {
+  .npc-card {
+    width: min(920px, 100%);
+  }
+
+  .npc-card-body-npc-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.85fr);
+    align-items: start;
+    gap: var(--space-6);
+  }
+}
+
+@media (max-width: 760px) {
   .npc-card-overlay {
     place-items: end center;
     padding: 0;
@@ -3394,6 +3655,11 @@ body {
   .npc-card-hero,
   .npc-card-body {
     padding: var(--space-4);
+  }
+
+  .npc-card-body-npc-split {
+    display: flex;
+    flex-direction: column;
   }
 
   .npc-card-avatar {
