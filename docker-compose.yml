@@ -48,6 +48,9 @@ services:
       # TUI locale of the server (en/zh).
       - LANG=C.UTF-8
       - TRPG_LOCALE=zh
+      # Per-room media (image) storage quota in bytes; raise past the 512 MB
+      # default when a table re-imports art-heavy modules. Overridable via .env.
+      - TRPG_TUI__MEDIA_ROOM_QUOTA_BYTES=${TRPG_TUI__MEDIA_ROOM_QUOTA_BYTES:-1073741824}
       # Example provider wiring — uncomment and fill in:
       # - TRPG_LLM__PROVIDER=deepseek
       # - TRPG_LLM__API_KEY=sk-…
