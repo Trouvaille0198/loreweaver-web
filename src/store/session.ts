@@ -5,6 +5,7 @@ import type {
   DiceFrame,
   ErrorFrame,
   MediaFrame,
+  MediaHiddenFrame,
   NarrativeDeltaFrame,
   NarrativeDraftFrame,
   NarrativeFrame,
@@ -26,6 +27,26 @@ export const MAX_STREAM_TEXT = 20_000
 export const TURN_BUSY_TIMEOUT_MS = 120_000
 /** How long an un-echoed local line waits before it is shown as undelivered. */
 export const PENDING_ECHO_TIMEOUT_MS = 120_000
+/** localStorage key for this client's hidden media lines (any seat's local hide). */
+const HIDDEN_MEDIA_KEY = "loreweaver-web.hidden-media-ids"
+
+function loadHiddenMedia(): string[] {
+  try {
+    const raw = localStorage.getItem(HIDDEN_MEDIA_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : []
+  } catch {
+    return []
+  }
+}
+
+function persistHiddenMedia(ids: string[]): void {
+  try {
+    localStorage.setItem(HIDDEN_MEDIA_KEY, JSON.stringify(ids))
+  } catch {
+    // Storage may be unavailable (private mode); hiding still works for the tab.
+  }
+}
 
 /**
  * A line this client sent and has not seen come back yet.
@@ -162,10 +183,13 @@ interface SessionState {
   } | null
   /** The most recent `.poke` (any target); the UI decides if it is for this seat. */
   lastPoke: PokeInfo | null
+  /** Media lines this client hides — a local hide by any seat, or a keeper
+   * retirement broadcast (`media_hidden`). Rendered out of the log. */
+  hiddenMediaIds: string[]
   /** Feed one validated server frame into the session (`narrative_draft` and
    * the player-open `chronicle_records` ride alongside the published
    * package's `ServerFrame`). */
-  ingest: (frame: ServerFrame | NarrativeDraftFrame | ChronicleRecordsFrame, now?: number) => void
+  ingest: (frame: ServerFrame | NarrativeDraftFrame | ChronicleRecordsFrame | MediaHiddenFrame, now?: number) => void
   /** Show a line this client just sent, until the table reflects it back.
    * Returns the entry's seq, so the caller can fail it if the send throws. */
   echoLocalInput: (text: string, speaker: string, now?: number) => number
@@ -179,6 +203,12 @@ interface SessionState {
   requestChronicle: () => void
   /** Clear a stale busy indicator once the safety timeout has elapsed. */
   expireTurnSafety: (now: number) => void
+  /** Hide one media line for this client only (any seat). */
+  hideMediaLocal: (id: string) => void
+  /** Keeper: retire one handout from the room's broadcast history for everyone. */
+  hideMediaForAll: (id: string) => void
+  /** Keeper: re-render one generated handout with its original kind+prompt. */
+  regenerateMedia: (id: string, kind: string, prompt: string) => void
   clear: () => void
 }
 
@@ -273,7 +303,9 @@ function ingestDelta(entries: LogEntry[], frame: NarrativeDeltaFrame, at: number
  */
 /** A media frame lands in the chronicle as its own image line — the generated
  * handout (`.image …`) shows up in the message stream, not only the deck. */
-function ingestMedia(entries: LogEntry[], frame: MediaFrame, at: number): LogEntry[] {
+function ingestMedia(entries: LogEntry[], frame: MediaFrame, at: number, hiddenIds: string[]): LogEntry[] {
+  // A hidden line must not come back through a join replay or a re-publish.
+  if (hiddenIds.includes(frame.id)) return entries
   return pushEntry(entries, { kind: "media", frame }, at)
 }
 
@@ -393,10 +425,11 @@ export const useSessionStore = create<SessionState>((set) => ({
   turn: IDLE_TURN,
   uiPanels: [],
   lastPoke: null,
+  hiddenMediaIds: loadHiddenMedia(),
   packCards: null,
   chronicleFeed: null,
 
-  ingest: (frame: ServerFrame | NarrativeDraftFrame | ChronicleRecordsFrame, now = Date.now()) => {
+  ingest: (frame: ServerFrame | NarrativeDraftFrame | ChronicleRecordsFrame | MediaHiddenFrame, now = Date.now()) => {
     switch (frame.type) {
       case "ui":
         if (frame.panel === "sidebar") {
@@ -420,7 +453,19 @@ export const useSessionStore = create<SessionState>((set) => ({
         set((s) => ({ entries: pushDice(s.entries, frame, now) }))
         return
       case "media":
-        set((s) => ({ entries: ingestMedia(s.entries, frame, now) }))
+        set((s) => ({ entries: ingestMedia(s.entries, frame, now, s.hiddenMediaIds) }))
+        return
+      case "media_hidden":
+        set((s) => {
+          const id = (frame as MediaHiddenFrame).id
+          if (!id || s.hiddenMediaIds.includes(id)) return s
+          const next = [...s.hiddenMediaIds, id]
+          persistHiddenMedia(next)
+          return {
+            hiddenMediaIds: next,
+            entries: s.entries.filter((entry) => !(entry.kind === "media" && entry.frame.id === id)),
+          }
+        })
         return
       case "system": {
         // A `.poke` rides inside the system frame (additive); stash it so the
@@ -566,6 +611,34 @@ export const useSessionStore = create<SessionState>((set) => ({
     set((s) => (s.turn.busy && now - s.turn.since >= TURN_BUSY_TIMEOUT_MS ? { turn: IDLE_TURN } : s))
   },
 
+  hideMediaLocal: (id) => {
+    set((s) => {
+      if (!id || s.hiddenMediaIds.includes(id)) return s
+      const next = [...s.hiddenMediaIds, id]
+      persistHiddenMedia(next)
+      return {
+        hiddenMediaIds: next,
+        entries: s.entries.filter((entry) => !(entry.kind === "media" && entry.frame.id === id)),
+      }
+    })
+  },
+
+  hideMediaForAll: (id) => {
+    // `media_hide` postdates the published protocol package; the runtime JSON
+    // is the contract (protocol-augment.d.ts), cast at the transport boundary.
+    void transportSend({ type: "media_hide", id } as unknown as Parameters<typeof transportSend>[0]).catch(() => {
+      // The transport surfaces failures through status events.
+    })
+  },
+
+  regenerateMedia: (id, kind, prompt) => {
+    void transportSend(
+      { type: "media_regenerate", id, kind, prompt } as unknown as Parameters<typeof transportSend>[0],
+    ).catch(() => {
+      // The transport surfaces failures through status events.
+    })
+  },
+
   clear: () => {
     usePanelsStore.getState().resetSession()
     set({
@@ -577,6 +650,7 @@ export const useSessionStore = create<SessionState>((set) => ({
       packCards: null,
       chronicleFeed: null,
       lastPoke: null,
+      hiddenMediaIds: loadHiddenMedia(),
     })
   },
 }))

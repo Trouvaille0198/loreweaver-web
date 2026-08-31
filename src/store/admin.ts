@@ -703,7 +703,8 @@ interface AdminState {
       | AdminGenerateProgressFrame
       | AdminLLMExportFrame
       | AdminPresetsFrame
-      | AdminPresetExportAllFrame,
+      | AdminPresetExportAllFrame
+      | AdminNpcRecordFrame,
   ) => boolean
   refreshConfig: () => void
   setEmbedding: (profileId: string, dimension?: number) => void

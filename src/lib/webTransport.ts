@@ -22,6 +22,7 @@ import {
   type ClientFrame,
   type ChronicleRecordsFrame,
   type MediaFrame,
+  type MediaHiddenFrame,
   type MediaPayload,
   type MediaUpload,
   type NarrativeDraftFrame,
@@ -47,6 +48,7 @@ type AdditiveServerFrame =
   | AdminNpcRecordFrame
   | ChronicleRecordsFrame
   | NarrativeDraftFrame
+  | MediaHiddenFrame
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string")
@@ -56,6 +58,9 @@ function isStringArray(value: unknown): value is string[] {
 export function isAdditiveServerFrame(data: unknown): data is AdditiveServerFrame {
   if (typeof data !== "object" || data === null) return false
   const frame = data as Record<string, unknown>
+  if (frame.type === "media_hidden") {
+    return typeof frame.id === "string"
+  }
   if (frame.type === "narrative_draft") {
     return typeof frame.id === "string" && typeof frame.text === "string"
   }

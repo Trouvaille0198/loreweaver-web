@@ -313,6 +313,22 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
   const [previewOpen, setPreviewOpen] = useState(false)
   const previewButtonRef = useRef<HTMLButtonElement | null>(null)
   const previewCloseRef = useRef<HTMLButtonElement | null>(null)
+  const isKeeper = useConnectionStore((s) => s.welcome?.you.role === "keeper")
+  // The image kind rides in the blob name (`image_name(kind, …)`), so the
+  // regenerate frame can reproduce the same reference-gathering lane.
+  const kind = frame.name ? frame.name.split("-")[0] : ""
+  const canRegenerate = Boolean(isKeeper && frame.prompt && ["scene", "portrait", "clue", "combat"].includes(kind))
+  const hideMedia = () => {
+    // Keeper retirement retires the line for the WHOLE room (server-backed);
+    // a player's hide is this client's log only.
+    if (isKeeper) useSessionStore.getState().hideMediaForAll(frame.id)
+    else useSessionStore.getState().hideMediaLocal(frame.id)
+    closePreview()
+  }
+  const regenerate = () => {
+    useSessionStore.getState().regenerateMedia(frame.id, kind, frame.prompt ?? "")
+    closePreview()
+  }
 
   const closePreview = useCallback(() => {
     setPreviewOpen(false)
@@ -384,9 +400,8 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
             ) : null}
           </div>
         )}
-        <div className="log-media-caption">
-          {frame.name ? <strong className="log-media-name">{frame.name}</strong> : null}
-        </div>
+        {/* The filename stays in the tooltip/aria only — machine names like
+            "portrait-generated.png" are protocol noise on the reading surface. */}
       </article>
       {previewOpen && src !== null
         ? createPortal(
@@ -410,17 +425,24 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
                   ×
                 </Button>
                 <img className="image-lightbox-image" src={src} alt={frame.name ?? ""} />
-                {frame.name || frame.prompt ? (
+                {frame.prompt ? (
                   <p className="image-lightbox-caption">
-                    {frame.name ? <strong className="image-lightbox-subject">{frame.name}</strong> : null}
-                    {frame.prompt ? (
-                      <span className="image-lightbox-prompt">
-                        <span className="image-lightbox-prompt-label">{t("log.mediaPromptLabel")}</span>
-                        <span>{frame.prompt}</span>
-                      </span>
-                    ) : null}
+                    <span className="image-lightbox-prompt">
+                      <span className="image-lightbox-prompt-label">{t("log.mediaPromptLabel")}</span>
+                      <span>{frame.prompt}</span>
+                    </span>
                   </p>
                 ) : null}
+                <div className="image-lightbox-actions">
+                  {canRegenerate ? (
+                    <Button type="button" variant="secondary" size="sm" onClick={regenerate}>
+                      {t("log.mediaRegenerate")}
+                    </Button>
+                  ) : null}
+                  <Button type="button" variant="quiet" size="sm" onClick={hideMedia}>
+                    {isKeeper ? t("log.mediaHideAll") : t("log.mediaHide")}
+                  </Button>
+                </div>
               </section>
             </div>,
             document.body,

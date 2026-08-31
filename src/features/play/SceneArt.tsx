@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { createPortal } from "react-dom"
+import { Button } from "../../components/ui"
 import { assetReadBytes } from "./panels/assets"
 import type { SceneImageRef } from "./sceneImage"
 
@@ -79,15 +80,17 @@ export default function SceneArt({ image, sceneName }: { image: SceneImageRef; s
                 aria-label={t("session.sceneArtPreview", { name: sceneName })}
                 onClick={(event) => event.stopPropagation()}
               >
-                <button
+                <Button
                   ref={closeButtonRef}
                   type="button"
+                  variant="quiet"
+                  size="icon"
                   className="image-lightbox-close"
                   aria-label={t("session.sceneArtClose")}
                   onClick={close}
                 >
                   ×
-                </button>
+                </Button>
                 <img className="image-lightbox-image" src={src} alt={sceneName} />
                 <p className="image-lightbox-caption">
                   <strong className="image-lightbox-subject">{sceneName}</strong>

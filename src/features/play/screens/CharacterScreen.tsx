@@ -959,33 +959,6 @@ function CharacterDetailsView({
               >
                 {t("play.character.retire")}
               </Button>
-              {confirmDelete ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    disabled={!online}
-                    onClick={() => {
-                      send(".st delete")
-                      setConfirmDelete(false)
-                    }}
-                  >
-                    {t("play.character.deleteConfirm")}
-                  </Button>
-                  <Button type="button" variant="quiet" onClick={() => setConfirmDelete(false)}>
-                    {t("play.character.deleteCancel")}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  variant="danger"
-                  disabled={!online}
-                  onClick={() => setConfirmDelete(true)}
-                >
-                  {t("play.character.delete")}
-                </Button>
-              )}
             </>
           ) : character.retired ? (
             <Button
@@ -1000,6 +973,38 @@ function CharacterDetailsView({
           ) : (
             <Button type="button" variant="primary" disabled={!online || !onActivate} onClick={onActivate}>
               {t("play.character.activate")}
+            </Button>
+          )}
+          {/* Delete is available on EVERY owned sheet, not just the seat's active one —
+              culling an unused character is the common case. The active sheet goes bare
+              (`.st delete`); a named sheet uses the named form so the verb never lands
+              on whichever character happens to be active. */}
+          {confirmDelete ? (
+            <>
+              <Button
+                type="button"
+                variant="danger"
+                disabled={!online}
+                onClick={() => {
+                  send(active ? ".st delete" : `.st delete ${character.name}`)
+                  setConfirmDelete(false)
+                }}
+              >
+                {t("play.character.deleteConfirm")}
+              </Button>
+              <Button type="button" variant="quiet" onClick={() => setConfirmDelete(false)}>
+                {t("play.character.deleteCancel")}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="danger"
+              disabled={!online}
+              title={t("play.character.deleteHint")}
+              onClick={() => setConfirmDelete(true)}
+            >
+              {t("play.character.delete")}
             </Button>
           )}
         </div>

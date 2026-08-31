@@ -969,24 +969,10 @@ body {
   border-color: color-mix(in srgb, var(--danger) 44%, var(--line-default));
 }
 
-.log-media-caption {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-1) var(--space-1);
-}
-
-.log-media-name {
-  min-width: 0;
-  color: var(--text-primary);
-  font: 650 13px/1.4 var(--font-ui);
-  overflow-wrap: anywhere;
-}
-
-/* Image preview dialog. Keep the image and its generation prompt inside one
-   bounded surface; the prompt gets its own scroll boundary instead of growing
-   the viewport or forcing horizontal overflow. */
+/* Image preview dialog, shared by the chronicle media line, the scene plate
+   and the module-detail deck. Keep the image and its generation prompt inside
+   one bounded surface; the prompt gets its own scroll boundary instead of
+   growing the viewport or forcing horizontal overflow. */
 .image-lightbox-backdrop {
   position: fixed;
   inset: 0;
@@ -1013,12 +999,17 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-.image-lightbox-close {
+/* The close chip floats over both the image and the side panel, so it carries
+   its own translucent surface and glyph size on top of the quiet icon button. */
+.image-lightbox .image-lightbox-close {
   position: absolute;
   z-index: 1;
   top: var(--space-3);
   right: var(--space-3);
+  color: var(--text-primary);
   background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  border-color: var(--line-subtle);
+  font-size: 22px;
   backdrop-filter: blur(6px);
 }
 
@@ -1049,31 +1040,11 @@ body {
   white-space: pre-wrap;
 }
 
-.image-lightbox-subject {
+.image-lightbox-subject,
+.image-lightbox-caption .module-media-subject {
   color: var(--text-primary);
-  font-weight: 650;
-}
-
-@media (min-width: 761px) {
-  .image-lightbox {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-    grid-template-rows: minmax(0, 1fr);
-  }
-
-  .image-lightbox-image {
-    width: 100%;
-    height: 100%;
-    max-height: none;
-  }
-
-  .image-lightbox-caption {
-    height: 100%;
-    max-height: none;
-    border-top: 0;
-    border-left: 1px solid var(--line-subtle);
-    padding: var(--space-6) var(--space-5);
-  }
+  font: 650 14px/1.35 var(--font-ui);
+  overflow-wrap: anywhere;
 }
 
 .image-lightbox-prompt {
@@ -1088,6 +1059,50 @@ body {
   font: 650 11px/1.3 var(--font-ui);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* Regenerate (keeper, generated handouts only) and hide/retract ride with the
+   caption: below the prompt in the phone sheet, pinned to the foot of the
+   prompt column on desktop. */
+.image-lightbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--line-subtle);
+}
+
+@media (min-width: 761px) {
+  .image-lightbox {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "image caption"
+      "image actions";
+  }
+
+  .image-lightbox-image {
+    grid-area: image;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+  }
+
+  .image-lightbox-caption {
+    grid-area: caption;
+    max-height: none;
+    padding: var(--space-6) var(--space-5);
+    border-top: 0;
+    border-left: 1px solid var(--line-subtle);
+  }
+
+  .image-lightbox-actions {
+    grid-area: actions;
+    padding: var(--space-3) var(--space-5);
+    border-left: 1px solid var(--line-subtle);
+  }
 }
 
 @media (max-width: 760px) {
@@ -1106,13 +1121,20 @@ body {
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 
+  /* Image and caption shrink together so the action row always fits under the
+     sheet's 94dvh cap instead of being clipped by the sheet's overflow. */
   .image-lightbox-image {
-    max-height: 62dvh;
+    max-height: 54dvh;
   }
 
   .image-lightbox-caption {
-    max-height: 32dvh;
+    max-height: 26dvh;
     padding: var(--space-4);
+  }
+
+  .image-lightbox-actions {
+    padding: var(--space-2) var(--space-4);
+    padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
   }
 }
 
@@ -1242,8 +1264,7 @@ body {
 }
 
 .log-jump-target .entry-speaker,
-.log-jump-target .entry-body,
-.log-jump-target .log-media-name {
+.log-jump-target .entry-body {
   transition: background-color var(--motion-fast) ease;
 }
 
@@ -6146,12 +6167,6 @@ code {
 
   .log-media {
     padding: var(--space-2);
-  }
-
-  .log-media-caption {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: var(--space-1);
   }
 
   .turn-status {

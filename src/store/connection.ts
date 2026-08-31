@@ -176,7 +176,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       // Keeper-only discarded drafts belong to the chronicle (attached to their
       // reply bubble), and the player-open catch-up feed belongs to the session
       // store — everything else additive is admin.
-      if (frame.type === "narrative_draft" || frame.type === "chronicle_records") {
+      if (frame.type === "narrative_draft" || frame.type === "chronicle_records" || frame.type === "media_hidden") {
         useSessionStore.getState().ingest(frame)
       } else {
         useAdminStore.getState().ingest(frame)

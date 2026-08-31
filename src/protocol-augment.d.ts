@@ -436,6 +436,29 @@ declare module "@loreweaver/protocol" {
     prompt?: string
   }
 
+  interface MediaRegenerateFrame {
+    type: "media_regenerate"
+    /** The media frame id of the handout to re-render (its `name` names the new blob). */
+    id: string
+    /** The image kind that produced the original — scene/portrait/clue/combat. */
+    kind: string
+    /** The original frame's display prompt — the SEED the server re-expands through
+     * the same `.image` lane before rendering; the new frame carries the expansion. */
+    prompt: string
+  }
+
+  interface MediaHideFrame {
+    type: "media_hide"
+    /** The media frame id to retire from the room's broadcast history. */
+    id: string
+  }
+
+  interface MediaHiddenFrame {
+    type: "media_hidden"
+    /** The retired media frame id — every client drops the line from its log. */
+    id: string
+  }
+
   interface AdminGenerateStartedFrame {
     type: "admin_generate_started"
     kind: "module" | "pack"

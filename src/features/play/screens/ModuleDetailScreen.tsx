@@ -196,21 +196,29 @@ function ModuleMediaImage({
                 aria-label={t("play.module.mediaPreview", { name: displayName })}
                 onClick={(event) => event.stopPropagation()}
               >
-                <button
+                <Button
                   ref={closeButtonRef}
                   type="button"
+                  variant="quiet"
+                  size="icon"
                   className="image-lightbox-close"
                   aria-label={t("play.module.mediaClose")}
                   onClick={closePreview}
                 >
                   ×
-                </button>
+                </Button>
                 <img className="image-lightbox-image" src={src} alt={displayName} />
                 <p className="image-lightbox-caption">
                   {subject || fallbackLabel ? (
                     <strong className="module-media-subject">{displayName}</strong>
                   ) : null}
                   <span className="module-media-filename">{record.name}</span>
+                  {prompt ? (
+                    <span className="image-lightbox-prompt">
+                      <span className="image-lightbox-prompt-label">{t("log.mediaPromptLabel")}</span>
+                      <span>{prompt}</span>
+                    </span>
+                  ) : null}
                 </p>
               </section>
             </div>,
@@ -779,6 +787,7 @@ function PackDetailViewModern({
             <ModuleMediaImage
               record={heroCover}
               fallbackLabel={detail.title || detail.name}
+              prompt={heroRegen?.prompt}
               onRegenerate={heroRegen ? () => retryJob(heroRegen.id) : undefined}
             />
           ) : (
@@ -1110,6 +1119,7 @@ function PackDetailViewModern({
                       <ModuleMediaImage
                         record={selectedLoreImage}
                         fallbackLabel={selectedLore.title}
+                        prompt={selectedLoreRegen?.prompt}
                         onRegenerate={selectedLoreRegen ? () => retryJob(selectedLoreRegen.id) : undefined}
                       />
                     </div>
@@ -1157,6 +1167,7 @@ function PackDetailViewModern({
                           <ModuleMediaImage
                             record={portrait}
                             fallbackLabel={pregen.name}
+                            prompt={regen?.prompt}
                             onRegenerate={regen ? () => retryJob(regen.id) : undefined}
                           />
                         </div>
@@ -1676,6 +1687,7 @@ function PackDetailView({
                           kind: t("play.module.packMediaGroups.cover"),
                           index: index + 1,
                         })}
+                        prompt={regen?.prompt}
                         onRegenerate={regen ? () => retryJob(regen.id) : undefined}
                       />
                     </li>
@@ -1823,6 +1835,7 @@ function PackDetailView({
                       <ModuleMediaImage
                         record={portrait}
                         fallbackLabel={pregen.name}
+                        prompt={regen?.prompt}
                         onRegenerate={regen ? () => retryJob(regen.id) : undefined}
                       />
                     ) : null}
