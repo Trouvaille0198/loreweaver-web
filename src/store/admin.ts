@@ -64,10 +64,6 @@ export interface ModuleSource {
 export interface GenerateModuleOptions {
   media?: string[]
   companion?: string[]
-  /** Difficulty tier (easy/standard/hard/deadly) — level-based systems only. */
-  difficulty?: string
-  /** Recommended character level range ("1-3") — level-based systems only. */
-  levels?: string
 }
 
 
@@ -109,10 +105,6 @@ export interface ModuleDetail {
     keys?: string[]
     image?: string
   }[]
-  /** Recommended character level range ("1-3") for level-based systems. */
-  levels?: string
-  /** Difficulty tier (easy/standard/hard/deadly) the module was authored for. */
-  difficulty?: string
   /** A pack's typed variable specs (its module trackers). */
   variables?: {
     id: string
@@ -168,9 +160,6 @@ export interface ModulePregen {
   background?: string
   appearance?: string
   occupation?: string
-  /** The system's canonical class/race ids (e.g. "cleric" / "human") the module
-   * authored — shown localized on the detail page's claimable-cast list. */
-  characterClass?: string
   race?: string
   aliases?: string[]
   skills?: Record<string, number>
@@ -446,7 +435,6 @@ function parseModuleDetailValue(value: Record<string, unknown>): ModuleDetail | 
             background: typeof item.background === "string" ? item.background : undefined,
             appearance: typeof item.appearance === "string" ? item.appearance : undefined,
             occupation: typeof item.occupation === "string" ? item.occupation : undefined,
-            characterClass: typeof item.character_class === "string" ? item.character_class : undefined,
             race: typeof item.race === "string" ? item.race : undefined,
             aliases: Array.isArray(item.aliases) ? item.aliases.map(String).filter(Boolean) : undefined,
             skills:
@@ -783,9 +771,6 @@ interface AdminState {
     media?: string[],
     companion?: string[],
     extendsBase?: string,
-    system?: string,
-    difficulty?: string,
-    levels?: string,
   ) => void
   listModules: () => void
   getModuleDetail: (name: string) => void
@@ -1311,34 +1296,26 @@ export const useAdminStore = create<AdminState>((set) => ({
     const frame: Record<string, unknown> = { type: "admin_generate", kind: "module", description, locale }
     const media = options?.media?.length ? options.media : null
     const companion = options?.companion?.length ? options.companion : null
-    const difficulty = options?.difficulty?.trim() || null
-    const levels = options?.levels?.trim() || null
-    if (media || companion || difficulty || levels)
+    if (media || companion)
       frame.options = {
         ...(media ? { media } : {}),
         ...(companion ? { companion } : {}),
-        ...(difficulty ? { difficulty } : {}),
-        ...(levels ? { levels } : {}),
       }
     send(frame as unknown as ClientFrame, set)
   },
-  generatePackModule: (description, media, companion, extendsBase, system, difficulty, levels) => {
+  generatePackModule: (description, media, companion, extendsBase, system) => {
     const locale = i18n.resolvedLanguage === "zh" ? "zh" : "en"
     const frame: Record<string, unknown> = { type: "admin_generate", kind: "pack", description, locale }
     const m = media?.length ? media : null
     const c = companion?.length ? companion : null
     const e = extendsBase?.trim() || null
     const s = system?.trim() || null
-    const d = difficulty?.trim() || null
-    const l = levels?.trim() || null
-    if (m || c || e || s || d || l)
+    if (m || c || e || s)
       frame.options = {
         ...(m ? { media: m } : {}),
         ...(c ? { companion: c } : {}),
         ...(e ? { extends: e } : {}),
         ...(s ? { system: s } : {}),
-        ...(d ? { difficulty: d } : {}),
-        ...(l ? { levels: l } : {}),
       }
     send(frame as unknown as ClientFrame, set)
   },
@@ -1358,7 +1335,6 @@ export const useAdminStore = create<AdminState>((set) => ({
           background: pregen.background ?? pregen.concept ?? "",
           appearance: pregen.appearance ?? "",
           occupation: pregen.occupation ?? "",
-          ...(pregen.characterClass !== undefined ? { character_class: pregen.characterClass } : {}),
           ...(pregen.race !== undefined ? { race: pregen.race } : {}),
           aliases: pregen.aliases ?? [],
           skills: pregen.skills ?? {},

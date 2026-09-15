@@ -22,7 +22,7 @@ import { useSessionStore } from "../../../store/session"
 import CharacterScreen from "./CharacterScreen"
 import { sheetWrite } from "./sheetWrite"
 
-const SYSTEMS = [{ id: "coc7", make_char: "coc" }, { id: "dnd5e", make_char: "dnd" }, { id: "wod" }]
+const SYSTEMS = [{ id: "coc7", make_char: "coc" }, { id: "wod", make_char: "wod" }, {}]
 
 function stateFrame(extra: Record<string, unknown> = {}) {
   return {
@@ -45,7 +45,7 @@ const SHEET = {
 
 const ALT_SHEET = {
   name: "Mira Vale",
-  system: "dnd5e",
+  system: "wod",
   resources: [{ id: "hp", label: "HP", value: 8, max: 10 }],
   attributes: { STR: 12, DEX: 16 },
   skills: { Stealth: 5 },
@@ -145,7 +145,7 @@ describe("CharacterScreen — creation", () => {
 
     const picker = screen.getByLabelText("Rule system") as HTMLSelectElement
     // Roll mode can only offer systems whose pack declares a make-char word.
-    expect([...picker.options].map((option) => option.value)).toEqual(["coc7", "dnd5e"])
+    expect([...picker.options].map((option) => option.value)).toEqual(["coc7", "wod"])
   })
 
   it("rolls with the pack's own dialect word", async () => {
@@ -158,10 +158,10 @@ describe("CharacterScreen — creation", () => {
 
   it("uses the chosen system's word, so a pack's own system works untouched", async () => {
     render(<CharacterScreen onBack={() => {}} />)
-    await userEvent.selectOptions(screen.getByLabelText("Rule system"), "dnd5e")
+    await userEvent.selectOptions(screen.getByLabelText("Rule system"), "wod")
     await userEvent.click(screen.getByRole("button", { name: "Create character" }))
 
-    expect(sent).toEqual([{ type: "input", text: ".dnd" }])
+    expect(sent).toEqual([{ type: "input", text: ".wod" }])
   })
 
   it("drafts from a description through the server's own generator", async () => {

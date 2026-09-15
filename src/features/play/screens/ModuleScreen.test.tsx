@@ -468,14 +468,14 @@ describe("ModuleScreen — community packs", () => {
     act(() => useAdminStore.setState({ busy: false }))
     await user.type(screen.getByLabelText("Or describe a module for the forge to write"), "a dungeon crawl")
     await user.click(screen.getByRole("radio", { name: /\.lwpack/ }))
-    await user.selectOptions(screen.getByRole("combobox"), "use:dnd5e")
+    await user.selectOptions(screen.getByRole("combobox"), "use:wod")
     await user.click(screen.getByRole("button", { name: "Generate complete pack & install" }))
     expect(sent.at(-1)).toEqual({
       type: "admin_generate",
       kind: "pack",
       description: "a dungeon crawl",
       locale: "en",
-      options: { system: "dnd5e" },
+      options: { system: "wod" },
     })
   })
 

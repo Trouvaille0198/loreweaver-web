@@ -317,7 +317,7 @@ function MediaEntry({ frame, seq, isJumpTarget }: { frame: MediaFrame; seq: numb
   // The image kind rides in the blob name (`image_name(kind, …)`), so the
   // regenerate frame can reproduce the same reference-gathering lane.
   const kind = frame.name ? frame.name.split("-")[0] : ""
-  const canRegenerate = Boolean(isKeeper && frame.prompt && ["scene", "portrait", "clue", "combat"].includes(kind))
+  const canRegenerate = Boolean(isKeeper && frame.prompt && ["scene", "portrait", "clue"].includes(kind))
   const hideMedia = () => {
     // Keeper retirement retires the line for the WHOLE room (server-backed);
     // a player's hide is this client's log only.

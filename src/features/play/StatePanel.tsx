@@ -63,11 +63,6 @@ export function CharacterCard({ character }: { character: CharacterState }) {
       <header className="desk-title">
         <Avatar ref={character.avatar} name={character.name} />
         {stripControlChars(character.name)}
-        {typeof (details.fields as Record<string, unknown> | undefined)?.level === "number" ? (
-          <span className="character-level-chip" title={t("play.character.level")}>
-            Lv {(details.fields as Record<string, unknown>).level as number}
-          </span>
-        ) : null}
       </header>
       <div className="character-card-body">
         {attributeEntries.length > 0 ? (
@@ -87,26 +82,6 @@ export function CharacterCard({ character }: { character: CharacterState }) {
             ))}
           </div>
         ) : null}
-        {(character.resource_groups ?? []).map((group) => (
-          (() => {
-            const groupLabel = group.id
-              ? t(`session.resourceGroups.${group.id}`, { defaultValue: stripControlChars(group.id) })
-              : t("session.resources")
-            return (
-              <div
-                key={group.id}
-                className="resource-group"
-                role="group"
-                aria-label={groupLabel}
-              >
-                {group.id ? <h4 className="resource-group-title">{groupLabel}</h4> : null}
-                {group.resources.map((resource) => (
-                  <ResourceRow key={`${group.id}:${resource.id}`} resource={resource} />
-                ))}
-              </div>
-            )
-          })()
-        ))}
         {skillEntries.length > 0 ? (
           <div className="skills-fold">
             <Button
@@ -381,10 +356,6 @@ type PartyCharacterInfo = StateFrame["party"][number] & {
   background?: string
   notes?: string
   status_effects?: string[]
-  resource_groups?: {
-    id: string
-    resources: { id: string; label: string; value: number; max?: number | null; prominent?: boolean }[]
-  }[]
 }
 
 function detailText(value: unknown): string {
@@ -486,10 +457,6 @@ function PartyCharacterModal({
   const secondary = Object.entries(info.secondary_attributes ?? {})
   const fields = Object.entries(info.fields ?? {})
   const localizedFields: [string, unknown][] = fields.map(([key, value]) => {
-    if (key === "character_class" && typeof value === "string" && value) {
-      // The class id ("wizard"/"bard"/...) displays as its localized name.
-      return [key, t(`play.character.class.${value}`, { defaultValue: value })]
-    }
     if (key === "race" && typeof value === "string" && value) {
       // The race id ("human"/"half-elf"/...) displays as its localized name.
       return [key, t(`play.character.race.${value}`, { defaultValue: value })]
@@ -590,22 +557,6 @@ function PartyCharacterModal({
                 <PartyDetailTable entries={localizedFields} t={t} />
               </section>
             ) : null}
-            {(info.resource_groups ?? []).map((group) =>
-              group.resources.some((resource) => typeof resource.max !== "number" || resource.max > 0) ? (
-                <section className="character-modal-section" key={group.id || "resources"}>
-                  <h3>
-                    {group.id
-                      ? t(`session.resourceGroups.${group.id}`, { defaultValue: stripControlChars(group.id) })
-                      : t("session.resources")}
-                  </h3>
-                  <div className="character-resources" role="group" aria-label={stripControlChars(group.id)}>
-                    {group.resources.map((resource) => (
-                      <ResourceRow key={resource.id} resource={resource} />
-                    ))}
-                  </div>
-                </section>
-              ) : null,
-            )}
             {attributes.length > 0 ? (
               <section className="character-modal-section">
                 <h3>{t("session.attributes")}</h3>
@@ -1474,7 +1425,6 @@ export function SceneCard({ game }: { game: StateFrame }) {
 
 export function InitiativeCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
-  if (game.combat) return <CombatCard combat={game.combat} />
   if (game.initiative.length === 0) return null
   return (
     <section className="desk-card">
@@ -1486,47 +1436,6 @@ export function InitiativeCard({ game }: { game: StateFrame }) {
             {stripControlChars(entry.name)}
           </li>
         ))}
-      </ol>
-    </section>
-  )
-}
-
-function CombatCard({ combat }: { combat: NonNullable<StateFrame["combat"]> }) {
-  const { t } = useTranslation()
-  return (
-    <section className="desk-card">
-      <header className="desk-title">{t("session.combat")}</header>
-      <p className="scene-line">
-        {t("session.combatPhase", { phase: combat.phase, round: combat.round })}
-        {combat.current ? ` · ${stripControlChars(combat.current)}` : ""}
-      </p>
-      <p className="scene-line">{t("session.combatBudget", { budget: JSON.stringify(combat.budget) })}</p>
-      <ol className="initiative-list">
-        {combat.combatants.map((entry) => {
-          // v2.9 presentation: public conditions render as chips, with the server's
-          // human-readable label ("火球术") preferred over the raw condition id —
-          // this is where "who is concentrating on what" shows at the table.
-          const chips = (entry.conditions ?? [])
-            .filter((condition) => (condition.visibility ?? "public") === "public")
-            .map((condition) => stripControlChars(condition.label || condition.id))
-            .filter((text) => text.length > 0)
-          return (
-            <li key={entry.id} className={entry.id === combat.current ? "is-current" : ""}>
-              <span className="initiative-value">{entry.initiative}</span>
-              {stripControlChars(entry.name)}
-              {entry.state && entry.state !== "ready" ? ` · ${stripControlChars(entry.state)}` : ""}
-              {chips.length > 0 ? (
-                <span className="chip-row">
-                  {chips.map((text, index) => (
-                    <span key={`${entry.id}-${index}`} className="chip">
-                      {text}
-                    </span>
-                  ))}
-                </span>
-              ) : null}
-            </li>
-          )
-        })}
       </ol>
     </section>
   )

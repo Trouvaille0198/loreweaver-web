@@ -1206,12 +1206,6 @@ select {
   min-width: 0;
 }
 
-.module-generate-difficulty {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 /* Forge submit block: the tab's only primary action, anchored at the end of
    the rail so it stays reachable while the option list scrolls. */
 .module-forge-actions {

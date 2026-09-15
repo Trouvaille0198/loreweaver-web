@@ -75,39 +75,6 @@ describe("StatePanel", () => {
     expect(bo).toHaveClass("is-offline")
   })
 
-  it("localizes resource group headings", async () => {
-    const previousLanguage = i18n.language
-    await i18n.changeLanguage("zh")
-    try {
-      useSessionStore.getState().ingest({
-        type: "state",
-        character: {
-          name: "Ash",
-          system: "dnd5e",
-          resources: [],
-          resource_groups: [
-            {
-              id: "hit_dice",
-              resources: [{ id: "hit_dice", label: "生命骰", value: 1, max: 1 }],
-            },
-          ],
-          attributes: {},
-          status_effects: [],
-        },
-        party: [],
-        initiative: [],
-        online: 1,
-      })
-
-      render(<StatePanel />)
-
-      expect(screen.getByRole("heading", { name: "生命骰" })).toBeInTheDocument()
-      expect(screen.getByRole("group", { name: "生命骰" })).toBeInTheDocument()
-    } finally {
-      await i18n.changeLanguage(previousLanguage)
-    }
-  })
-
   it("opens a character sheet popup from a party member double-click", () => {
     useSessionStore.getState().ingest({
       type: "state",
@@ -124,8 +91,7 @@ describe("StatePanel", () => {
         {
           name: "Bo",
           online: true,
-          active: false,
-          system: "dnd5e",
+          system: "wod",
           attributes: { STR: 14 },
           skills: { Stealth: 7 },
           background: "A quiet scout.",
@@ -200,8 +166,7 @@ describe("StatePanel", () => {
         {
           name: "Bo",
           online: true,
-          active: false,
-          system: "dnd5e",
+          system: "wod",
           attributes: { STR: 14 },
           items: [
             {

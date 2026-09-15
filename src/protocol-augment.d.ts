@@ -61,33 +61,6 @@ declare module "@loreweaver/protocol" {
     text: string
   }
 
-  interface RuntimeCombatant {
-    id: string
-    name: string
-    initiative: number
-    position: number
-    state?: string
-    budget?: Record<string, number>
-        conditions?: { id: string; visibility?: string; stacks?: number; label?: string }[]
-    health?: unknown
-    health_presentation?: unknown
-  }
-
-  interface RuntimeCombatState {
-    schema_version: number
-    id: string
-    revision: number
-    phase: string
-    round: number
-    turn_index: number
-    current?: string | null
-    budget: Record<string, number>
-    order: string[]
-    combatants: RuntimeCombatant[]
-    reaction_window?: Record<string, unknown> | null
-    event_seq: number
-    events?: Record<string, unknown>[]
-  }
 
   interface StateFrame {
     /** The room's resolved rule system, distinct from the complete systems list. */
@@ -109,7 +82,6 @@ declare module "@loreweaver/protocol" {
     /** `.share` publishes a player-facing module link: the public face (name +
      * description) rides every member's state frame. */
     module_share?: { name?: string; description?: string }
-    combat?: RuntimeCombatState
   }
 
   interface CharacterState {
@@ -119,20 +91,6 @@ declare module "@loreweaver/protocol" {
      * the character library, excluded from the party roster) — the library
      * renders a "join" affordance on retired cards. Absent pre-retirement. */
     retired?: boolean
-    resource_groups?: {
-      id: string
-      resources: {
-        id: string
-        label: string
-        value: number
-        max?: number
-        role?: string
-        group?: string
-        revision?: number
-        die?: string
-        prominent?: boolean
-      }[]
-    }[]
     secondary_attributes?: Record<string, unknown>
     fields?: Record<string, unknown>
     equipment?: unknown[]
@@ -150,9 +108,6 @@ declare module "@loreweaver/protocol" {
     /** Relationship tracks this character holds toward each named entity
      * (non-default values only). Absent when none. */
     relationships?: { target: string; tracks: { track: string; value: number }[] }[]
-    /** v2.9 wire: the character's known spells, localized display names.
-     * Absent when the server predates it or the character knows none. */
-    spells?: string[]
     /** v2.9 wire: the pack-resolved race data behind the sheet's free-text race
      * field. Absent when the server predates it, the pack declares no races, or
      * the name is unknown. */
@@ -440,7 +395,7 @@ declare module "@loreweaver/protocol" {
     type: "media_regenerate"
     /** The media frame id of the handout to re-render (its `name` names the new blob). */
     id: string
-    /** The image kind that produced the original — scene/portrait/clue/combat. */
+    /** The image kind that produced the original — scene/portrait/clue. */
     kind: string
     /** The original frame's display prompt — the SEED the server re-expands through
      * the same `.image` lane before rendering; the new frame carries the expansion. */

@@ -41,13 +41,9 @@ function ShareModuleButton({ name, variant = "secondary" }: { name: string; vari
   )
 }
 
-/** Level-based system identity ids the pregen editor offers (localized via
- * `play.character.class.*` / `play.character.race.*`); empty option clears the
- * field for systems or characters without one. */
-const PRGEN_CLASS_IDS = [
-  "barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin",
-  "ranger", "rogue", "sorcerer", "warlock", "wizard", "artificer",
-] as const
+/** Race identity ids the pregen editor offers (localized via
+ * `play.character.race.*`); empty option clears the field for systems or
+ * characters without one. */
 const PRGEN_RACE_IDS = [
   "dragonborn", "dwarf", "elf", "gnome", "half-elf", "half-orc", "halfling",
   "human", "tiefling", "orc",
@@ -436,7 +432,6 @@ function PregenEditorModal({
   const closeRef = useRef<HTMLButtonElement>(null)
   const [name, setName] = useState(pregen.name)
   const [occupation, setOccupation] = useState(pregen.occupation ?? "")
-  const [characterClass, setCharacterClass] = useState(pregen.characterClass ?? "")
   const [race, setRace] = useState(pregen.race ?? "")
   const [background, setBackground] = useState(pregen.background ?? pregen.concept ?? "")
   const [appearance, setAppearance] = useState(pregen.appearance ?? "")
@@ -481,7 +476,6 @@ function PregenEditorModal({
       ...pregen,
       name: name.trim(),
       occupation: occupation.trim(),
-      characterClass: characterClass.trim(),
       race: race.trim(),
       background: background.trim(),
       appearance: appearance.trim(),
@@ -534,23 +528,6 @@ function PregenEditorModal({
                 aria-invalid={invalid || undefined}
                 autoComplete="off"
               />
-            )}
-          </Field>
-          <Field label={t("play.module.pregenClass")}>
-            {({ id, describedBy }) => (
-              <select
-                id={id}
-                value={characterClass}
-                onChange={(event) => setCharacterClass(event.target.value)}
-                aria-describedby={describedBy}
-              >
-                <option value="">—</option>
-                {PRGEN_CLASS_IDS.map((classId) => (
-                  <option key={classId} value={classId}>
-                    {t(`play.character.class.${classId}`, { defaultValue: classId })}
-                  </option>
-                ))}
-              </select>
             )}
           </Field>
           <Field label={t("play.module.pregenRace")}>
@@ -805,10 +782,6 @@ function PackDetailViewModern({
           <h2 id="module-v2-title">{detail.title || detail.name}</h2>
           <p className="module-v2-file-meta">
             {formatBytes(detail.size)}
-            {detail.levels ? ` · ${t("play.module.levels")}: ${detail.levels}` : ""}
-            {detail.difficulty
-              ? ` · ${t("play.module.difficulty." + detail.difficulty, { defaultValue: detail.difficulty })}`
-              : ""}
           </p>
           {detail.content ? (
             <div className="module-v2-summary-block">
@@ -1175,11 +1148,6 @@ function PackDetailViewModern({
                       <div className="module-v2-cast-copy">
                         <ModuleMediaName name={pregen.name} onRegenerate={regen ? () => retryJob(regen.id) : undefined} />
                         <div className="module-v2-cast-tags">
-                          {pregen.characterClass ? (
-                            <span className="chip">
-                              {t(`play.character.class.${pregen.characterClass}`, { defaultValue: pregen.characterClass })}
-                            </span>
-                          ) : null}
                           {pregen.race ? (
                             <span className="chip">
                               {t(`play.character.race.${pregen.race}`, { defaultValue: pregen.race })}
@@ -1552,13 +1520,7 @@ function PackDetailView({
           title={detail.title || detail.name}
           description={`${formatBytes(detail.size)}${
             detail.worldbookEntries ? ` · ${detail.worldbookEntries.length} ${t("play.module.entries")}` : ""
-          }${detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}${
-            detail.levels ? ` · ${t("play.module.levels")}: ${detail.levels}` : ""
-          }${
-            detail.difficulty
-              ? ` · ${t("play.module.difficulty." + detail.difficulty, { defaultValue: detail.difficulty })}`
-              : ""
-          }`}
+          }${detail.pregens ? ` · ${detail.pregens.length} ${t("play.module.packPregens")}` : ""}`}
           actions={
             <div className="module-detail-actions">
               {detail.current && !importing ? (
@@ -1841,11 +1803,6 @@ function PackDetailView({
                     ) : null}
                     <div className="module-source-copy">
                       <ModuleMediaName name={pregen.name} onRegenerate={regen ? () => retryJob(regen.id) : undefined} />
-                      {pregen.characterClass ? (
-                        <span className="chip">
-                          {t(`play.character.class.${pregen.characterClass}`, { defaultValue: pregen.characterClass })}
-                        </span>
-                      ) : null}
                       {pregen.race ? (
                         <span className="chip">
                           {t(`play.character.race.${pregen.race}`, { defaultValue: pregen.race })}

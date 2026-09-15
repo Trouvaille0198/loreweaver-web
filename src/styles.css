@@ -6301,8 +6301,7 @@ code {
 
 /* Vitals inside the character card share one row rhythm, whether a resource
    has a maximum (meter) or is an unbounded value such as temporary HP. */
-.session .desk-pane .character-card .character-resources,
-.session .desk-pane .character-card .resource-group {
+.session .desk-pane .character-card .character-resources {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -6318,18 +6317,6 @@ code {
 
 .session .desk-pane .character-card .character-resources {
   padding-top: 0;
-}
-
-.session .desk-pane .character-card .resource-group {
-  margin-top: 0;
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--border-soft);
-}
-
-.session .desk-pane .character-card .resource-group-title {
-  margin: 0;
-  color: var(--ink);
-  font: 650 13px/1.3 var(--font-ui);
 }
 
 .session .desk-pane .character-card .resource-row,
@@ -7366,14 +7353,4 @@ code {
   .module-share-card {
     padding: var(--space-5);
   }
-}
-
-.character-level-chip {
-  font: 600 11px/1.4 var(--font-ui);
-  color: var(--ink-faint);
-  background: var(--surface-inset);
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 1px 8px;
-  white-space: nowrap;
 }

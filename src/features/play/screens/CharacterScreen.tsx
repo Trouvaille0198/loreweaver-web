@@ -633,10 +633,6 @@ function CharacterDetailsView({
   const itemTarget = active ? "" : ` --on ${character.name}`
   const fieldEntries = Object.entries(details.fields ?? {})
   const localizedFieldEntries: [string, unknown][] = fieldEntries.map(([key, value]) => {
-    if (key === "character_class" && typeof value === "string" && value) {
-      // The class id ("wizard"/"bard"/...) displays as its localized name.
-      return [key, t(`play.character.class.${value}`, { defaultValue: value })]
-    }
     if (key === "race" && typeof value === "string" && value) {
       // The race id ("human"/"half-elf"/...) displays as its localized name.
       return [key, t(`play.character.race.${value}`, { defaultValue: value })]
@@ -660,9 +656,8 @@ function CharacterDetailsView({
   const archivedItems = items.filter((item) => item.archived)
   const memory = details.memory
   const relationships = details.relationships ?? []
-  // v2.9 wire: the character's known spells and pack-resolved race data. Both
-  // are server-resolved presentation facts — the sheet stores ids and free text.
-  const spells = character.spells ?? []
+  // v2.9 wire: the pack-resolved race data behind the sheet's free-text race
+  // field — a server-resolved presentation fact, not sheet content.
   const raceInfo = character.race_info
   const visibleResources = character.resources.filter(
     (resource) => !(typeof resource.max === "number" && resource.max <= 0),
@@ -676,7 +671,6 @@ function CharacterDetailsView({
     Boolean(background || notes) ||
     Boolean(memory && (memory.summary || (memory.entries?.length ?? 0) > 0)) ||
     relationships.length > 0 ||
-    spells.length > 0 ||
     Boolean(raceInfo)
   return (
     <Surface tone="accent" className="character-detail" labelledBy="character-detail-name">
@@ -729,41 +723,11 @@ function CharacterDetailsView({
           {raceInfo.traits ? <p className="play-character-prose">{stripControlChars(raceInfo.traits)}</p> : null}
         </CharacterDetailSection>
       ) : null}
-      {spells.length > 0 ? (
-        <CharacterDetailSection title={`${t("play.character.spells")} (${spells.length})`}>
-          <div className="play-character-skill-grid" role="list">
-            {spells.map((spell) => (
-              <span key={spell} role="listitem" className="play-character-skill">
-                {stripControlChars(spell)}
-              </span>
-            ))}
-          </div>
-          <p className="studio-hint">{t("play.character.spellsHint")}</p>
-        </CharacterDetailSection>
-      ) : null}
       {localizedFieldEntries.length > 0 ? (
         <CharacterDetailSection title={t("play.character.fields")}>
           <DetailTable entries={localizedFieldEntries} />
         </CharacterDetailSection>
       ) : null}
-      {(character.resource_groups ?? []).map((group) =>
-        group.resources.some((resource) => typeof resource.max !== "number" || resource.max > 0) ? (
-          <CharacterDetailSection
-            key={group.id || "resources"}
-            title={
-              group.id
-                ? t(`session.resourceGroups.${group.id}`, { defaultValue: stripControlChars(group.id) })
-                : t("play.character.fields")
-            }
-          >
-            <div className="character-resources" role="group" aria-label={stripControlChars(group.id)}>
-              {group.resources.map((resource) => (
-                <ResourceRow key={resource.id} resource={resource} />
-              ))}
-            </div>
-          </CharacterDetailSection>
-        ) : null,
-      )}
       {background ? (
         <CharacterDetailSection title={t("play.character.background")}>
           <p className="play-character-prose">{stripControlChars(background)}</p>
