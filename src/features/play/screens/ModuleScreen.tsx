@@ -334,6 +334,34 @@ function OperationNotice({
       </Notice>
     )
   }
+  if (operation.kind === "module_native_convert") {
+    return (
+      <Notice tone="success" role="status">
+        <p>{t("play.module.nativeConverted", { name: operation.name })}</p>
+        {operation.entityCount !== undefined ? (
+          <p className="studio-hint">
+            {t("play.module.nativeConvertedSummary", {
+              entities: operation.entityCount,
+              assets: operation.assets ?? 0,
+            })}
+          </p>
+        ) : null}
+        {operation.blockedRules?.length ? (
+          <p className="studio-hint">
+            {t("play.module.nativeBlockedRules", { rules: operation.blockedRules.join(", ") })}
+          </p>
+        ) : null}
+        {operation.warnings?.length ? (
+          <details>
+            <summary>{t("play.module.nativeWarnings", { count: operation.warnings.length })}</summary>
+            <ul className="play-list">
+              {operation.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+            </ul>
+          </details>
+        ) : null}
+      </Notice>
+    )
+  }
   return <Notice tone="success" role="status">{`${t("play.module.saved")} ${operation.name}`}</Notice>
 }
 
@@ -369,6 +397,7 @@ export default function ModuleScreen({
   const getModuleDetail = useAdminStore((s) => s.getModuleDetail)
   const uploadModule = useAdminStore((s) => s.uploadModule)
   const uploadModuleBundle = useAdminStore((s) => s.uploadModuleBundle)
+  const convertModuleBundle = useAdminStore((s) => s.convertModuleBundle)
   const uploadModulePack = useAdminStore((s) => s.uploadModulePack)
   const importModule = useAdminStore((s) => s.importModule)
   const deleteModule = useAdminStore((s) => s.deleteModule)
@@ -482,11 +511,11 @@ export default function ModuleScreen({
     if (operation.name) {
       setSelectedName(operation.name)
       getModuleDetail(operation.name)
-      if (operation.kind === "module_bundle_upload") importModule(operation.name)
+      if (operation.kind === "module_bundle_upload") convertModuleBundle(operation.name)
     }
     // `send` is intentionally absent: it is a fresh function every render, and the
     // install command must fire once per operation, not once per render.
-  }, [getModuleDetail, importModule, listModules, operation])
+  }, [convertModuleBundle, getModuleDetail, listModules, operation])
 
   useEffect(() => {
     if (!generated) return

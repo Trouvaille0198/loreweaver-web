@@ -1423,6 +1423,75 @@ export function SceneCard({ game }: { game: StateFrame }) {
   )
 }
 
+/** Player-safe projection of the native scenario graph: progress is shown only
+ * after the server's deterministic action bus changes it. */
+export function ModuleRuntimeCard({ game }: { game: StateFrame }) {
+  const { t } = useTranslation()
+  const runtime = game.module_runtime
+  if (!runtime) return null
+  const objectives = runtime.objectives ?? []
+  const actors = runtime.actors ?? []
+  const trackers = runtime.trackers ?? []
+  const rewards = runtime.rewards ?? []
+  const clues = runtime.clues ?? []
+  return (
+    <section className="desk-card">
+      <header className="desk-title">{t("session.moduleRuntime")}</header>
+      {runtime.scene?.name ? <p className="scene-line">{stripControlChars(runtime.scene.name)}</p> : null}
+      {objectives.length > 0 ? (
+        <div className="runtime-section">
+          <div className="desk-label">{t("session.runtime.objectives")}</div>
+          <ul className="party-list">
+            {objectives.map((item) => (
+              <li key={item.id ?? item.name} className="party-row">
+                <span className="party-name">{stripControlChars(item.name ?? item.id ?? "")}</span>
+                <span className="desk-tag">{t(`session.runtime.status.${item.status ?? "pending"}`)}</span>
+                {typeof item.progress === "number" ? <span className="desk-tag">{item.progress}%</span> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {actors.length > 0 ? (
+        <div className="runtime-section">
+          <div className="desk-label">{t("session.runtime.actors")}</div>
+          <ul className="party-list">
+            {actors.map((item) => (
+              <li key={item.id ?? item.name} className="party-row">
+                <span className="party-name">{stripControlChars(item.name ?? item.id ?? "")}</span>
+                <span className="desk-tag">{t(`session.runtime.status.${item.status ?? "active"}`)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {trackers.length > 0 ? (
+        <div className="runtime-section">
+          <div className="desk-label">{t("session.runtime.trackers")}</div>
+          <ul className="party-list">
+            {trackers.map((item) => (
+              <li key={item.id ?? item.name} className="party-row">
+                <span className="party-name">{stripControlChars(item.name ?? item.id ?? "")}{item.actor ? ` · ${stripControlChars(item.actor)}` : ""}</span>
+                <span className="desk-tag">{String(item.value ?? "")}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {runtime.ending?.name ? <p className="scene-line">{t("session.runtime.ending", { name: stripControlChars(runtime.ending.name) })}</p> : null}
+      {clues.length > 0 ? (
+        <div className="runtime-section">
+          <div className="desk-label">{t("session.runtime.clues", { count: clues.length })}</div>
+          <ul className="clue-list">
+            {clues.map((clue) => <li key={clue.id ?? clue.name} className="clue-row"><strong className="clue-title">{stripControlChars(clue.name ?? clue.id ?? "")}</strong></li>)}
+          </ul>
+        </div>
+      ) : null}
+      {rewards.length > 0 ? <p className="scene-line">{t("session.runtime.rewards", { count: rewards.length })}</p> : null}
+    </section>
+  )
+}
+
 export function InitiativeCard({ game }: { game: StateFrame }) {
   const { t } = useTranslation()
   if (game.initiative.length === 0) return null
@@ -1518,6 +1587,7 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
     return (
       <div className="desk-stack">
         {game ? <SceneCard game={game} /> : null}
+        {game ? <ModuleRuntimeCard game={game} /> : null}
         <UiPanelCards />
         {game ? <VariablesCard game={game} /> : null}
         {game ? <InitiativeCard game={game} /> : null}
@@ -1534,6 +1604,7 @@ export default function StatePanel({ order = "desk" }: { order?: "desk" | "drawe
       {game ? <PartyCard game={game} /> : null}
       {game ? <PregenCard game={game} /> : null}
       {game ? <SceneCard game={game} /> : null}
+      {game ? <ModuleRuntimeCard game={game} /> : null}
       {game ? <InitiativeCard game={game} /> : null}
       <PresenceCard />
       {game ? <UsageCard game={game} /> : null}

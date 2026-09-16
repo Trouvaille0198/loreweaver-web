@@ -2465,6 +2465,11 @@ body {
   font-size: 13px;
 }
 
+.runtime-section {
+  display: grid;
+  gap: var(--space-2);
+}
+
 /* The scene card's plate: the current scene's illustration, one click from the
    full-size lightbox. The desk card's flex gap provides the spacing. */
 .desk-card .scene-art-trigger {

@@ -31,6 +31,7 @@ import {
   CharacterCard,
   ClueCard,
   InitiativeCard,
+  ModuleRuntimeCard,
   PartyCard,
   PregenCard,
   SceneCard,
@@ -46,6 +47,7 @@ export type DeskSlotId =
   | "sidebar"
   | "tray"
   | "scene"
+  | "runtime"
   | "uiPanels"
   | "trackers"
   | "initiative"
@@ -59,6 +61,7 @@ const DEFAULT_ORDER: readonly DeskSlotId[] = [
   "sidebar",
   "tray",
   "scene",
+  "runtime",
   "uiPanels",
   "trackers",
   "initiative",
@@ -177,6 +180,7 @@ export default function DeskColumn() {
       sidebar: manifest.some((panel) => panel.slot === "sidebar" && !closed[panel.id]),
       tray: manifest.some((panel) => panel.slot === "tray" && !closed[panel.id]),
       scene: Boolean(game && (game.scene || game.clock)),
+      runtime: Boolean(game?.module_runtime),
       uiPanels: uiPanels.length > 0,
       trackers: Boolean(game && (game.variables ?? []).length > 0),
       initiative: Boolean(game && game.initiative.length > 0),
@@ -415,6 +419,8 @@ export default function DeskColumn() {
         return <PanelTray />
       case "scene":
         return game ? <SceneCard game={game} /> : null
+      case "runtime":
+        return game ? <ModuleRuntimeCard game={game} /> : null
       case "uiPanels":
         return <UiPanelCards />
       case "trackers":

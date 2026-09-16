@@ -72,6 +72,7 @@ export const COMMANDS: readonly CommandEntry[] = [
   { word: "settle", keeper: true },
   { word: "phase" },
   { word: "hint" },
+  { word: "runtime", keeper: true },
   { word: "help" },
   { word: "h" },
   { word: "language", keeper: true },
@@ -172,6 +173,7 @@ export const QUICK_COMMANDS: readonly QuickCommand[] = [
 
   // --- Keeper-only surface (hidden from player seats) ---
   { word: "settle", line: ".settle", keeper: true, dataMode: "write" },
+  { word: "runtime", line: ".runtime", keeper: true, privateReply: true, dataMode: "mixed" },
   { word: "summary", line: ".summary", keeper: true, dataMode: "read" },
   { word: "module", line: ".module ", keeper: true, privateReply: true, dataMode: "write" },
   { word: "forge", line: ".forge ", keeper: true, privateReply: true, dataMode: "write" },

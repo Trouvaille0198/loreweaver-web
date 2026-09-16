@@ -211,6 +211,7 @@ export interface ModuleOperation {
     | "module_pregen_update"
     | "module_pack_export"
     | "module_bundle_upload"
+    | "module_native_convert"
     | "module_pack_upload"
     | "module_import"
     | "module_delete"
@@ -234,6 +235,11 @@ export interface ModuleOperation {
   /** module_pack_upload: the server path the archive landed on — the ref the following
    * `.pack install` consumes. */
   path?: string
+  /** Native conversion report: source-backed facts that need keeper review. */
+  warnings?: string[]
+  blockedRules?: string[]
+  entityCount?: number
+  assets?: number
 }
 
 function parseModuleDetail(frame: AdminGeneratedFrame): Record<string, unknown> {
@@ -780,6 +786,8 @@ interface AdminState {
   overwriteModulePack: (name: string) => void
   exportModulePack: (name: string) => void
   uploadModuleBundle: (name: string, archive: string) => void
+  /** Convert the preserved source bundle through the source-cited native-card lane. */
+  convertModuleBundle: (name: string) => void
   /** Store an uploaded .lwpack on the server (`data_dir/modules/`); the reply's `path`
    * feeds a following `.pack install`, which owns verification and room switching. */
   uploadModulePack: (name: string, archive: string) => void
@@ -1055,6 +1063,14 @@ export const useAdminStore = create<AdminState>((set) => ({
                 fileName: typeof detail.filename === "string" ? detail.filename : undefined,
                 overwritten: typeof detail.overwritten === "boolean" ? detail.overwritten : undefined,
                 path: typeof detail.path === "string" ? detail.path : undefined,
+                warnings: Array.isArray(detail.warnings)
+                  ? detail.warnings.filter((item): item is string => typeof item === "string" && !!item)
+                  : undefined,
+                blockedRules: Array.isArray(detail.blocked_rules)
+                  ? detail.blocked_rules.filter((item): item is string => typeof item === "string" && !!item)
+                  : undefined,
+                entityCount: typeof detail.entities === "number" ? detail.entities : undefined,
+                assets: typeof detail.assets === "number" ? detail.assets : undefined,
               },
               ...(kind === "module_import" ? { moduleImporting: null } : {}),
               busy: false,
@@ -1352,6 +1368,7 @@ export const useAdminStore = create<AdminState>((set) => ({
     moduleAction("module_pack_export", { name, overwrite: false }, set)
   },
   uploadModuleBundle: (name, archive) => moduleAction("module_bundle_upload", { name, archive }, set),
+  convertModuleBundle: (name) => moduleAction("module_native_convert", { name }, set),
   uploadModulePack: (name, archive) => moduleAction("module_pack_upload", { name, archive }, set),
   deleteModule: (name, sourceKind) => moduleAction("module_delete", { name, source_kind: sourceKind }, set),
   importModule: (name) => {

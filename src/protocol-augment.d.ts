@@ -1,6 +1,7 @@
-// Local type augmentation for the `@loreweaver/protocol` npm alias (2.3.1).
+// Local type augmentation for the `@loreweaver/protocol` npm alias.
 //
-// The server's wire protocol 2.4 adds `state.character.skills` — the sheet's
+// The server's wire protocol 2.11 adds `state.module_runtime` alongside the
+// earlier additive fields such as `state.character.skills` — the sheet's
 // trained skills (name → value) — which the published npm package does not yet
 // type. The runtime JSON already carries the key; this declaration makes it
 // visible to TypeScript without waiting on an npm release. Delete when the
@@ -63,6 +64,8 @@ declare module "@loreweaver/protocol" {
 
 
   interface StateFrame {
+    /** v2.11 additive: player-safe projection of an imported native scenario runtime. */
+    module_runtime?: ModuleRuntimeState
     /** The room's resolved rule system, distinct from the complete systems list. */
     room_system?: string
     /** v2.5 additive: every character sheet owned by this viewer in this room. */
@@ -82,6 +85,17 @@ declare module "@loreweaver/protocol" {
     /** `.share` publishes a player-facing module link: the public face (name +
      * description) rides every member's state frame. */
     module_share?: { name?: string; description?: string }
+  }
+
+  interface ModuleRuntimeState {
+    module_id?: string
+    scene?: { id?: string; name?: string; description?: string; summary?: string; image?: string }
+    objectives?: { id?: string; name?: string; status?: string; progress?: number }[]
+    actors?: { id?: string; name?: string; status?: string }[]
+    trackers?: { id?: string; name?: string; value?: unknown; actor?: string }[]
+    clues?: { id?: string; name?: string; description?: string; summary?: string; image?: string }[]
+    ending?: { id?: string; name?: string } | null
+    rewards?: { name?: string; recipient?: string; quantity?: number; description?: string }[]
   }
 
   interface CharacterState {
