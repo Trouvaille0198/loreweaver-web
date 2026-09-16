@@ -571,7 +571,13 @@ export default function ModuleScreen({
 
   const removeSelected = () => {
     if (!selectedName || !window.confirm(t("play.module.deleteConfirm"))) return
-    deleteModule(selectedName)
+    // The server routes a delete by source kind: an installed .lwpack pack is deleted by its
+    // pack id, a Markdown source by filename. Omitting `source_kind` (as this call once did)
+    // makes the server take the text path for EVERY module — a pack name has no .md suffix, so
+    // the delete was refused with `bad_request` and a pack could never be removed from the
+    // library. Read the kind off the source row instead of the detail, which may lag it.
+    const row = sources.find((source) => source.name === selectedName)
+    deleteModule(selectedName, row?.sourceKind === "pack" ? "pack" : "text")
   }
 
   const toggleOption = (list: string[], setList: (next: string[]) => void, id: string, on: boolean) => {

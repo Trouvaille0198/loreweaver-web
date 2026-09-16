@@ -1124,6 +1124,19 @@ export const useAdminStore = create<AdminState>((set) => ({
       case "admin_update":
         set({ serverUpdate: frame, busy: false })
         return true
+      case "error": {
+        // The transport's generic refusal (`net/session.py::error_frame` — server_error,
+        // rate_limited, bad_frame…) also answers ADMIN requests, not just chat input. Without
+        // this, a failed module op (e.g. a delete that threw server-side) left `busy` true and
+        // the screens' pending states stuck at "处理中…" forever, because only `admin_error`
+        // and `admin_generated` ever settled them. Only an in-flight admin request (`busy`)
+        // makes this frame OUR reply — a stray refusal (chat input, media lane) must not paint
+        // the keeper banner. We settle the admin side but return false so the frame ALSO
+        // reaches the session store and appears in the chronicle like every other refusal.
+        if (!useAdminStore.getState().busy) return false
+        set({ lastError: frame.message ?? frame.code, busy: false, moduleImporting: null })
+        return false
+      }
       case "admin_error": {
         // An NPC-detail failure echoes the requested id (net/admin.py
         // `_npc_detail_frame`), so a pending request can fail precisely without

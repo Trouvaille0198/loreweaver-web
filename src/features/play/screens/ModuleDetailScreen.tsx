@@ -77,6 +77,12 @@ function ModuleMediaImage({
   const [src, setSrc] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const rootRef = useRef<HTMLElement | null>(null)
+  // A finished pack can ship tens of plates (this room's covers/scenes/npcs/items sum to
+  // ~35 MB). Fetching every plate the moment the detail mounts drowned the connection and
+  // froze the page for a long "处理中…" window — the keeper could not delete/import until
+  // the whole gallery had downloaded. Fetch only once a plate approaches the viewport.
+  const [visible, setVisible] = useState(() => typeof IntersectionObserver === "undefined")
   const previewTriggerRef = useRef<HTMLButtonElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const closePreview = () => {
@@ -90,6 +96,24 @@ function ModuleMediaImage({
   }
 
   useEffect(() => {
+    const node = rootRef.current
+    if (!node || visible) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        setVisible(true)
+        observer.disconnect()
+      },
+      // Start the fetch slightly before the plate scrolls into view so the keeper never
+      // watches an empty frame; a 400px margin is cheap (one pre-fetch per plate).
+      { rootMargin: "400px" },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [visible])
+
+  useEffect(() => {
+    if (!visible) return
     let live = true
     if (record.data) {
       setSrc(`data:${record.mime};base64,${record.data}`)
@@ -108,7 +132,7 @@ function ModuleMediaImage({
     return () => {
       live = false
     }
-  }, [record.hash, record.mime, record.data])
+  }, [record.hash, record.mime, record.data, visible])
 
   useEffect(() => {
     if (!previewOpen) return
@@ -140,6 +164,7 @@ function ModuleMediaImage({
 
   return (
     <figure
+      ref={rootRef}
       className="module-media-item"
       onContextMenu={openMenu}
       onMouseEnter={() => prompt && setHovering(true)}
@@ -2031,6 +2056,18 @@ export default function ModuleDetailScreen({
       getModuleDetail(moduleName)
     }
   }, [getModuleDetail, moduleName, operation, saving])
+
+  // The operation effects above only settle on an `admin_generated` reply. An ERROR reply —
+  // `admin_error` (forbidden / bad_request) or the transport's generic `error` frame
+  // (server_error), which the admin store now surfaces as `lastError` — would otherwise leave
+  // `deleting`/`saving` true and the buttons stuck at "处理中…" forever. `send()` clears
+  // `lastError` at request start, so a non-null `lastError` while pending is always the reply
+  // to the in-flight action (same "failed" signal ModelScreen / PackDetailView use).
+  useEffect(() => {
+    if (lastError === null) return
+    setDeleting(false)
+    setSaving(false)
+  }, [lastError])
 
   const remove = () => {
     if (deleting || !window.confirm(t("play.module.deleteConfirm"))) return

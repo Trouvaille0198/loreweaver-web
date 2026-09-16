@@ -80,9 +80,11 @@ describe("ModuleScreen — community packs", () => {
   // must not promise one — and it keeps the reference so the retry is one click.
   it("says so when the send fails, and keeps the reference typed", async () => {
     const user = userEvent.setup()
-    transportSend.mockResolvedValueOnce(undefined)
-    transportSend.mockRejectedValueOnce(new Error("offline"))
     render(<ModuleScreen onBack={() => {}} />)
+    // Flush the mount-time `listModules` send so the rejection below lands on the
+    // install itself, not on whichever frame happens to go out first.
+    await act(async () => {})
+    transportSend.mockRejectedValueOnce(new Error("offline"))
     const field = screen.getByLabelText("Pack reference")
     await user.type(field, "gh:1A7432/antu@v1.0.0")
     await user.click(screen.getByRole("button", { name: "Install (.pack install)" }))
@@ -115,9 +117,11 @@ describe("ModuleScreen — community packs", () => {
 
   it("says so when the fetch fails, and keeps the reference typed", async () => {
     const user = userEvent.setup()
-    transportSend.mockResolvedValueOnce(undefined)
-    transportSend.mockRejectedValueOnce(new Error("offline"))
     render(<ModuleScreen onBack={() => {}} />)
+    // Flush the mount-time `listModules` send so the rejection below lands on the
+    // fetch itself, not on whichever frame happens to go out first.
+    await act(async () => {})
+    transportSend.mockRejectedValueOnce(new Error("offline"))
     const field = screen.getByLabelText("Pack reference")
     await user.type(field, "gh:1A7432/antu@v1.0.0")
     await user.click(screen.getByRole("button", { name: "Fetch only (.pack fetch)" }))
@@ -128,9 +132,11 @@ describe("ModuleScreen — community packs", () => {
 
   it("says so when the module path send fails, and keeps the path typed", async () => {
     const user = userEvent.setup()
-    transportSend.mockResolvedValueOnce(undefined)
-    transportSend.mockRejectedValueOnce(new Error("offline"))
     render(<ModuleScreen onBack={() => {}} />)
+    // Flush the mount-time `listModules` send so the rejection below lands on the
+    // install itself, not on whichever frame happens to go out first.
+    await act(async () => {})
+    transportSend.mockRejectedValueOnce(new Error("offline"))
     const field = screen.getByLabelText("Module path on the server")
     await user.type(field, "packs/blackpool.lwpack")
     await user.click(screen.getByRole("button", { name: "Install (.module)" }))
@@ -184,7 +190,7 @@ describe("ModuleScreen — community packs", () => {
     expect(sent.at(-1)).toEqual({
       type: "admin_generate",
       kind: "module_delete",
-      description: JSON.stringify({ name: "scene.md" }),
+      description: JSON.stringify({ name: "scene.md", source_kind: "text" }),
     })
   })
 
