@@ -622,6 +622,7 @@
       "saveApplyHint": "请再次点击“导入当前房间”，让修改后的剧本生效。",
       "operationFailed": "模组操作失败。",
       "nativeConverted": "{{name}} 已转换为原生模组包，并导入当前房间。",
+      "nativeConvertedNeedsReview": "{{name}} 已构建并导入，但仍有机制或来源问题待复核；请先查看下方转换备注。",
       "nativeConvertedSummary": "已提取 {{entities}} 个有来源依据的实体，保留 {{assets}} 个有意义的素材。",
       "nativeBlockedRules": "以下机制仍需引擎支持或主持人复核：{{rules}}",
       "nativeWarnings": "转换备注（{{count}}）",

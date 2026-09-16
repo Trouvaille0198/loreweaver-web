@@ -238,6 +238,7 @@ export interface ModuleOperation {
   /** Native conversion report: source-backed facts that need keeper review. */
   warnings?: string[]
   blockedRules?: string[]
+  incomplete?: boolean
   entityCount?: number
   assets?: number
 }
@@ -1069,6 +1070,7 @@ export const useAdminStore = create<AdminState>((set) => ({
                 blockedRules: Array.isArray(detail.blocked_rules)
                   ? detail.blocked_rules.filter((item): item is string => typeof item === "string" && !!item)
                   : undefined,
+                incomplete: detail.incomplete === true,
                 entityCount: typeof detail.entities === "number" ? detail.entities : undefined,
                 assets: typeof detail.assets === "number" ? detail.assets : undefined,
               },

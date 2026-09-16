@@ -336,8 +336,8 @@ function OperationNotice({
   }
   if (operation.kind === "module_native_convert") {
     return (
-      <Notice tone="success" role="status">
-        <p>{t("play.module.nativeConverted", { name: operation.name })}</p>
+      <Notice tone={operation.incomplete ? "warning" : "success"} role="status">
+        <p>{t(operation.incomplete ? "play.module.nativeConvertedNeedsReview" : "play.module.nativeConverted", { name: operation.name })}</p>
         {operation.entityCount !== undefined ? (
           <p className="studio-hint">
             {t("play.module.nativeConvertedSummary", {

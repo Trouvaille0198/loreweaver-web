@@ -622,6 +622,7 @@
       "saveApplyHint": "Import it again to apply the edited source to this room.",
       "operationFailed": "Module operation failed.",
       "nativeConverted": "{{name}} was converted to a native module pack and imported into this room.",
+      "nativeConvertedNeedsReview": "{{name}} was built and imported, but mechanics or source issues still need review. Check the conversion notes below before play.",
       "nativeConvertedSummary": "Extracted {{entities}} source-backed entities and kept {{assets}} meaningful assets.",
       "nativeBlockedRules": "These mechanics still need engine support or keeper review: {{rules}}",
       "nativeWarnings": "Conversion notes ({{count}})",
